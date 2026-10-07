@@ -16,6 +16,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        ndk { abiFilters += "arm64-v8a" }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,6 +37,10 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    sourceSets.getByName("main").assets.srcDir(
+        providers.gradleProperty("okuloModelAssets").orElse("model-assets")
+    )
+    androidResources { noCompress += "onnx" }
     buildFeatures {
         compose = true
     }
@@ -43,6 +48,9 @@ android {
 
 dependencies {
 
+    implementation(libs.androidx.exifinterface)
+    implementation(libs.onnxruntime.android)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -65,4 +73,20 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom(rootProject.files("config/detekt.yml"))
     ignoreFailures = false
+}
+
+val modelAssetRoot = providers.gradleProperty("okuloModelAssets").orElse("model-assets")
+val verifyModelAssets by tasks.registering {
+    val models = listOf("s2c.onnx", "detector-800.onnx", "detector-320.onnx")
+    inputs.files(models.map { file("${modelAssetRoot.get()}/models/$it") })
+    doLast {
+        models.forEach { name ->
+            check(file("${modelAssetRoot.get()}/models/$name").isFile) {
+                "Missing $name. See docs/model-assets.md to prepare model assets."
+            }
+        }
+    }
+}
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }.configureEach {
+    dependsOn(verifyModelAssets)
 }
