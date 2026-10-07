@@ -5,6 +5,8 @@ import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.content.Context
 import android.graphics.Bitmap
+import com.example.okulo.composition.s2c.OBJECT_NODES
+import com.example.okulo.composition.s2c.objectIndices
 import java.io.Closeable
 import java.nio.FloatBuffer
 import java.util.concurrent.CancellationException
