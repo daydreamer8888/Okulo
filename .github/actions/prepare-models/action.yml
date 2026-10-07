@@ -1,0 +1,31 @@
+name: Prepare model assets
+description: Fetch and verify the versioned ONNX models used by the app.
+runs:
+  using: composite
+  steps:
+    - name: Restore model cache
+      id: models
+      uses: actions/cache@v5
+      with:
+        path: ${{ runner.temp }}/okulo-models
+        key: okulo-model-assets-v1-${{ hashFiles('tools/models/package.py') }}
+
+    - name: Download model assets
+      if: steps.models.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        mkdir -p "$RUNNER_TEMP/okulo-models"
+        gh release download model-assets-v1 \
+          --repo daydreamer8888/Okulo \
+          --pattern '*.onnx' \
+          --dir "$RUNNER_TEMP/okulo-models"
+
+    - name: Verify and stage model assets
+      shell: bash
+      run: |
+        python3 tools/models/package.py \
+          --scorer "$RUNNER_TEMP/okulo-models/s2c.onnx" \
+          --standard-detector "$RUNNER_TEMP/okulo-models/detector-800.onnx" \
+          --fast-detector "$RUNNER_TEMP/okulo-models/detector-320.onnx"

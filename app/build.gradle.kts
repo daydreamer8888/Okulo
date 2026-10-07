@@ -16,7 +16,9 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-        ndk { abiFilters += "arm64-v8a" }
+        ndk {
+            abiFilters += providers.gradleProperty("okuloAbis").orElse("arm64-v8a").get().split(",")
+        }
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
