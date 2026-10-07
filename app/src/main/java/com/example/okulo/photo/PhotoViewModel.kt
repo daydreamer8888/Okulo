@@ -1,18 +1,26 @@
 package com.example.okulo.photo
 
 import android.app.Application
+import android.content.ContentResolver
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.createCompositionAnalyzer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class PhotoViewModel(application: Application) : AndroidViewModel(application) {
+class PhotoViewModel internal constructor(
+    application: Application,
+    private val engine: CompositionAnalyzer,
+    private val photoReader: (ContentResolver, Uri) -> Bitmap
+) : AndroidViewModel(application) {
+    constructor(application: Application) : this(application, createCompositionAnalyzer(application), ::readPhoto)
+
     private val mutableState = MutableStateFlow(PhotoState())
     internal val state = mutableState.asStateFlow()
-    private val engine = createCompositionAnalyzer(application)
     private val tasks = PhotoWorkQueue(mutableState, engine::close)
     private var selectedUri: Uri? = null
 
@@ -21,7 +29,7 @@ class PhotoViewModel(application: Application) : AndroidViewModel(application) {
         val request = tasks.invalidate()
         mutableState.value = PhotoState(mode = state.value.mode, busy = true, status = "正在读取照片…")
         tasks.submit(request, { "照片读取失败，请重新选择" }) {
-            val bitmap = readPhoto(getApplication<Application>().contentResolver, uri)
+            val bitmap = photoReader(getApplication<Application>().contentResolver, uri)
             tasks.publish(request) { it.copy(photo = bitmap, busy = false, status = "照片已就绪") }
         }
     }
