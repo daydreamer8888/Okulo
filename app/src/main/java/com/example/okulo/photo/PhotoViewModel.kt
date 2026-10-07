@@ -4,15 +4,15 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import com.example.okulo.composition.AnalysisMode
-import com.example.okulo.composition.CompositionEngine
 import com.example.okulo.composition.CropBox
+import com.example.okulo.composition.createCompositionAnalyzer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class PhotoViewModel(application: Application) : AndroidViewModel(application) {
     private val mutableState = MutableStateFlow(PhotoState())
     internal val state = mutableState.asStateFlow()
-    private val engine = CompositionEngine(application)
+    private val engine = createCompositionAnalyzer(application)
     private val tasks = PhotoWorkQueue(mutableState, engine::close)
     private var selectedUri: Uri? = null
 

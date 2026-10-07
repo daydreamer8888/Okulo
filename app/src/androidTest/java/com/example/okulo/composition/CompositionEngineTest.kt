@@ -3,6 +3,9 @@ package com.example.okulo.composition
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.okulo.composition.s2c.ImageTensors
+import com.example.okulo.composition.s2c.S2cCropScorer
+import com.example.okulo.composition.s2c.imageTensors
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -22,7 +25,7 @@ class CompositionEngineTest {
             fixturePixels(raw, false), longArrayOf(1, 3, raw.height.toLong(), raw.width.toLong()),
             fixturePixels(normalized, true), longArrayOf(1, 3, normalized.height.toLong(), normalized.width.toLong())
         )
-        CompositionEngine(instrumentation.targetContext).use { engine ->
+        S2cCropScorer(instrumentation.targetContext).use { engine ->
             for (mode in AnalysisMode.entries) {
                 engine.load(mode)
                 val scores = engine.scoreInputs(input, cropCandidates())
@@ -41,7 +44,7 @@ class CompositionEngineTest {
     fun manualScoringMatchesRecommendationWithCachedPhotoInBothModes() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val bitmap = instrumentation.context.assets.open("scene.png").use { BitmapFactory.decodeStream(it) }
-        CompositionEngine(instrumentation.targetContext).use { engine ->
+        createCompositionAnalyzer(instrumentation.targetContext).use { engine ->
             for (mode in AnalysisMode.entries) {
                 val recommendation = engine.analyze(bitmap, mode, { true }, {})
                 val manual = engine.evaluate(bitmap, mode, recommendation.crop) { true }
