@@ -47,6 +47,15 @@ class CompositionEngine(context: Context) : Closeable {
         )
     }
 
+    fun evaluate(bitmap: Bitmap, mode: AnalysisMode, crop: CropBox, isCurrent: () -> Boolean): CompositionResult {
+        val started = System.nanoTime()
+        load(mode)
+        checkCurrent(isCurrent)
+        val image = prepare(bitmap, mode, isCurrent)
+        val scores = scoreCrops(image, listOf(CropBox.FullFrame, crop))
+        return CompositionResult(crop, scores[0], scores[1], 0, elapsed(started), 1)
+    }
+
     internal fun load(mode: AnalysisMode) {
         if (scorer == null) scorer = session("s2c.onnx")
         if (detectorMode != mode) {

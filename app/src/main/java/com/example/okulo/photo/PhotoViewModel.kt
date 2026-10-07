@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionEngine
+import com.example.okulo.composition.CropBox
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -43,9 +44,45 @@ class PhotoViewModel(application: Application) : AndroidViewModel(application) {
                 tasks.publish(request) { it.copy(status = status) }
             }
             tasks.publish(request) {
-                it.copy(result = result, busy = false, status = "分析完成")
+                it.copy(result = result, busy = false, status = if (it.manualCrop == null) "分析完成" else "有新推荐")
             }
         }
+    }
+
+    fun updateCrop(box: CropBox) {
+        if (state.value.result == null) return
+        tasks.invalidate()
+        mutableState.value = state.value.copy(
+            manualCrop = box, manualScore = null, manualMillis = null,
+            busy = false, error = null, status = "松手后重新评分"
+        )
+    }
+
+    fun evaluateCrop() {
+        val current = state.value
+        val photo = current.photo ?: return
+        val crop = current.manualCrop ?: return
+        val request = tasks.invalidate()
+        mutableState.value = current.copy(busy = true, status = "正在评价裁剪…", error = null)
+        tasks.submit(request, ::analysisFailureMessage) {
+            val result = engine.evaluate(photo, current.mode, crop) { tasks.isCurrent(request) }
+            tasks.publish(request) {
+                it.copy(
+                    manualScore = result.cropScore,
+                    manualMillis = result.analysisMillis,
+                    busy = false,
+                    status = "裁剪评分已更新"
+                )
+            }
+        }
+    }
+
+    fun restoreRecommendation() {
+        tasks.invalidate()
+        mutableState.value = state.value.copy(
+            manualCrop = null, manualScore = null, manualMillis = null,
+            busy = false, error = null, status = "已恢复推荐"
+        )
     }
 
     fun cancel() {
@@ -57,6 +94,7 @@ class PhotoViewModel(application: Application) : AndroidViewModel(application) {
         val current = state.value
         when {
             current.photo == null -> selectedUri?.let(::selectPhoto)
+            current.manualCrop != null -> evaluateCrop()
             else -> analyze()
         }
     }

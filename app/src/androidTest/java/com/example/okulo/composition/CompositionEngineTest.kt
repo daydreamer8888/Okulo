@@ -38,6 +38,25 @@ class CompositionEngineTest {
     }
 
     @Test
+    fun manualScoringMatchesRecommendationWithCachedPhotoInBothModes() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val bitmap = instrumentation.context.assets.open("scene.png").use { BitmapFactory.decodeStream(it) }
+        CompositionEngine(instrumentation.targetContext).use { engine ->
+            for (mode in AnalysisMode.entries) {
+                val recommendation = engine.analyze(bitmap, mode, { true }, {})
+                val manual = engine.evaluate(bitmap, mode, recommendation.crop) { true }
+                assertEquals(recommendation.originalScore, manual.originalScore, 2e-5f)
+                assertEquals(recommendation.cropScore, manual.cropScore, 2e-5f)
+                assertEquals(recommendation.crop, manual.crop)
+                val changed = engine.evaluate(bitmap, mode, CropBox(0.2f, 0.2f, 0.6f, 0.6f)) { true }
+                assertTrue(changed.cropScore.isFinite())
+                android.util.Log.i("OkuloValidation", "${mode.name} manual score: ${manual.analysisMillis} ms")
+            }
+        }
+        bitmap.recycle()
+    }
+
+    @Test
     fun solidRgbPhotoHasExpectedChannelsAndNormalization() {
         val bitmap = Bitmap.createBitmap(160, 128, Bitmap.Config.ARGB_8888)
         bitmap.eraseColor(0xff80ff00.toInt())
