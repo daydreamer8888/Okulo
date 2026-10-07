@@ -11,6 +11,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.example.okulo.photo.CropActions
 import com.example.okulo.photo.PhotoScreen
 import com.example.okulo.photo.PhotoViewModel
 import com.example.okulo.ui.theme.OkuloTheme
@@ -32,6 +33,11 @@ class MainActivity : ComponentActivity() {
                         onAnalyze = viewModel::analyze,
                         onCancel = viewModel::cancel,
                         onRetry = viewModel::retry,
+                        cropActions = CropActions(
+                            viewModel::updateCrop,
+                            viewModel::evaluateCrop,
+                            viewModel::restoreRecommendation
+                        ),
                         modifier = Modifier.padding(padding)
                     )
                 }
