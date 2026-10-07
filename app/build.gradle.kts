@@ -37,10 +37,14 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    sourceSets.getByName("test").resources.srcDir("src/androidTest/assets")
     sourceSets.getByName("main").assets.srcDir(
         providers.gradleProperty("okuloModelAssets").orElse("model-assets")
     )
     androidResources { noCompress += "onnx" }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
     buildFeatures {
         compose = true
     }
@@ -60,6 +64,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testRuntimeOnly(libs.onnxruntime.jvm)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

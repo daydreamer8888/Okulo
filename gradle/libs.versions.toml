@@ -12,9 +12,12 @@ activityCompose = "1.11.0"
 composeBom = "2024.09.00"
 detekt = "1.23.8"
 kover = "0.9.8"
+robolectric = "4.17"
 
 [libraries]
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifInterface" }
+onnxruntime-jvm = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnxruntime" }
 onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
