@@ -26,8 +26,8 @@ class PhotoReaderTest {
     @get:Rule val files = TemporaryFolder()
 
     @Test
-    @Config(sdk = [26])
-    fun legacyImportPreservesAllEightExifOrientations() {
+    @Config(sdk = [26, 28])
+    fun importPreservesAllEightExifOrientationsAndProducesSoftwarePixels() {
         val original = writePhoto(22, 33)
         val baseline = BitmapFactory.decodeFile(original.absolutePath)
         val colors = intArrayOf(
@@ -56,6 +56,7 @@ class PhotoReaderTest {
             }
             val imported = read(original)
             try {
+                assertTrue(imported.config != Bitmap.Config.HARDWARE)
                 val columns = if (index < 4) 2 else 3
                 assertEquals(columns * 11, imported.width)
                 assertEquals(if (index < 4) 33 else 22, imported.height)
@@ -64,24 +65,6 @@ class PhotoReaderTest {
             } finally {
                 imported.recycle()
             }
-        }
-    }
-
-    @Test
-    fun modernImportRespectsExifAndProducesSoftwarePixels() {
-        val original = writePhoto(22, 33)
-        ExifInterface(original).apply {
-            setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_ROTATE_90.toString())
-            saveAttributes()
-        }
-        val imported = read(original)
-        try {
-            assertEquals(33, imported.width)
-            assertEquals(22, imported.height)
-            assertTrue(imported.config != Bitmap.Config.HARDWARE)
-            assertTrue(imported.getPixel(5, 5) != imported.getPixel(27, 16))
-        } finally {
-            imported.recycle()
         }
     }
 
