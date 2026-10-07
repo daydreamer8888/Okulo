@@ -4,6 +4,7 @@ import android.net.Uri
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropBox
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -57,6 +58,7 @@ class PhotoViewModelTest {
         fixture.model.analyze()
         old.awaitEntry()
         fixture.model.setMode(AnalysisMode.Fast)
+        assertFalse("Previous mode must be cancelled before another analysis starts", fixture.analyzer.isCurrent())
         old.release()
         fixture.model.analyze()
         fresh.awaitEntry()
@@ -106,6 +108,7 @@ class PhotoViewModelTest {
         fixture.model.evaluateCrop()
         gate.awaitEntry()
         fixture.model.restoreRecommendation()
+        assertFalse("Restoring must cancel the pending manual score", fixture.analyzer.isCurrent())
         gate.release()
         fixture.model.analyze()
         fixture.await { !fixture.model.state.value.busy }
@@ -115,7 +118,25 @@ class PhotoViewModelTest {
     }
 
     @Test
-    fun cancelAndModeChangeDiscardAnInFlightImport() = PhotoTestHarness().use { fixture ->
+    fun cancelInvalidatesRunningAnalysisWithoutStartingAnotherRequest() = PhotoTestHarness().use { fixture ->
+        fixture.select()
+        val gate = fixture.gate()
+        fixture.analyzer.analyze = { _, _ ->
+            gate.block()
+            recommendation()
+        }
+        fixture.model.analyze()
+        gate.awaitEntry()
+        assertTrue(fixture.analyzer.isCurrent())
+        fixture.model.cancel()
+        assertFalse(fixture.analyzer.isCurrent())
+        assertFalse(fixture.model.state.value.busy)
+        assertEquals("已取消分析", fixture.model.state.value.status)
+        assertNull(fixture.model.state.value.result)
+    }
+
+    @Test
+    fun modeChangeRestartsAnInFlightImport() = PhotoTestHarness().use { fixture ->
         val gate = fixture.gate()
         var reads = 0
         fixture.reader = {
@@ -125,8 +146,6 @@ class PhotoViewModelTest {
         }
         fixture.model.selectPhoto(Uri.parse("content://photos/one"))
         gate.awaitEntry()
-        fixture.model.cancel()
-        assertEquals("已取消分析", fixture.model.state.value.status)
         fixture.model.setMode(AnalysisMode.Fast)
         gate.release()
         fixture.await { !fixture.model.state.value.busy }
