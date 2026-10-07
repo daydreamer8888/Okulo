@@ -1,0 +1,82 @@
+package com.example.okulo.photo
+
+import android.graphics.Bitmap
+import androidx.exifinterface.media.ExifInterface
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.composition.CompositionResult
+import com.example.okulo.composition.CropBox
+import com.example.okulo.ui.theme.OkuloTheme
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+
+class PhotoScreenTest {
+    @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun emptyScreenAllowsPickingAndDisablesAnalysis() {
+        compose.setContent {
+            OkuloTheme { PhotoScreen(PhotoState(), {}, {}, {}, {}) }
+        }
+        compose.onNodeWithText("选择照片").assertIsEnabled()
+        compose.onNodeWithText("分析构图").assertIsNotEnabled()
+    }
+
+    @Test
+    fun modeSwitchAndCancelRemainAvailableDuringAnalysis() {
+        var mode: AnalysisMode? = null
+        var cancelled = false
+        compose.setContent {
+            OkuloTheme {
+                PhotoScreen(PhotoState(busy = true), {}, { mode = it }, {}, { cancelled = true })
+            }
+        }
+        compose.onNodeWithText("选择照片").assertIsEnabled()
+        compose.onNodeWithText("快速分析").performClick()
+        compose.onNodeWithText("取消").performClick()
+        assertEquals(AnalysisMode.Fast, mode)
+        assertTrue(cancelled)
+    }
+
+    @Test
+    fun completedResultShowsOriginalPreviewAndElapsedTime() {
+        val bitmap = Bitmap.createBitmap(48, 32, Bitmap.Config.ARGB_8888)
+        val result = CompositionResult(CropBox(0.1f, 0.1f, 0.9f, 0.9f), 2f, 3f, 0, 1200, 250)
+        compose.setContent {
+            OkuloTheme { PhotoScreen(PhotoState(photo = bitmap, result = result), {}, {}, {}, {}) }
+        }
+        compose.onNodeWithText("原图").assertIsDisplayed()
+        compose.onNodeWithText("裁剪预览").assertExists()
+        compose.onNodeWithText("重新分析").assertIsEnabled()
+    }
+
+    @Test
+    fun exifRotationAndMirrorUseCorrectPixelCoordinates() {
+        val colors = intArrayOf(0xff110000.toInt(), 0xff220000.toInt(), 0xff330000.toInt(),
+            0xff440000.toInt(), 0xff550000.toInt(), 0xff660000.toInt())
+        val bitmap = Bitmap.createBitmap(colors, 2, 3, Bitmap.Config.ARGB_8888)
+        val cases = listOf(
+            ExifInterface.ORIENTATION_ROTATE_90 to intArrayOf(4, 2, 0, 5, 3, 1),
+            ExifInterface.ORIENTATION_TRANSPOSE to intArrayOf(0, 2, 4, 1, 3, 5),
+            ExifInterface.ORIENTATION_TRANSVERSE to intArrayOf(5, 3, 1, 4, 2, 0)
+        )
+        for ((orientation, order) in cases) {
+            val rotated = Bitmap.createBitmap(bitmap, 0, 0, 2, 3, orientationMatrix(orientation), false)
+            assertEquals(3, rotated.width)
+            assertEquals(2, rotated.height)
+            val pixels = IntArray(6)
+            rotated.getPixels(pixels, 0, 3, 0, 0, 3, 2)
+            assertArrayEquals(order.map { colors[it] }.toIntArray(), pixels)
+            rotated.recycle()
+        }
+        bitmap.recycle()
+    }
+}
