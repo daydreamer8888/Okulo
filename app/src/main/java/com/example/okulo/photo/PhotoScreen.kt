@@ -7,10 +7,8 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,10 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropBox
@@ -54,7 +49,8 @@ internal fun PhotoScreen(
     onAnalyze: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
-    onRetry: () -> Unit = onAnalyze
+    onRetry: () -> Unit = onAnalyze,
+    cropActions: CropActions = CropActions()
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
     Column(
@@ -72,25 +68,31 @@ internal fun PhotoScreen(
             }
         }
         AnalysisActions(state, onAnalyze, onCancel, onRetry)
-        state.photo?.let { photo -> PhotoResults(state, photo) }
+        state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
         Spacer(Modifier.height(12.dp))
     }
 }
 
 @Composable
-private fun PhotoResults(state: PhotoState, photo: Bitmap) {
-    val crop = state.result?.crop
+private fun PhotoResults(state: PhotoState, photo: Bitmap, actions: CropActions) {
+    val crop = state.displayedCrop
     if (crop == null) {
         PhotoCard("原图", photo)
         return
     }
-    PhotoCard("原图", photo, crop)
+    Text("原图", style = MaterialTheme.typography.titleSmall)
+    CropEditor(photo, crop, actions)
+    Text("拖动框内移动，拖动四角或双指缩放")
+    Text("保留原图 ${kotlin.math.round(crop.area * 100).toInt()}%")
+    if (crop.area < 0.5f) Text("裁剪范围较小", color = MaterialTheme.colorScheme.error)
+    if (state.manualCrop != null) TextButton(onClick = actions.restore) { Text("恢复推荐") }
     val preview = remember(photo, crop) { cropPreview(photo, crop) }
     PhotoCard("裁剪预览", preview)
     state.result?.let { result ->
         Text("分析用时 ${seconds(result.analysisMillis)} 秒 · 比较了 ${result.candidateCount} 个方案")
         if (result.loadMillis >= 100) Text("模型准备 ${seconds(result.loadMillis)} 秒")
     }
+    state.manualMillis?.let { Text("裁剪评分用时 ${seconds(it)} 秒") }
     ScoreDetails(state)
 }
 
@@ -101,7 +103,7 @@ private fun ScoreDetails(state: PhotoState) {
         Text(if (showScores) "收起模型评分" else "查看模型评分")
     }
     if (showScores) {
-        val score = state.result?.cropScore
+        val score = state.displayedScore
         Text(
             if (score == null) {
                 "裁剪评分待更新"
@@ -129,28 +131,14 @@ private fun AnalysisActions(state: PhotoState, onAnalyze: () -> Unit, onCancel: 
 }
 
 @Composable
-private fun PhotoCard(title: String, bitmap: Bitmap, crop: CropBox? = null) {
+private fun PhotoCard(title: String, bitmap: Bitmap) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = MaterialTheme.typography.titleSmall)
         Card {
-            Box(Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height)) {
-                Image(bitmap.asImageBitmap(), contentDescription = title, modifier = Modifier.fillMaxSize())
-                CropOutline(crop)
-            }
-        }
-    }
-}
-
-@Composable
-private fun CropOutline(crop: CropBox?) {
-    val color = MaterialTheme.colorScheme.primary
-    Canvas(Modifier.fillMaxSize()) {
-        if (crop != null) {
-            drawRect(
-                color,
-                topLeft = Offset(crop.left * size.width, crop.top * size.height),
-                size = Size(crop.width * size.width, crop.height * size.height),
-                style = Stroke(3.dp.toPx())
+            Image(
+                bitmap.asImageBitmap(),
+                contentDescription = title,
+                modifier = Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height)
             )
         }
     }
