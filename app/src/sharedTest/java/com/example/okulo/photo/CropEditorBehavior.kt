@@ -52,7 +52,10 @@ abstract class CropEditorBehavior {
         compose.onNodeWithTag("crop-editor").performTouchInput {
             swipe(Offset(width * 0.02f, height * 0.02f), Offset(width * 0.02f, height * 0.1f))
         }
-        compose.runOnIdle { assertEquals(0, finishes) }
+        compose.runOnIdle {
+            assertEquals(CropBox(0.2f, 0.2f, 0.8f, 0.8f), crop.value)
+            assertEquals(0, finishes)
+        }
         compose.onNodeWithTag("crop-editor").performTouchInput {
             down(0, Offset(width * 0.4f, height * 0.5f))
             down(1, Offset(width * 0.6f, height * 0.5f))
