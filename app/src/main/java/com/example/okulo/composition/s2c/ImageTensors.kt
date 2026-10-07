@@ -1,6 +1,6 @@
 @file:Suppress("MagicNumber") // RGB bit layout and published normalization constants.
 
-package com.example.okulo.composition
+package com.example.okulo.composition.s2c
 
 import android.graphics.Bitmap
 import kotlin.math.round

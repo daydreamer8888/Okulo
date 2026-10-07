@@ -1,4 +1,4 @@
-package com.example.okulo.composition
+package com.example.okulo.composition.s2c
 
 import android.content.Context
 import java.io.File
