@@ -15,7 +15,7 @@ import kotlin.math.floor
 
 internal class S2cCropScorer(context: Context) : CropScoringModel {
     private val assets = ModelAssets(context)
-    private val environment = OrtEnvironment.getEnvironment()
+    private val environment by lazy { OrtEnvironment.getEnvironment() }
     private var scorer: OrtSession? = null
     private var detector: OrtSession? = null
     private var detectorMode: AnalysisMode? = null

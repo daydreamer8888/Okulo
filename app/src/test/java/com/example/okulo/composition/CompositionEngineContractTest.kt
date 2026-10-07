@@ -4,8 +4,13 @@ import android.graphics.Bitmap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.util.concurrent.CancellationException
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28])
 class CompositionEngineContractTest {
     @Test
     fun recommendationAndManualScoringUseTheInjectedModel() {
