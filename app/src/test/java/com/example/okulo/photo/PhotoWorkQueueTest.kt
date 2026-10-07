@@ -13,6 +13,7 @@ import java.io.IOException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(RobolectricTestRunner::class)
@@ -35,12 +36,14 @@ class PhotoWorkQueueTest {
         val state = MutableStateFlow(PhotoState())
         val gate = WorkGate()
         val obsoleteCalls = AtomicInteger()
+        val inferenceCompleted = AtomicBoolean()
         val finished = CountDownLatch(1)
         PhotoWorkQueue(state, {}).use { queue ->
             try {
                 val first = queue.invalidate()
                 queue.submit(first, { "failure" }) {
                     gate.block()
+                    inferenceCompleted.set(true)
                     queue.publish(first) { it.copy(status = "first") }
                 }
                 gate.awaitEntry()
@@ -54,6 +57,7 @@ class PhotoWorkQueueTest {
                 gate.release()
                 assertTrue(finished.await(10, TimeUnit.SECONDS))
                 shadowOf(Looper.getMainLooper()).idle()
+                assertTrue("Active inference must finish without interruption", inferenceCompleted.get())
                 assertEquals(0, obsoleteCalls.get())
                 assertEquals("latest", state.value.status)
             } finally {

@@ -66,6 +66,8 @@ internal class TestAnalyzer : CompositionAnalyzer {
     val analysisCalls = AtomicInteger()
     val evaluationCalls = AtomicInteger()
     val closed = CountDownLatch(1)
+    var isCurrent: () -> Boolean = { false }
+        private set
     var analyze: (Bitmap, AnalysisMode) -> CompositionResult = { _, _ -> recommendation() }
     var evaluate: (CropBox) -> CompositionResult = { crop -> recommendation().copy(crop = crop, cropScore = 4f) }
 
@@ -75,6 +77,7 @@ internal class TestAnalyzer : CompositionAnalyzer {
         isCurrent: () -> Boolean,
         status: (String) -> Unit
     ): CompositionResult {
+        this.isCurrent = isCurrent
         analysisCalls.incrementAndGet()
         status("正在分析照片…")
         return analyze(bitmap, mode)
@@ -86,6 +89,7 @@ internal class TestAnalyzer : CompositionAnalyzer {
         crop: CropBox,
         isCurrent: () -> Boolean
     ): CompositionResult {
+        this.isCurrent = isCurrent
         evaluationCalls.incrementAndGet()
         return evaluate(crop)
     }
