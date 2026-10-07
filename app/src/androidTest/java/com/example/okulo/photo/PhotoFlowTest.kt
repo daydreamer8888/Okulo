@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.AnalysisMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -47,6 +48,23 @@ class PhotoFlowTest {
             val result = checkNotNull(model.state.value.result) { model.state.value.error ?: "No result" }
             assertEquals(250, result.candidateCount)
             assertTrue(result.crop.area >= 0.5f - 1e-6f)
+            val manual = CropBox(0.2f, 0.2f, 0.6f, 0.6f)
+            instrumentation.runOnMainSync { model.updateCrop(manual); model.evaluateCrop() }
+            waitUntil { !model.state.value.busy }
+            assertNotNull(model.state.value.manualScore)
+            instrumentation.runOnMainSync { model.analyze() }
+            waitUntil { !model.state.value.busy }
+            assertEquals(manual, model.state.value.displayedCrop)
+            instrumentation.runOnMainSync {
+                model.updateCrop(CropBox(0.3f, 0.3f, 0.7f, 0.7f))
+                assertNull(model.state.value.displayedScore)
+                model.evaluateCrop()
+                model.restoreRecommendation()
+            }
+            Thread.sleep(1000)
+            assertNull(model.state.value.manualCrop)
+            assertNull(model.state.value.manualScore)
+            assertEquals(model.state.value.result?.crop, model.state.value.displayedCrop)
             instrumentation.runOnMainSync { model.analyze() }
             waitUntil { model.state.value.status == "正在分析照片…" }
             instrumentation.runOnMainSync { model.setMode(AnalysisMode.Standard) }
