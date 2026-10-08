@@ -17,6 +17,45 @@ abstract class CropEditorBehavior {
     @get:Rule val compose = createComposeRule()
 
     @Test
+    fun draggingEachEdgeResizesRatherThanMovesTheCrop() {
+        val crop = mutableStateOf(CropBox(0.2f, 0.2f, 0.8f, 0.8f))
+        val ratio = mutableStateOf<Float?>(null)
+        val bitmap = Bitmap.createBitmap(500, 400, Bitmap.Config.ARGB_8888)
+        var finishes = 0
+        compose.setContent {
+            CropEditor(bitmap, crop.value, CropActions({ crop.value = it }, { finishes++ }), ratio.value)
+        }
+        val starts = listOf(Offset(0.2f, 0.5f), Offset(0.5f, 0.2f), Offset(0.8f, 0.5f), Offset(0.5f, 0.8f))
+        val ends = listOf(Offset(0.3f, 0.5f), Offset(0.5f, 0.3f), Offset(0.7f, 0.5f), Offset(0.5f, 0.7f))
+        for (locked in listOf(null, 1f)) {
+            for (index in starts.indices) {
+                compose.runOnIdle {
+                    crop.value = CropBox(0.2f, 0.2f, 0.8f, 0.8f)
+                    ratio.value = locked
+                }
+                compose.onNodeWithTag("crop-editor").performTouchInput {
+                    swipe(
+                        Offset(width * starts[index].x, height * starts[index].y),
+                        Offset(width * ends[index].x, height * ends[index].y)
+                    )
+                }
+                compose.runOnIdle {
+                    val horizontal = index == 0 || index == 2
+                    assertEquals(if (locked != null || horizontal) 0.5f else 0.6f, crop.value.width, 0.02f)
+                    assertEquals(if (locked != null || !horizontal) 0.5f else 0.6f, crop.value.height, 0.02f)
+                    when (index) {
+                        0 -> assertEquals(0.8f, crop.value.right, 1e-5f)
+                        1 -> assertEquals(0.8f, crop.value.bottom, 1e-5f)
+                        2 -> assertEquals(0.2f, crop.value.left, 1e-5f)
+                        else -> assertEquals(0.2f, crop.value.top, 1e-5f)
+                    }
+                }
+            }
+        }
+        assertEquals(8, finishes)
+    }
+
+    @Test
     fun freeAspectCornerDragChangesWidthWithoutForcingHeight() {
         val crop = mutableStateOf(CropBox(0.2f, 0.2f, 0.8f, 0.8f))
         val bitmap = Bitmap.createBitmap(500, 400, Bitmap.Config.ARGB_8888)
