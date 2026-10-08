@@ -62,11 +62,18 @@ internal fun PhotoScreen(
     onSettings: () -> Unit = {},
     showModelScores: Boolean = false,
     onAspect: (CropAspect) -> Unit = {},
-    onTransform: (PhotoOperation) -> Unit = {}
+    onTransform: (PhotoOperation) -> Unit = {},
+    onSave: () -> Unit = {},
+    saving: Boolean = false
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        PhotoToolbar(onBack, onSettings)
+        PhotoToolbar(
+            onBack = onBack,
+            onSettings = onSettings,
+            onSave = rememberPhotoSaveAction(onSave),
+            canSave = state.displayedCrop != null && !state.busy && !saving
+        )
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
