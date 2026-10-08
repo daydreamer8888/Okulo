@@ -10,7 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -67,30 +66,40 @@ internal fun PhotoScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (state.photo == null) {
-                Box(Modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
+                Column(
+                    Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
                     Icon(
                         painterResource(R.drawable.ic_photo),
                         null,
                         Modifier.size(56.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Button(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
+                        Text("选择照片")
+                    }
+                }
+            } else {
+                OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
+                    Text("换一张照片")
                 }
             }
-            OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
-                Text(if (state.photo == null) "选择照片" else "换一张照片")
-            }
             if (state.photo != null) PhotoAspectControls(state, onAspect)
-            PhotoActionRow(
-                state,
-                PhotoEditActions(
-                    onAnalyze,
-                    onCancel,
-                    rememberPhotoSaveAction(onSave),
-                    cropActions.restore,
-                    onTransform
-                ),
-                saving
-            )
+            if (state.photo != null || state.busy) {
+                PhotoActionRow(
+                    state,
+                    PhotoEditActions(
+                        onAnalyze,
+                        onCancel,
+                        rememberPhotoSaveAction(onSave),
+                        cropActions.restore,
+                        onTransform
+                    ),
+                    saving
+                )
+            }
             AnalysisFeedback(state, onRetry)
             state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
             if (showModelScores && state.originalScore != null && state.displayedScore != null) {
