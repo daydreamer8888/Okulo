@@ -72,6 +72,23 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
+    fun optedInScoresRemainVisibleForAFreeCropWithoutACurrentRecommendation() {
+        val state = PhotoState(
+            photo = image(),
+            aspect = CropAspect.Free,
+            manualCrop = CropBox(0.1f, 0.2f, 0.9f, 0.6f),
+            manualScore = 4f,
+            manualOriginalScore = 2f
+        )
+        compose.setContent {
+            OkuloTheme { PhotoScreen(state, {}, {}, {}, {}, showModelScores = true) }
+        }
+        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertExists()
+        compose.onNodeWithContentDescription("分析构图").assertExists()
+        compose.onNodeWithContentDescription("恢复推荐").assertDoesNotExist()
+    }
+
+    @Test
     fun saveRequiresACropAndCannotBeRepeatedWhileWriting() {
         val state = mutableStateOf(PhotoState())
         val saving = mutableStateOf(false)

@@ -85,6 +85,8 @@ class PhotoViewModelTest {
         fixture.model.evaluateCrop()
         fixture.await { !fixture.model.state.value.busy }
         assertEquals(resized, fixture.model.state.value.displayedCrop)
+        assertEquals(2f, fixture.model.state.value.originalScore)
+        assertEquals(4f, fixture.model.state.value.displayedScore)
         assertEquals(2, fixture.analyzer.analysisCalls.get())
         assertNull(fixture.model.state.value.result)
         fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = CropBox(0f, 0.2f, 1f, 0.7f)) }
