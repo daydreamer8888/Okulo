@@ -134,7 +134,7 @@ private fun PhotoResults(state: PhotoState, photo: Bitmap, actions: CropActions)
     Text("原图", style = MaterialTheme.typography.titleSmall)
     CropEditor(photo, crop, actions, state.aspect.normalizedRatio(photo.width, photo.height))
     val preview = remember(photo, crop) { cropPreview(photo, crop) }
-    PhotoCard("裁剪预览", preview)
+    PhotoCard("裁剪预览", preview, smallCrop = crop.area < 0.5f)
 }
 
 @Composable
@@ -148,9 +148,18 @@ private fun AnalysisFeedback(state: PhotoState, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun PhotoCard(title: String, bitmap: Bitmap) {
+private fun PhotoCard(title: String, bitmap: Bitmap, smallCrop: Boolean = false) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(title, style = MaterialTheme.typography.titleSmall)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            if (smallCrop) {
+                Text(
+                    "裁剪范围较小",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
         Image(
             bitmap.asImageBitmap(),
             contentDescription = title,

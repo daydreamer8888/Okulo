@@ -234,6 +234,20 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
+    fun smallCropWarningAppearsBelowTheEditorAndClearsWhenEnlarged() {
+        val state = mutableStateOf(PhotoState(photo = image(), manualCrop = CropBox(0f, 0f, 1f, 0.5f)))
+        compose.setContent { OkuloTheme { PhotoScreen(state.value, {}, {}, {}) } }
+        val bounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithText("裁剪范围较小").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox(0f, 0f, 0.7f, 0.7f)) }
+        compose.onNodeWithText("裁剪范围较小").assertExists()
+        assertEquals(bounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithContentDescription("保存").assertIsEnabled()
+        compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox.FullFrame) }
+        compose.onNodeWithText("裁剪范围较小").assertDoesNotExist()
+    }
+
+    @Test
     fun normalEditingOmitsModelDiagnosticsAndGestureInstructions() {
         val state = PhotoState(
             photo = image(),
@@ -252,7 +266,7 @@ class PhotoScreenBehaviorTest {
         compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
         compose.onNodeWithText("拖动框内移动，拖动四角或双指缩放").assertDoesNotExist()
         compose.onNodeWithText("保留原图 16%").assertDoesNotExist()
-        compose.onNodeWithText("裁剪范围较小").assertDoesNotExist()
+        compose.onNodeWithText("裁剪范围较小").assertExists()
         compose.runOnIdle { showScores.value = true }
         compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertExists()
         compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
