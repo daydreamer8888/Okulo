@@ -30,19 +30,16 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
-import com.example.okulo.ui.ActionIconButton
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -66,15 +63,7 @@ internal fun PhotoScreen(
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        PhotoToolbar(
-            onBack = onBack,
-            onSettings = onSettings,
-            onSave = rememberPhotoSaveAction(onSave),
-            canSave = state.displayedCrop != null && !state.busy && !saving,
-            onRestore = if (state.canRestoreFromEditor) cropActions.restore else null,
-            onAnalyze = if (state.canAnalyzeFromEditor) onAnalyze else null,
-            onCancel = if (state.canCancelFromEditor) onCancel else null
-        )
+        PhotoToolbar(onBack, onSettings)
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -92,11 +81,20 @@ internal fun PhotoScreen(
             OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
                 Text(if (state.photo == null) "选择照片" else "换一张照片")
             }
-            AnalysisActions(state, onAnalyze, onCancel, onRetry)
-            state.photo?.let { photo ->
-                PhotoEditingControls(state, onAspect, onTransform)
-                PhotoResults(state, photo, cropActions)
-            }
+            if (state.photo != null) PhotoAspectControls(state, onAspect)
+            PhotoActionRow(
+                state,
+                PhotoEditActions(
+                    onAnalyze,
+                    onCancel,
+                    rememberPhotoSaveAction(onSave),
+                    cropActions.restore,
+                    onTransform
+                ),
+                saving
+            )
+            AnalysisFeedback(state, onRetry)
+            state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
             if (showModelScores && state.originalScore != null && state.displayedScore != null) {
                 Text(
                     String.format(
@@ -112,21 +110,8 @@ internal fun PhotoScreen(
     }
 }
 
-private val PhotoState.canRestoreFromEditor: Boolean
-    get() = result != null && manualCrop != null
-
-private val PhotoState.canCancelFromEditor: Boolean
-    get() = busy && displayedCrop != null && result == null
-
-private val PhotoState.canAnalyzeFromEditor: Boolean
-    get() = !busy && displayedCrop != null && (result == null || (aspect == CropAspect.Free && manualCrop != null))
-
 @Composable
-private fun PhotoEditingControls(
-    state: PhotoState,
-    onAspect: (CropAspect) -> Unit,
-    onTransform: (PhotoOperation) -> Unit
-) {
+private fun PhotoAspectControls(state: PhotoState, onAspect: (CropAspect) -> Unit) {
     Row(Modifier.horizontalScroll(rememberScrollState()), Arrangement.spacedBy(8.dp)) {
         CropAspect.entries.forEach { aspect ->
             FilterChip(
@@ -136,27 +121,6 @@ private fun PhotoEditingControls(
                 label = { Text(aspect.title) }
             )
         }
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ActionIconButton(
-            R.drawable.ic_rotate_right,
-            "向右旋转",
-            { onTransform(PhotoOperation.RotateClockwise) },
-            enabled = !state.busy
-        )
-        ActionIconButton(
-            R.drawable.ic_flip,
-            "水平翻转",
-            { onTransform(PhotoOperation.FlipHorizontal) },
-            enabled = !state.busy
-        )
-        ActionIconButton(
-            R.drawable.ic_flip,
-            "垂直翻转",
-            { onTransform(PhotoOperation.FlipVertical) },
-            enabled = !state.busy,
-            iconModifier = Modifier.rotate(90f)
-        )
     }
 }
 
@@ -174,20 +138,12 @@ private fun PhotoResults(state: PhotoState, photo: Bitmap, actions: CropActions)
 }
 
 @Composable
-private fun AnalysisActions(
-    state: PhotoState,
-    onAnalyze: () -> Unit,
-    onCancel: () -> Unit,
-    onRetry: () -> Unit
-) {
+private fun AnalysisFeedback(state: PhotoState, onRetry: () -> Unit) {
     if (state.busy && state.displayedCrop == null) {
         LinearProgressIndicator(Modifier.fillMaxWidth())
-        TextButton(onClick = onCancel) { Text("取消") }
     } else if (state.error != null) {
         Text(state.error, color = MaterialTheme.colorScheme.error)
         Button(onClick = onRetry) { Text("重试") }
-    } else if (state.displayedCrop == null) {
-        Button(onClick = onAnalyze, enabled = state.photo != null) { Text("分析构图") }
     }
 }
 

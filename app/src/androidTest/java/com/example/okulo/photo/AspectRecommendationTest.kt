@@ -41,7 +41,7 @@ class AspectRecommendationTest {
             }
             awaitIdle(model)
             compose.onNodeWithText("16:9").performScrollTo().performClick()
-            compose.onNodeWithText("分析构图").performClick()
+            compose.onNodeWithContentDescription("分析构图").performClick()
             awaitIdle(model)
             val wide = checkNotNull(model.state.value.displayedCrop) { model.state.value.error.orEmpty() }
             val photo = checkNotNull(model.state.value.photo)

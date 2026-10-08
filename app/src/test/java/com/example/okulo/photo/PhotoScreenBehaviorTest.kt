@@ -14,6 +14,7 @@ import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.theme.OkuloTheme
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -37,6 +38,34 @@ class PhotoScreenBehaviorTest {
     fun restoreLocale() = Locale.setDefault(originalLocale)
 
     @Test
+    fun editActionsFollowAspectSelectionAndTransformsRequireOpeningMore() {
+        val state = PhotoState(photo = image(), manualCrop = CropBox(0.2f, 0.2f, 0.8f, 0.8f))
+        var operation: PhotoOperation? = null
+        compose.setContent {
+            OkuloTheme { PhotoScreen(state, {}, {}, {}, onTransform = { operation = it }) }
+        }
+        val aspect = compose.onNodeWithText("自由").fetchSemanticsNode().boundsInRoot
+        val analyze = compose.onNodeWithContentDescription("分析构图").fetchSemanticsNode().boundsInRoot
+        val save = compose.onNodeWithContentDescription("保存").fetchSemanticsNode().boundsInRoot
+        val editor = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        assertTrue(analyze.top >= aspect.bottom)
+        assertEquals(analyze.top, save.top, 1f)
+        assertTrue(analyze.bottom <= editor.top)
+        compose.onNodeWithContentDescription("向右旋转").assertDoesNotExist()
+        compose.onNodeWithText("向右旋转").assertDoesNotExist()
+        compose.onNodeWithContentDescription("更多").performClick()
+        compose.onNodeWithText("向右旋转").performClick()
+        assertEquals(PhotoOperation.RotateClockwise, operation)
+        compose.onNodeWithText("向右旋转").assertDoesNotExist()
+        compose.onNodeWithContentDescription("更多").performClick()
+        compose.onNodeWithText("水平翻转").performClick()
+        assertEquals(PhotoOperation.FlipHorizontal, operation)
+        compose.onNodeWithContentDescription("更多").performClick()
+        compose.onNodeWithText("垂直翻转").performClick()
+        assertEquals(PhotoOperation.FlipVertical, operation)
+    }
+
+    @Test
     fun aspectCanBeChosenBeforeAnalysisAndNewSearchKeepsTheEditorStationary() {
         val state = mutableStateOf(PhotoState(photo = image()))
         var analyses = 0
@@ -53,7 +82,7 @@ class PhotoScreenBehaviorTest {
         }
         compose.onNodeWithText("16:9").performScrollTo().performClick()
         assertEquals(CropAspect.Wide, state.value.aspect)
-        compose.onNodeWithText("分析构图").performClick()
+        compose.onNodeWithContentDescription("分析构图").performClick()
         assertEquals(1, analyses)
         compose.runOnIdle {
             state.value = state.value.copy(manualCrop = CropBox(0.1f, 0.2f, 0.9f, 0.6f), aspect = CropAspect.Free)
@@ -108,13 +137,13 @@ class PhotoScreenBehaviorTest {
                 )
             }
         }
-        compose.onNodeWithContentDescription("保存裁剪").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("保存").assertIsNotEnabled()
         compose.runOnIdle { state.value = PhotoState(photo = image(), result = recommendation()) }
-        compose.onNodeWithContentDescription("保存裁剪").performClick()
-        compose.onNodeWithContentDescription("保存裁剪").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("保存").performClick()
+        compose.onNodeWithContentDescription("保存").assertIsNotEnabled()
         assertEquals(1, saves)
         compose.runOnIdle { saving.value = false }
-        compose.onNodeWithContentDescription("保存裁剪").performClick()
+        compose.onNodeWithContentDescription("保存").performClick()
         assertEquals(2, saves)
     }
 
@@ -129,13 +158,13 @@ class PhotoScreenBehaviorTest {
                 PhotoScreen(state.value, {}, { analysis++ }, { cancel++ }, onRetry = { retry++ })
             }
         }
-        compose.onNodeWithText("分析构图").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("分析构图").assertIsNotEnabled()
         compose.runOnIdle { state.value = PhotoState(photo = image()) }
-        compose.onNodeWithText("分析构图").performClick()
+        compose.onNodeWithContentDescription("分析构图").performClick()
         assertEquals(1, analysis)
         compose.runOnIdle { state.value = state.value.copy(busy = true, status = "正在分析照片…") }
-        compose.onNodeWithText("分析构图").assertDoesNotExist()
-        compose.onNodeWithText("取消").performClick()
+        compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
+        compose.onNodeWithContentDescription("取消").performClick()
         assertEquals(1, cancel)
         compose.runOnIdle { state.value = state.value.copy(busy = false, error = "照片不可访问") }
         compose.onNodeWithText("照片不可访问").assertExists()
