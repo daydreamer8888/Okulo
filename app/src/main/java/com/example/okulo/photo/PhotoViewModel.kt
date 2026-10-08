@@ -14,6 +14,7 @@ import com.example.okulo.composition.fitCropAspect
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+@Suppress("TooManyFunctions") // Public operations share one photo and request lifecycle.
 class PhotoViewModel internal constructor(
     application: Application,
     private val engine: CompositionAnalyzer,
@@ -40,7 +41,9 @@ class PhotoViewModel internal constructor(
         if (state.value.mode == mode) return
         tasks.invalidate()
         val current = state.value
-        mutableState.value = PhotoState(photo = current.photo, mode = mode, status = "照片已就绪")
+        mutableState.value = PhotoState(
+            photo = current.photo, mode = mode, status = "照片已就绪", transform = current.transform
+        )
         if (current.photo == null) selectedUri?.let(::selectPhoto)
     }
 
@@ -59,6 +62,29 @@ class PhotoViewModel internal constructor(
         }
     }
 
+    internal fun transformPhoto(operation: PhotoOperation) {
+        val current = state.value
+        val photo = current.photo ?: return
+        val request = tasks.invalidate()
+        mutableState.value = current.copy(busy = true, error = null)
+        tasks.submit(request, { "无法编辑这张照片，请重试" }) {
+            val step = PhotoTransform().followedBy(operation)
+            val edited = step.apply(photo)
+            tasks.publish(request) {
+                PhotoState(
+                    photo = edited,
+                    mode = current.mode,
+                    manualCrop = step.apply(current.displayedCrop ?: CropBox.FullFrame),
+                    aspect = when (operation) {
+                        PhotoOperation.RotateClockwise -> current.aspect.rotated()
+                        else -> current.aspect
+                    },
+                    transform = current.transform.followedBy(operation)
+                )
+            }
+        }
+    }
+
     fun setAspect(aspect: CropAspect) {
         val current = state.value
         val photo = current.photo ?: return
@@ -68,7 +94,7 @@ class PhotoViewModel internal constructor(
     }
 
     fun updateCrop(box: CropBox) {
-        if (state.value.result == null) return
+        if (state.value.displayedCrop == null) return
         tasks.invalidate()
         mutableState.value = state.value.copy(
             manualCrop = box, manualScore = null, manualMillis = null,

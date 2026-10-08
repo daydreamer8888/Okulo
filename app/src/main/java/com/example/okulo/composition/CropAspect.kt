@@ -7,7 +7,18 @@ import kotlin.math.sqrt
 enum class CropAspect(val title: String, private val pixelRatio: Float? = null) {
     Original("原图"), Free("自由"), Square("1:1", 1f),
     FourThree("4:3", 4f / 3f), ThreeTwo("3:2", 3f / 2f),
-    Wide("16:9", 16f / 9f), Portrait("9:16", 9f / 16f);
+    Wide("16:9", 16f / 9f), Portrait("9:16", 9f / 16f),
+    PortraitFourThree("3:4", 3f / 4f), PortraitThreeTwo("2:3", 2f / 3f);
+
+    fun rotated(): CropAspect = when (this) {
+        Wide -> Portrait
+        Portrait -> Wide
+        FourThree -> PortraitFourThree
+        PortraitFourThree -> FourThree
+        ThreeTwo -> PortraitThreeTwo
+        PortraitThreeTwo -> ThreeTwo
+        else -> this
+    }
 
     fun normalizedRatio(width: Int, height: Int): Float? = when (this) {
         Free -> null

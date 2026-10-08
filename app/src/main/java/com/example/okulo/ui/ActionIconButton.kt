@@ -17,14 +17,20 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun ActionIconButton(@DrawableRes icon: Int, label: String, onClick: () -> Unit) {
+internal fun ActionIconButton(
+    @DrawableRes icon: Int,
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    iconModifier: Modifier = Modifier
+) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState()
     ) {
-        IconButton(onClick = onClick) {
-            Icon(painterResource(icon), contentDescription = label, modifier = Modifier.size(24.dp))
+        IconButton(onClick = onClick, enabled = enabled) {
+            Icon(painterResource(icon), contentDescription = label, modifier = iconModifier.size(24.dp))
         }
     }
 }
