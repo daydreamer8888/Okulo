@@ -18,10 +18,12 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.okulo.camera.CameraCapture
 import com.example.okulo.camera.CameraScreen
 import com.example.okulo.photo.CropActions
 import com.example.okulo.photo.PhotoScreen
@@ -36,6 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val cameraCapture = remember { CameraCapture(applicationContext) }
             var cameraPage by rememberSaveable { mutableStateOf(true) }
             SideEffect {
                 val bars = if (cameraPage) {
@@ -52,7 +55,11 @@ class MainActivity : ComponentActivity() {
                 ) { padding ->
                     Column(Modifier.fillMaxSize().padding(padding)) {
                         if (cameraPage) {
-                            CameraScreen(onImportPhoto = { cameraPage = false }, modifier = Modifier.weight(1f))
+                            CameraScreen(
+                                cameraCapture,
+                                onImportPhoto = { cameraPage = false },
+                                modifier = Modifier.weight(1f)
+                            )
                         } else {
                             TextButton(onClick = { cameraPage = true }) { Text("返回拍摄") }
                             val state by viewModel.state.collectAsState()

@@ -1,8 +1,6 @@
 package com.example.okulo.camera
 
 import android.util.Log
-import androidx.camera.core.CameraSelector
-import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -27,15 +25,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.ExecutionException
 
 @Composable
-internal fun CameraPreview() {
+internal fun CameraPreview(capture: CameraCapture) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
-    val controller = remember(context) {
-        LifecycleCameraController(context).apply {
-            cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-            setEnabledUseCases(0)
-        }
-    }
+    val controller = capture.controller
     val preview = remember(controller) {
         PreviewView(context).apply {
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
@@ -48,7 +41,10 @@ internal fun CameraPreview() {
     var error by remember { mutableStateOf<String?>(null) }
     DisposableEffect(controller, owner) {
         var active = true
-        val observer = Observer<PreviewView.StreamState> { stream = it }
+        val observer = Observer<PreviewView.StreamState> {
+            stream = it
+            capture.previewReady(it == PreviewView.StreamState.STREAMING)
+        }
         preview.previewStreamState.observe(owner, observer)
         val initialization = controller.initializationFuture
         fun reportFailure(failure: Exception) {
@@ -74,6 +70,7 @@ internal fun CameraPreview() {
         )
         onDispose {
             active = false
+            capture.previewReady(false)
             preview.previewStreamState.removeObserver(observer)
             controller.unbind()
             preview.controller = null
