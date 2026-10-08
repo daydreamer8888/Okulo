@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropBox
+import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -53,11 +54,13 @@ internal fun PhotoScreen(
     modifier: Modifier = Modifier,
     onRetry: () -> Unit = onAnalyze,
     cropActions: CropActions = CropActions(),
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onSettings: () -> Unit = {},
+    showModelScores: Boolean = false
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        PhotoToolbar(onBack)
+        PhotoToolbar(onBack, onSettings)
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -82,6 +85,16 @@ internal fun PhotoScreen(
             }
             AnalysisActions(state, onAnalyze, onCancel, onRetry, cropActions.restore)
             state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
+            if (showModelScores && state.result != null && state.displayedScore != null) {
+                Text(
+                    String.format(
+                        Locale.getDefault(),
+                        "原图 %.3f · 裁剪 %.3f",
+                        state.result.originalScore,
+                        state.displayedScore
+                    )
+                )
+            }
             Spacer(Modifier.height(12.dp))
         }
     }

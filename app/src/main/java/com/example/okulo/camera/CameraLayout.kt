@@ -37,6 +37,7 @@ internal fun CameraLayout(
     onCapture: () -> Unit = {},
     onViewPhoto: () -> Unit = {},
     onMessageDismissed: () -> Unit = {},
+    onSettings: () -> Unit = {},
     viewfinder: @Composable () -> Unit
 ) {
     BoxWithConstraints(modifier.fillMaxSize().background(Color.Black)) {
@@ -45,9 +46,10 @@ internal fun CameraLayout(
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
                 Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
                 ActionIconButton(R.drawable.ic_photo, "分析照片", onImportPhoto)
             }
             Box(Modifier.width(previewWidth).aspectRatio(ratio)) { viewfinder() }

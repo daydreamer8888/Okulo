@@ -2,6 +2,7 @@ package com.example.okulo.photo
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,12 +14,14 @@ import com.example.okulo.R
 import com.example.okulo.ui.ActionIconButton
 
 @Composable
-internal fun PhotoToolbar(onBack: () -> Unit) {
+internal fun PhotoToolbar(onBack: () -> Unit, onSettings: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         ActionIconButton(R.drawable.ic_arrow_back, "返回拍摄", onBack)
+        Spacer(Modifier.weight(1f))
+        ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
     }
 }
