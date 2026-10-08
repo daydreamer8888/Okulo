@@ -43,7 +43,7 @@ class CameraPreviewTest {
             assertTrue("Camera preview must contain an image", pixels.any { it != pixels[0] })
             frame.recycle()
         }
-        compose.onNodeWithText("导入照片").performClick()
+        compose.onNodeWithText("分析照片").performClick()
         compose.waitUntil(10_000) {
             compose.runOnIdle { preview.previewStreamState.value == PreviewView.StreamState.IDLE }
         }

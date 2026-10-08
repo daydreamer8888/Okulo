@@ -23,7 +23,7 @@ class MainActivityTest {
 
     @Test
     fun launchAndCancelledPhotoSelectionKeepAnalysisDisabled() {
-        compose.onNodeWithText("导入照片").performClick()
+        compose.onNodeWithText("分析照片").performClick()
         compose.onNodeWithText("Okulo").assertExists()
         compose.onNodeWithText("分析构图").assertIsNotEnabled()
         compose.onNodeWithText("选择照片").performClick()
