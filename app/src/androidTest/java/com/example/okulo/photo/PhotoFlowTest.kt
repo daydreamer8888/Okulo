@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.AnalysisMode
 import org.junit.Assert.assertEquals
@@ -43,7 +44,11 @@ class PhotoFlowTest {
             }
             waitUntil { !model.state.value.busy }
             assertNotNull(model.state.value.photo)
-            instrumentation.runOnMainSync { model.setMode(AnalysisMode.Fast); model.analyze() }
+            instrumentation.runOnMainSync {
+                model.setMode(AnalysisMode.Fast)
+                model.setAspect(CropAspect.Original)
+                model.analyze()
+            }
             waitUntil { !model.state.value.busy }
             val result = checkNotNull(model.state.value.result) { model.state.value.error ?: "No result" }
             assertEquals(250, result.candidateCount)
