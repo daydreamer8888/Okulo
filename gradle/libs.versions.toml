@@ -13,8 +13,15 @@ composeBom = "2024.09.00"
 detekt = "1.23.8"
 kover = "0.9.8"
 robolectric = "4.17"
+camerax = "1.6.2"
+testRules = "1.7.0"
 
 [libraries]
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "testRules" }
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifInterface" }
 onnxruntime-jvm = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnxruntime" }
