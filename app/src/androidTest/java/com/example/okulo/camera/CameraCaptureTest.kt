@@ -3,17 +3,21 @@ package com.example.okulo.camera
 import android.Manifest
 import android.app.Activity
 import android.app.Instrumentation
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.provider.MediaStore
 import androidx.camera.view.PreviewView
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.exifinterface.media.ExifInterface
+import androidx.lifecycle.Lifecycle
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.matcher.ViewMatchers.withContentDescription
 import androidx.test.filters.SdkSuppress
@@ -50,7 +54,9 @@ class CameraCaptureTest {
             compose.waitUntil(60_000) { !shutter.fetchSemanticsNode().config.contains(SemanticsProperties.Disabled) }
             shutter.performClick()
             compose.waitUntil(30_000) { compose.onAllNodesWithText("已保存到相册").fetchSemanticsNodes().isNotEmpty() }
-            compose.onNodeWithContentDescription("查看最新照片").performClick()
+            val photo = compose.onNodeWithContentDescription("查看最新照片")
+            compose.waitUntil(5_000) { !photo.fetchSemanticsNode().config.contains(SemanticsProperties.Disabled) }
+            photo.performClick()
             compose.waitUntil(5_000) { viewIntent.get() != null }
             val intent = checkNotNull(viewIntent.get())
             assertEquals("image/jpeg", intent.type)
@@ -83,6 +89,18 @@ class CameraCaptureTest {
                 if (error != null) throw error
                 assertEquals(PreviewView.StreamState.STREAMING, (view as PreviewView).previewStreamState.value)
             }
+            compose.waitUntil(5_000) { compose.onAllNodesWithText("已保存到相册").fetchSemanticsNodes().isEmpty() }
+            compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+            val removed = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val deleted = ContentValues().apply { put(MediaStore.MediaColumns.IS_TRASHED, 1) }
+                resolver.update(uri, deleted, null, null)
+            } else {
+                resolver.delete(uri, null, null)
+            }
+            assertEquals(1, removed)
+            compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+            compose.waitUntil(5_000) { photo.fetchSemanticsNode().config.contains(SemanticsProperties.Disabled) }
+            photo.assertIsNotEnabled()
         } finally {
             viewIntent.get()?.data?.let { instrumentation.targetContext.contentResolver.delete(it, null, null) }
             instrumentation.removeMonitor(monitor)

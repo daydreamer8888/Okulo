@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
+import android.provider.MediaStore
 import android.util.Size
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -14,17 +15,26 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.exifinterface.media.ExifInterface
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -35,34 +45,67 @@ private const val LEGACY_SAMPLE_SIZE = 16
 @Composable
 internal fun SavedPhotoButton(uri: Uri?, onClick: () -> Unit) {
     val resolver = LocalContext.current.contentResolver
-    val bitmap = produceState<Bitmap?>(null, uri, resolver) {
-        value = withContext(Dispatchers.IO) {
-            try {
-                when {
-                    uri == null -> null
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ->
-                        resolver.loadThumbnail(uri, Size(THUMBNAIL_SIZE, THUMBNAIL_SIZE), null)
-                    else -> legacyThumbnail(resolver, uri)
-                }
-            } catch (_: IOException) {
-                null
-            } catch (_: SecurityException) {
-                null
-            }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var revision by remember { mutableIntStateOf(0) }
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) revision++
         }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    val photo = produceState(PhotoThumbnail(), uri, resolver, revision) {
+        value = PhotoThumbnail()
+        value = withContext(Dispatchers.IO) { loadPhotoThumbnail(resolver, uri) }
     }.value
+    val bitmap = photo.bitmap
     IconButton(
         onClick = onClick,
-        enabled = uri != null,
+        enabled = photo.available,
         modifier = Modifier.size(56.dp).semantics { contentDescription = "查看最新照片" }
     ) {
         val shape = RoundedCornerShape(12.dp)
         if (bitmap != null) {
-            Image(bitmap.asImageBitmap(), null, Modifier.size(48.dp).clip(shape), contentScale = ContentScale.Crop)
+            Image(
+                bitmap.asImageBitmap(),
+                null,
+                Modifier.size(48.dp).clip(shape).testTag("saved-photo-thumbnail"),
+                contentScale = ContentScale.Crop
+            )
         } else {
             Box(Modifier.size(48.dp).background(Color.DarkGray, shape))
         }
     }
+}
+
+private data class PhotoThumbnail(val available: Boolean = false, val bitmap: Bitmap? = null)
+
+private fun loadPhotoThumbnail(resolver: ContentResolver, uri: Uri?): PhotoThumbnail {
+    if (uri == null || !photoAvailable(resolver, uri)) return PhotoThumbnail()
+    val bitmap = try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            resolver.loadThumbnail(uri, Size(THUMBNAIL_SIZE, THUMBNAIL_SIZE), null)
+        } else {
+            legacyThumbnail(resolver, uri)
+        }
+    } catch (_: IOException) {
+        null
+    } catch (_: SecurityException) {
+        null
+    }
+    return PhotoThumbnail(available = true, bitmap = bitmap)
+}
+
+private fun photoAvailable(resolver: ContentResolver, uri: Uri): Boolean = try {
+    val trashed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && uri.authority == MediaStore.AUTHORITY &&
+        resolver.query(uri, arrayOf(MediaStore.MediaColumns.IS_TRASHED), null, null, null)?.use {
+            !it.moveToFirst() || it.getInt(0) != 0
+        } != false
+    !trashed && resolver.openFileDescriptor(uri, "r")?.use { true } == true
+} catch (_: IOException) {
+    false
+} catch (_: SecurityException) {
+    false
 }
 
 private fun legacyThumbnail(resolver: ContentResolver, uri: Uri): Bitmap? {
