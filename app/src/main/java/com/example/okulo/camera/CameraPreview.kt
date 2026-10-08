@@ -4,8 +4,10 @@ import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -15,7 +17,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
@@ -77,9 +81,12 @@ internal fun CameraPreview() {
     }
     Box(Modifier.fillMaxSize()) {
         AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
-        Text(
-            error ?: if (stream == PreviewView.StreamState.STREAMING) "正在取景" else "正在启动相机…",
-            Modifier.align(Alignment.BottomCenter)
-        )
+        if (error != null || stream != PreviewView.StreamState.STREAMING) {
+            Text(
+                error ?: "正在启动相机…",
+                Modifier.align(Alignment.Center).background(Color.Black.copy(alpha = 0.8f)).padding(12.dp),
+                color = Color.White
+            )
+        }
     }
 }

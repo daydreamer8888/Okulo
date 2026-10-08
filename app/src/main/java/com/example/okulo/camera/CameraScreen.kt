@@ -31,7 +31,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
-internal fun CameraScreen(modifier: Modifier = Modifier) {
+internal fun CameraScreen(onImportPhoto: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     fun hasPermission() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -49,31 +49,33 @@ internal fun CameraScreen(modifier: Modifier = Modifier) {
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
-    if (granted) {
-        Box(modifier.fillMaxSize().semantics { contentDescription = "取景区域" }) {
-            CameraPreview()
-        }
-    } else {
-        Column(
-            modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text("Okulo")
-            Text(if (denied) "相机权限未开启，请在设置中允许使用相机。" else "开启相机权限以使用取景功能。")
-            Button(onClick = {
-                if (denied) {
-                    context.startActivity(
-                        Intent(
-                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.parse("package:${context.packageName}")
+    CameraLayout(onImportPhoto, modifier) {
+        if (granted) {
+            Box(Modifier.fillMaxSize().semantics { contentDescription = "取景区域" }) {
+                CameraPreview()
+            }
+        } else {
+            Column(
+                Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Okulo")
+                Text(if (denied) "相机权限未开启，请在设置中允许使用相机。" else "开启相机权限以使用取景功能。")
+                Button(onClick = {
+                    if (denied) {
+                        context.startActivity(
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:${context.packageName}")
+                            )
                         )
-                    )
-                } else {
-                    request.launch(Manifest.permission.CAMERA)
+                    } else {
+                        request.launch(Manifest.permission.CAMERA)
+                    }
+                }) {
+                    Text(if (denied) "打开权限设置" else "开启相机")
                 }
-            }) {
-                Text(if (denied) "打开权限设置" else "开启相机")
             }
         }
     }
