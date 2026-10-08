@@ -18,6 +18,17 @@ import java.io.IOException
 @Config(sdk = [28])
 class PhotoViewModelTest {
     @Test
+    fun newPhotosUseFastAnalysisUnlessTheUserChoosesStandard() = PhotoTestHarness().use { fixture ->
+        assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
+        fixture.select()
+        assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
+        fixture.model.setMode(AnalysisMode.Standard)
+        fixture.model.selectPhoto(Uri.parse("content://photos/two"))
+        fixture.await { !fixture.model.state.value.busy }
+        assertEquals(AnalysisMode.Standard, fixture.model.state.value.mode)
+    }
+
+    @Test
     fun importRecommendationAndManualScoreRemainConsistent() = PhotoTestHarness().use { fixture ->
         val model = fixture.model
         model.analyze()
@@ -48,6 +59,7 @@ class PhotoViewModelTest {
 
     @Test
     fun switchingModeDuringInferenceRejectsOldScores() = PhotoTestHarness().use { fixture ->
+        fixture.model.setMode(AnalysisMode.Standard)
         fixture.select()
         val old = fixture.gate()
         val fresh = fixture.gate()
@@ -146,13 +158,13 @@ class PhotoViewModelTest {
         }
         fixture.model.selectPhoto(Uri.parse("content://photos/one"))
         gate.awaitEntry()
-        fixture.model.setMode(AnalysisMode.Fast)
+        fixture.model.setMode(AnalysisMode.Standard)
         gate.release()
         fixture.await { !fixture.model.state.value.busy }
         assertEquals(2, reads)
-        assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
+        assertEquals(AnalysisMode.Standard, fixture.model.state.value.mode)
         assertSame(fixture.bitmap, fixture.model.state.value.photo)
-        fixture.model.setMode(AnalysisMode.Fast)
+        fixture.model.setMode(AnalysisMode.Standard)
         assertSame(fixture.bitmap, fixture.model.state.value.photo)
     }
 
