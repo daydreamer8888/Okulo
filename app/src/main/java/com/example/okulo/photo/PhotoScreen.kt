@@ -73,7 +73,9 @@ internal fun PhotoScreen(
             onSettings = onSettings,
             onSave = rememberPhotoSaveAction(onSave),
             canSave = state.displayedCrop != null && !state.busy && !saving,
-            onRestore = if (state.result != null && state.manualCrop != null) cropActions.restore else null
+            onRestore = if (state.canRestoreFromEditor) cropActions.restore else null,
+            onAnalyze = if (state.canAnalyzeFromEditor) onAnalyze else null,
+            onCancel = if (state.canCancelFromEditor) onCancel else null
         )
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
@@ -117,22 +119,29 @@ internal fun PhotoScreen(
     }
 }
 
+private val PhotoState.canRestoreFromEditor: Boolean
+    get() = result != null && manualCrop != null
+
+private val PhotoState.canCancelFromEditor: Boolean
+    get() = busy && displayedCrop != null && result == null
+
+private val PhotoState.canAnalyzeFromEditor: Boolean
+    get() = !busy && displayedCrop != null && (result == null || (aspect == CropAspect.Free && manualCrop != null))
+
 @Composable
 private fun PhotoEditingControls(
     state: PhotoState,
     onAspect: (CropAspect) -> Unit,
     onTransform: (PhotoOperation) -> Unit
 ) {
-    if (state.displayedCrop != null) {
-        Row(Modifier.horizontalScroll(rememberScrollState()), Arrangement.spacedBy(8.dp)) {
-            CropAspect.entries.forEach { aspect ->
-                FilterChip(
-                    selected = state.aspect == aspect,
-                    onClick = { onAspect(aspect) },
-                    enabled = !state.busy,
-                    label = { Text(aspect.title) }
-                )
-            }
+    Row(Modifier.horizontalScroll(rememberScrollState()), Arrangement.spacedBy(8.dp)) {
+        CropAspect.entries.forEach { aspect ->
+            FilterChip(
+                selected = state.aspect == aspect,
+                onClick = { onAspect(aspect) },
+                enabled = !state.busy,
+                label = { Text(aspect.title) }
+            )
         }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -178,13 +187,13 @@ private fun AnalysisActions(
     onCancel: () -> Unit,
     onRetry: () -> Unit
 ) {
-    if (state.busy && state.result == null) {
+    if (state.busy && state.displayedCrop == null) {
         LinearProgressIndicator(Modifier.fillMaxWidth())
         TextButton(onClick = onCancel) { Text("取消") }
     } else if (state.error != null) {
         Text(state.error, color = MaterialTheme.colorScheme.error)
         Button(onClick = onRetry) { Text("重试") }
-    } else if (state.result == null) {
+    } else if (state.displayedCrop == null) {
         Button(onClick = onAnalyze, enabled = state.photo != null) { Text("分析构图") }
     }
 }
