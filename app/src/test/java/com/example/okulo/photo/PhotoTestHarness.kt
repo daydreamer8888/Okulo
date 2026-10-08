@@ -64,6 +64,7 @@ internal class WorkGate {
 
 internal class TestAnalyzer : CompositionAnalyzer {
     val analysisCalls = AtomicInteger()
+    val requestedRatios = mutableListOf<Float?>()
     val evaluationCalls = AtomicInteger()
     val closed = CountDownLatch(1)
     var isCurrent: () -> Boolean = { false }
@@ -74,11 +75,13 @@ internal class TestAnalyzer : CompositionAnalyzer {
     override fun analyze(
         bitmap: Bitmap,
         mode: AnalysisMode,
+        normalizedRatio: Float?,
         isCurrent: () -> Boolean,
         status: (String) -> Unit
     ): CompositionResult {
         this.isCurrent = isCurrent
         analysisCalls.incrementAndGet()
+        requestedRatios.add(normalizedRatio)
         status("正在分析照片…")
         return analyze(bitmap, mode)
     }

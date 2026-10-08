@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionAnalyzer
+import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.createCompositionAnalyzer
 import com.example.okulo.composition.cropCandidates
@@ -28,6 +29,20 @@ class S2cInferenceTest {
     @get:Rule val models = TemporaryFolder()
     private val context get() = object : ContextWrapper(RuntimeEnvironment.getApplication()) {
         override fun getNoBackupFilesDir() = models.root
+    }
+
+    @Test
+    fun realModelScoresRequestedAndFreeAspectRecommendationsConsistently() {
+        val photo = resource("scene.png").use { BitmapFactory.decodeStream(it) }
+        try {
+            createCompositionAnalyzer(context).use { analyzer ->
+                for (aspect in listOf(CropAspect.Wide, CropAspect.Portrait, CropAspect.Free)) {
+                    assertAspectRecommendation(analyzer, photo, aspect)
+                }
+            }
+        } finally {
+            photo.recycle()
+        }
     }
 
     @Test
@@ -102,6 +117,16 @@ class S2cInferenceTest {
         } finally {
             bitmap.recycle()
         }
+    }
+
+    private fun assertAspectRecommendation(analyzer: CompositionAnalyzer, photo: Bitmap, aspect: CropAspect) {
+        val ratio = aspect.normalizedRatio(photo.width, photo.height)
+        val result = analyzer.analyze(photo, AnalysisMode.Fast, ratio, { true }, {})
+        if (ratio != null) assertEquals(ratio, result.crop.width / result.crop.height, 1e-5f)
+        assertTrue(result.cropScore.isFinite())
+        val evaluated = analyzer.evaluate(photo, AnalysisMode.Fast, result.crop) { true }
+        assertEquals(result.cropScore, evaluated.cropScore, 2e-5f)
+        assertEquals(result.originalScore, evaluated.originalScore, 2e-5f)
     }
 
     private fun referenceInput(): ImageTensors {

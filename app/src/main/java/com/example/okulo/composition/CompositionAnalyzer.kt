@@ -10,6 +10,15 @@ interface CompositionAnalyzer : Closeable {
         mode: AnalysisMode,
         isCurrent: () -> Boolean,
         status: (String) -> Unit
+    ): CompositionResult = analyze(bitmap, mode, 1f, isCurrent, status)
+
+    /** Normalized crop width/height, or null to search across multiple aspects. */
+    fun analyze(
+        bitmap: Bitmap,
+        mode: AnalysisMode,
+        normalizedRatio: Float?,
+        isCurrent: () -> Boolean,
+        status: (String) -> Unit
     ): CompositionResult
 
     fun evaluate(bitmap: Bitmap, mode: AnalysisMode, crop: CropBox, isCurrent: () -> Boolean): CompositionResult
