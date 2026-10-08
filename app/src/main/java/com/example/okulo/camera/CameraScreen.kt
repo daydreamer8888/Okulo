@@ -51,7 +51,7 @@ internal fun CameraScreen(modifier: Modifier = Modifier) {
     }
     if (granted) {
         Box(modifier.fillMaxSize().semantics { contentDescription = "取景区域" }) {
-            Text("相机权限已开启")
+            CameraPreview()
         }
     } else {
         Column(

@@ -57,6 +57,10 @@ android {
 
 dependencies {
 
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
     implementation(libs.androidx.exifinterface)
     implementation(libs.onnxruntime.android)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
@@ -72,6 +76,7 @@ dependencies {
     testImplementation(libs.robolectric)
     testRuntimeOnly(libs.onnxruntime.jvm)
     testImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
