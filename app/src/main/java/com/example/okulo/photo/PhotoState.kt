@@ -7,7 +7,7 @@ import com.example.okulo.composition.CropBox
 
 internal data class PhotoState(
     val photo: Bitmap? = null,
-    val mode: AnalysisMode = AnalysisMode.Standard,
+    val mode: AnalysisMode = AnalysisMode.Fast,
     val result: CompositionResult? = null,
     val busy: Boolean = false,
     val status: String = "选择一张照片，看看裁剪建议",
