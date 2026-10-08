@@ -153,6 +153,17 @@ class PhotoViewModelTest {
     }
 
     @Test
+    fun importedPhotosStartWithUnrestrictedFreeAnalysis() = PhotoTestHarness().use { fixture ->
+        fixture.select()
+        assertEquals(CropAspect.Free, fixture.model.state.value.aspect)
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        assertNull(fixture.analyzer.requestedRatios.single())
+        assertEquals(CropAspect.Free, CropAspect.entries.first())
+        assertEquals(CropAspect.Original, CropAspect.entries[1])
+    }
+
+    @Test
     fun newPhotosUseFastAnalysisUnlessTheUserChoosesStandard() = PhotoTestHarness().use { fixture ->
         assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
         fixture.select()

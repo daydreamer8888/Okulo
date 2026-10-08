@@ -5,7 +5,7 @@ package com.example.okulo.composition
 import kotlin.math.sqrt
 
 enum class CropAspect(val title: String, private val pixelRatio: Float? = null) {
-    Original("原图"), Free("自由"), Square("1:1", 1f),
+    Free("自由"), Original("原图"), Square("1:1", 1f),
     FourThree("4:3", 4f / 3f), ThreeTwo("3:2", 3f / 2f),
     Wide("16:9", 16f / 9f), Portrait("9:16", 9f / 16f),
     PortraitFourThree("3:4", 3f / 4f), PortraitThreeTwo("2:3", 2f / 3f);
