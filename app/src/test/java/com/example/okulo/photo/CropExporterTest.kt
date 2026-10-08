@@ -80,12 +80,14 @@ class CropExporterTest {
     }
 }
 
-private class ExportGallery(val file: File, private val failWrites: Boolean = false) : ContentProvider() {
+internal class ExportGallery(val file: File, private val failWrites: Boolean = false) : ContentProvider() {
     val values = ContentValues()
     var deletions = 0
+    var insertions = 0
     override fun onCreate() = true
     override fun getType(uri: Uri) = "image/jpeg"
     override fun insert(uri: Uri, incoming: ContentValues?): Uri {
+        insertions++
         values.putAll(checkNotNull(incoming))
         return Uri.parse("content://media/external/images/media/1")
     }

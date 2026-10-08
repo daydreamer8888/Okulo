@@ -14,7 +14,12 @@ import com.example.okulo.R
 import com.example.okulo.ui.ActionIconButton
 
 @Composable
-internal fun PhotoToolbar(onBack: () -> Unit, onSettings: () -> Unit) {
+internal fun PhotoToolbar(
+    onBack: () -> Unit,
+    onSettings: () -> Unit,
+    onSave: () -> Unit,
+    canSave: Boolean
+) {
     Row(
         Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -22,6 +27,7 @@ internal fun PhotoToolbar(onBack: () -> Unit, onSettings: () -> Unit) {
     ) {
         ActionIconButton(R.drawable.ic_arrow_back, "返回拍摄", onBack)
         Spacer(Modifier.weight(1f))
+        ActionIconButton(R.drawable.ic_save, "保存裁剪", onSave, enabled = canSave)
         ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
     }
 }

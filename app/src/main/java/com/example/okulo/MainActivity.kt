@@ -1,6 +1,7 @@
 package com.example.okulo
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,6 +41,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            LaunchedEffect(viewModel) {
+                viewModel.saveEvents.collect { Toast.makeText(applicationContext, it, Toast.LENGTH_SHORT).show() }
+            }
             val cameraCapture = remember { CameraCapture(applicationContext) }
             val settings = remember { AppSettings(applicationContext) }
             var page by rememberSaveable { mutableStateOf(AppPage.Camera) }
@@ -91,12 +96,15 @@ private fun AnalysisPage(
     showScores: Boolean
 ) {
     val state by viewModel.state.collectAsState()
+    val saving by viewModel.saving.collectAsState()
     PhotoScreen(
         state = state,
         onPhoto = viewModel::selectPhoto,
         onMode = viewModel::setMode,
         onAspect = viewModel::setAspect,
         onTransform = viewModel::transformPhoto,
+        onSave = viewModel::saveCrop,
+        saving = saving,
         onAnalyze = viewModel::analyze,
         onCancel = viewModel::cancel,
         onRetry = viewModel::retry,

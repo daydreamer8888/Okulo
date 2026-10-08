@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -33,6 +34,39 @@ class PhotoScreenBehaviorTest {
 
     @After
     fun restoreLocale() = Locale.setDefault(originalLocale)
+
+    @Test
+    fun saveRequiresACropAndCannotBeRepeatedWhileWriting() {
+        val state = mutableStateOf(PhotoState())
+        val saving = mutableStateOf(false)
+        var saves = 0
+        org.robolectric.Shadows.shadowOf(org.robolectric.RuntimeEnvironment.getApplication())
+            .grantPermissions(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        compose.setContent {
+            OkuloTheme {
+                PhotoScreen(
+                    state.value,
+                    {},
+                    {},
+                    {},
+                    {},
+                    onSave = {
+                        saves++
+                        saving.value = true
+                    },
+                    saving = saving.value
+                )
+            }
+        }
+        compose.onNodeWithContentDescription("保存裁剪").assertIsNotEnabled()
+        compose.runOnIdle { state.value = PhotoState(photo = image(), result = recommendation()) }
+        compose.onNodeWithContentDescription("保存裁剪").performClick()
+        compose.onNodeWithContentDescription("保存裁剪").assertIsNotEnabled()
+        assertEquals(1, saves)
+        compose.runOnIdle { saving.value = false }
+        compose.onNodeWithContentDescription("保存裁剪").performClick()
+        assertEquals(2, saves)
+    }
 
     @Test
     fun analysisCancelRetryAndModeControlsRouteToTheCorrectAction() {

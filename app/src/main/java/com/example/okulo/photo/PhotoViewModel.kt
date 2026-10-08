@@ -4,15 +4,23 @@ import android.app.Application
 import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.createCompositionAnalyzer
 import com.example.okulo.composition.fitCropAspect
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Suppress("TooManyFunctions") // Public operations share one photo and request lifecycle.
 class PhotoViewModel internal constructor(
@@ -26,6 +34,35 @@ class PhotoViewModel internal constructor(
     internal val state = mutableState.asStateFlow()
     private val tasks = PhotoWorkQueue(mutableState, engine::close)
     private var selectedUri: Uri? = null
+    private val mutableSaving = MutableStateFlow(false)
+    internal val saving = mutableSaving.asStateFlow()
+    private val saveMessages = Channel<String>(Channel.BUFFERED)
+    internal val saveEvents = saveMessages.receiveAsFlow()
+
+    @Suppress("TooGenericExceptionCaught") // Storage errors become actionable save feedback.
+    fun saveCrop() {
+        val current = state.value
+        val source = selectedUri
+        val crop = current.displayedCrop
+        if (source == null || crop == null) return
+        if (mutableSaving.value || current.busy) return
+        mutableSaving.value = true
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    CropExporter(getApplication<Application>()).save(source, current.transform, crop)
+                }
+                saveMessages.send("已保存到相册")
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                Log.e("OkuloExport", "Crop save failed", failure)
+                saveMessages.send("保存失败，请重试")
+            } finally {
+                mutableSaving.value = false
+            }
+        }
+    }
 
     fun selectPhoto(uri: Uri) {
         selectedUri = uri
