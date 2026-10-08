@@ -104,12 +104,12 @@ internal fun PhotoScreen(
                 PhotoEditingControls(state, onAspect, onTransform)
                 PhotoResults(state, photo, cropActions)
             }
-            if (showModelScores && state.result != null && state.displayedScore != null) {
+            if (showModelScores && state.originalScore != null && state.displayedScore != null) {
                 Text(
                     String.format(
                         Locale.getDefault(),
                         "原图 %.3f · 裁剪 %.3f",
-                        state.result.originalScore,
+                        state.originalScore,
                         state.displayedScore
                     )
                 )

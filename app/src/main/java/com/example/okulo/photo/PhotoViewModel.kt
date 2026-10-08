@@ -147,7 +147,12 @@ class PhotoViewModel internal constructor(
             manualCrop = current.displayedCrop?.let {
                 fitCropAspect(it, aspect.normalizedRatio(photo.width, photo.height))
             },
-            result = null, manualScore = null, manualMillis = null, busy = false, error = null
+            result = null,
+            manualScore = null,
+            manualOriginalScore = null,
+            manualMillis = null,
+            busy = false,
+            error = null
         )
     }
 
@@ -182,6 +187,7 @@ class PhotoViewModel internal constructor(
             tasks.publish(request) {
                 it.copy(
                     manualScore = result.cropScore,
+                    manualOriginalScore = result.originalScore,
                     manualMillis = result.analysisMillis,
                     busy = false,
                     status = "裁剪评分已更新"
