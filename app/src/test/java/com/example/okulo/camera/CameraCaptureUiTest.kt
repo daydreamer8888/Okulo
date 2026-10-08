@@ -1,5 +1,6 @@
 package com.example.okulo.camera
 
+import android.net.Uri
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -20,6 +21,26 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CameraCaptureUiTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun saveConfirmationExpiresAndAppearsAgainForTheNextPhoto() {
+        val state = mutableStateOf(
+            CaptureUiState(ready = true, savedPhoto = Uri.parse("content://photos/1"), message = "已保存到相册")
+        )
+        compose.setContent { CameraLayout({}, capture = state.value) {} }
+        compose.onNodeWithText("已保存到相册").assertExists()
+        compose.mainClock.autoAdvance = false
+        compose.mainClock.advanceTimeBy(3_000)
+        compose.onNodeWithText("已保存到相册").assertDoesNotExist()
+        compose.mainClock.autoAdvance = true
+        compose.runOnIdle {
+            state.value = state.value.copy(savedPhoto = Uri.parse("content://photos/2"))
+        }
+        compose.onNodeWithText("已保存到相册").assertExists()
+        compose.mainClock.autoAdvance = false
+        compose.mainClock.advanceTimeBy(3_000)
+        compose.onNodeWithText("已保存到相册").assertDoesNotExist()
+    }
 
     @Test
     fun shutterWaitsForTheCameraAndPreventsRepeatsWhileSavingButAllowsRetry() {

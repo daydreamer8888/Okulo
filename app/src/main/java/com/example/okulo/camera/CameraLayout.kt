@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,6 +40,7 @@ internal fun CameraLayout(
     capture: CaptureUiState = CaptureUiState(),
     onCapture: () -> Unit = {},
     onViewPhoto: () -> Unit = {},
+    onMessageDismissed: () -> Unit = {},
     viewfinder: @Composable () -> Unit
 ) {
     BoxWithConstraints(modifier.fillMaxSize().background(Color.Black)) {
@@ -88,12 +88,7 @@ internal fun CameraLayout(
                     }
                     Spacer(Modifier.size(56.dp))
                 }
-                Text(
-                    if (capture.saving) "正在保存…" else capture.message.orEmpty(),
-                    Modifier.padding(top = 12.dp),
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodySmall
-                )
+                CaptureFeedback(capture, onMessageDismissed)
             }
         }
     }
