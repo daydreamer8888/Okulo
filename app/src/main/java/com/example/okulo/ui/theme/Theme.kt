@@ -17,6 +17,7 @@ private val DarkColorScheme = darkColorScheme(
     primary = Color.White,
     onPrimary = Color.Black,
     secondary = Color(0xFFE0E0E0),
+    tertiary = Color(0xFFE0E0E0),
     secondaryContainer = Color(0xFF303030),
     onSecondaryContainer = Color.White,
     background = Color.Black,
@@ -34,26 +35,31 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+    primary = Color.Black,
     onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-     */
+    secondary = Color(0xFF404040),
+    tertiary = Color(0xFF404040),
+    secondaryContainer = Color(0xFFE5E5E5),
+    onSecondaryContainer = Color.Black,
+    background = Color.White,
+    onBackground = Color.Black,
+    surface = Color.White,
+    onSurface = Color.Black,
+    surfaceVariant = Color(0xFFE8E8E8),
+    onSurfaceVariant = Color(0xFF525252),
+    surfaceTint = Color.Black,
+    surfaceContainerLow = Color(0xFFF7F7F7),
+    surfaceContainer = Color(0xFFF2F2F2),
+    surfaceContainerHigh = Color(0xFFEBEBEB),
+    surfaceContainerHighest = Color(0xFFE5E5E5),
+    outline = Color(0xFF737373)
 )
 
 @Composable
 fun OkuloTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

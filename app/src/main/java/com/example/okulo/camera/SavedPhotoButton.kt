@@ -12,7 +12,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -64,7 +64,7 @@ internal fun SavedPhotoButton(uri: Uri?, onClick: () -> Unit) {
         enabled = photo.available,
         modifier = Modifier.size(56.dp).semantics { contentDescription = "查看最新照片" }
     ) {
-        val shape = RoundedCornerShape(12.dp)
+        val shape = CircleShape
         if (bitmap != null) {
             Image(
                 bitmap.asImageBitmap(),

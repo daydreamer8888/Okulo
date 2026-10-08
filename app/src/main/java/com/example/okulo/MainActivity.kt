@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -38,11 +39,16 @@ class MainActivity : ComponentActivity() {
             val cameraCapture = remember { CameraCapture(applicationContext) }
             var cameraPage by rememberSaveable { mutableStateOf(true) }
             BackHandler(enabled = !cameraPage) { cameraPage = true }
+            val darkTheme = cameraPage || isSystemInDarkTheme()
             SideEffect {
-                val bars = SystemBarStyle.dark(AndroidColor.BLACK)
+                val bars = if (darkTheme) {
+                    SystemBarStyle.dark(AndroidColor.BLACK)
+                } else {
+                    SystemBarStyle.light(AndroidColor.WHITE, AndroidColor.WHITE)
+                }
                 enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
             }
-            OkuloTheme(darkTheme = true, dynamicColor = false) {
+            OkuloTheme(darkTheme = darkTheme, dynamicColor = false) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     containerColor = MaterialTheme.colorScheme.background
