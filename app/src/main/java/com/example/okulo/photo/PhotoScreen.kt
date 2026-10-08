@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -32,10 +31,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -44,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropBox
-import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -85,7 +80,7 @@ internal fun PhotoScreen(
                     FilterChip(selected = state.mode == mode, onClick = { onMode(mode) }, label = { Text(mode.title) })
                 }
             }
-            AnalysisActions(state, onAnalyze, onCancel, onRetry)
+            AnalysisActions(state, onAnalyze, onCancel, onRetry, cropActions.restore)
             state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
             Spacer(Modifier.height(12.dp))
         }
@@ -101,51 +96,28 @@ private fun PhotoResults(state: PhotoState, photo: Bitmap, actions: CropActions)
     }
     Text("原图", style = MaterialTheme.typography.titleSmall)
     CropEditor(photo, crop, actions)
-    Text("拖动框内移动，拖动四角或双指缩放")
-    Text("保留原图 ${kotlin.math.round(crop.area * 100).toInt()}%")
-    if (crop.area < 0.5f) Text("裁剪范围较小", color = MaterialTheme.colorScheme.error)
-    if (state.manualCrop != null) TextButton(onClick = actions.restore) { Text("恢复推荐") }
     val preview = remember(photo, crop) { cropPreview(photo, crop) }
     PhotoCard("裁剪预览", preview)
-    state.result?.let { result ->
-        Text("分析用时 ${seconds(result.analysisMillis)} 秒 · 比较了 ${result.candidateCount} 个方案")
-        if (result.loadMillis >= 100) Text("模型准备 ${seconds(result.loadMillis)} 秒")
-    }
-    state.manualMillis?.let { Text("裁剪评分用时 ${seconds(it)} 秒") }
-    ScoreDetails(state)
 }
 
 @Composable
-private fun ScoreDetails(state: PhotoState) {
-    var showScores by remember(state.photo) { mutableStateOf(false) }
-    TextButton(onClick = { showScores = !showScores }) {
-        Text(if (showScores) "收起模型评分" else "查看模型评分")
-    }
-    if (showScores) {
-        val score = state.displayedScore
-        Text(
-            if (score == null) {
-                "裁剪评分待更新"
-            } else {
-                String.format(Locale.getDefault(), "原图 %.3f · 裁剪 %.3f", state.result?.originalScore, score)
-            }
-        )
-    }
-}
-
-@Composable
-private fun AnalysisActions(state: PhotoState, onAnalyze: () -> Unit, onCancel: () -> Unit, onRetry: () -> Unit) {
-    Text(state.status, style = MaterialTheme.typography.bodyMedium)
+private fun AnalysisActions(
+    state: PhotoState,
+    onAnalyze: () -> Unit,
+    onCancel: () -> Unit,
+    onRetry: () -> Unit,
+    onRestore: () -> Unit
+) {
     if (state.busy) {
         LinearProgressIndicator(Modifier.fillMaxWidth())
         TextButton(onClick = onCancel) { Text("取消") }
     } else if (state.error != null) {
         Text(state.error, color = MaterialTheme.colorScheme.error)
         Button(onClick = onRetry) { Text("重试") }
-    } else {
-        Button(onClick = onAnalyze, enabled = state.photo != null) {
-            Text(if (state.result == null) "分析构图" else "重新分析")
-        }
+    } else if (state.result == null) {
+        Button(onClick = onAnalyze, enabled = state.photo != null) { Text("分析构图") }
+    } else if (state.manualCrop != null) {
+        Button(onClick = onRestore) { Text("恢复推荐") }
     }
 }
 
@@ -153,13 +125,11 @@ private fun AnalysisActions(state: PhotoState, onAnalyze: () -> Unit, onCancel: 
 private fun PhotoCard(title: String, bitmap: Bitmap) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = MaterialTheme.typography.titleSmall)
-        Card {
-            Image(
-                bitmap.asImageBitmap(),
-                contentDescription = title,
-                modifier = Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height)
-            )
-        }
+        Image(
+            bitmap.asImageBitmap(),
+            contentDescription = title,
+            modifier = Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height)
+        )
     }
 }
 
@@ -170,5 +140,3 @@ internal fun cropPreview(bitmap: Bitmap, box: CropBox): Bitmap {
     val bottom = ceil(box.bottom * bitmap.height).toInt().coerceIn(top + 1, bitmap.height)
     return Bitmap.createBitmap(bitmap, left, top, right - left, bottom - top)
 }
-
-private fun seconds(millis: Long): String = String.format(Locale.getDefault(), "%.2f", millis / 1000.0)

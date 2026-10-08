@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +20,5 @@ internal fun PhotoToolbar(onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         ActionIconButton(R.drawable.ic_arrow_back, "返回拍摄", onBack)
-        Text("照片分析", style = MaterialTheme.typography.titleMedium)
     }
 }
