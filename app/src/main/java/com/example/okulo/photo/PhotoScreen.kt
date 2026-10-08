@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ import com.example.okulo.R
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
+import com.example.okulo.ui.ActionIconButton
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -59,7 +61,8 @@ internal fun PhotoScreen(
     onBack: () -> Unit = {},
     onSettings: () -> Unit = {},
     showModelScores: Boolean = false,
-    onAspect: (CropAspect) -> Unit = {}
+    onAspect: (CropAspect) -> Unit = {},
+    onTransform: (PhotoOperation) -> Unit = {}
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -88,17 +91,7 @@ internal fun PhotoScreen(
             }
             AnalysisActions(state, onAnalyze, onCancel, onRetry, cropActions.restore)
             state.photo?.let { photo ->
-                if (state.displayedCrop != null) {
-                    Row(Modifier.horizontalScroll(rememberScrollState()), Arrangement.spacedBy(8.dp)) {
-                        CropAspect.entries.forEach { aspect ->
-                            FilterChip(
-                                selected = state.aspect == aspect,
-                                onClick = { onAspect(aspect) },
-                                label = { Text(aspect.title) }
-                            )
-                        }
-                    }
-                }
+                PhotoEditingControls(state, onAspect, onTransform)
                 PhotoResults(state, photo, cropActions)
             }
             if (showModelScores && state.result != null && state.displayedScore != null) {
@@ -113,6 +106,47 @@ internal fun PhotoScreen(
             }
             Spacer(Modifier.height(12.dp))
         }
+    }
+}
+
+@Composable
+private fun PhotoEditingControls(
+    state: PhotoState,
+    onAspect: (CropAspect) -> Unit,
+    onTransform: (PhotoOperation) -> Unit
+) {
+    if (state.displayedCrop != null) {
+        Row(Modifier.horizontalScroll(rememberScrollState()), Arrangement.spacedBy(8.dp)) {
+            CropAspect.entries.forEach { aspect ->
+                FilterChip(
+                    selected = state.aspect == aspect,
+                    onClick = { onAspect(aspect) },
+                    enabled = !state.busy,
+                    label = { Text(aspect.title) }
+                )
+            }
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ActionIconButton(
+            R.drawable.ic_rotate_right,
+            "向右旋转",
+            { onTransform(PhotoOperation.RotateClockwise) },
+            enabled = !state.busy
+        )
+        ActionIconButton(
+            R.drawable.ic_flip,
+            "水平翻转",
+            { onTransform(PhotoOperation.FlipHorizontal) },
+            enabled = !state.busy
+        )
+        ActionIconButton(
+            R.drawable.ic_flip,
+            "垂直翻转",
+            { onTransform(PhotoOperation.FlipVertical) },
+            enabled = !state.busy,
+            iconModifier = Modifier.rotate(90f)
+        )
     }
 }
 

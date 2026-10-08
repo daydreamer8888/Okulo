@@ -19,6 +19,34 @@ import java.io.IOException
 @Config(sdk = [28])
 class PhotoViewModelTest {
     @Test
+    fun rotationAndMirroringKeepTheSelectedRegionAndInvalidateOldScores() = PhotoTestHarness().use { fixture ->
+        fixture.select()
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        fixture.model.updateCrop(CropBox(0.1f, 0.2f, 0.6f, 0.8f))
+        fixture.model.transformPhoto(PhotoOperation.RotateClockwise)
+        fixture.await { !fixture.model.state.value.busy }
+        assertEquals(3, fixture.model.state.value.photo?.width)
+        assertEquals(4, fixture.model.state.value.photo?.height)
+        val rotated = checkNotNull(fixture.model.state.value.displayedCrop)
+        assertEquals(0.2f, rotated.left, 1e-6f)
+        assertEquals(0.1f, rotated.top, 1e-6f)
+        assertEquals(0.8f, rotated.right, 1e-6f)
+        assertEquals(0.6f, rotated.bottom, 1e-6f)
+        assertNull(fixture.model.state.value.result)
+        assertNull(fixture.model.state.value.displayedScore)
+        fixture.model.transformPhoto(PhotoOperation.FlipHorizontal)
+        fixture.await { !fixture.model.state.value.busy }
+        fixture.model.transformPhoto(PhotoOperation.FlipHorizontal)
+        fixture.await { !fixture.model.state.value.busy }
+        val restored = checkNotNull(fixture.model.state.value.displayedCrop)
+        assertEquals(rotated.left, restored.left, 1e-6f)
+        assertEquals(rotated.right, restored.right, 1e-6f)
+        fixture.select(Uri.parse("content://photos/two"))
+        assertEquals(PhotoTransform(), fixture.model.state.value.transform)
+    }
+
+    @Test
     fun changingAspectInvalidatesManualScoresAndRestoreUsesTheOriginalRatio() = PhotoTestHarness().use { fixture ->
         fixture.select()
         fixture.model.analyze()
