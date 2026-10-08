@@ -5,12 +5,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.theme.OkuloTheme
@@ -111,8 +113,19 @@ class PhotoScreenBehaviorTest {
                 )
             }
         }
-        compose.onNodeWithText("16:9").performScrollTo().performClick()
+        compose.onNodeWithText("16:9").assertDoesNotExist()
+        compose.onNodeWithContentDescription("裁剪比例").performClick()
+        compose.onNodeWithText("16:9").performClick()
         assertEquals(CropAspect.Wide, state.value.aspect)
+        compose.onNodeWithText("自由").assertDoesNotExist()
+        compose.onNodeWithText("16:9").assertExists()
+        compose.onNodeWithContentDescription("裁剪比例").performClick()
+        compose.onNode(hasText("原图") and hasAnyAncestor(isPopup())).performClick()
+        assertEquals(CropAspect.Original, state.value.aspect)
+        compose.onNodeWithContentDescription("裁剪比例").performClick()
+        compose.onNodeWithText("自由").performClick()
+        assertEquals(CropAspect.Free, state.value.aspect)
+        compose.onNodeWithText("16:9").assertDoesNotExist()
         compose.onNodeWithContentDescription("分析构图").performClick()
         assertEquals(1, analyses)
         compose.runOnIdle {

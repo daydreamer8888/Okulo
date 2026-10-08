@@ -1,0 +1,15 @@
+<!--
+    Material Symbols Outlined: expand_more, Google, Apache-2.0.
+    Source: https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/expand_more/default/24px.xml
+    Modification: removed View-theme tint so Compose controls the icon color.
+    License: LICENSES/material-symbols.txt
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M480,615L240,375L296,319L480,503L664,319L720,375L480,615Z"/>
+</vector>
