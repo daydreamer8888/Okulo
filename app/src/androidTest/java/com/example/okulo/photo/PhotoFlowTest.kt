@@ -54,7 +54,8 @@ class PhotoFlowTest {
             assertNotNull(model.state.value.manualScore)
             instrumentation.runOnMainSync { model.analyze() }
             waitUntil { !model.state.value.busy }
-            assertEquals(manual, model.state.value.displayedCrop)
+            assertNull(model.state.value.manualCrop)
+            assertEquals(model.state.value.result?.crop, model.state.value.displayedCrop)
             instrumentation.runOnMainSync {
                 model.updateCrop(CropBox(0.3f, 0.3f, 0.7f, 0.7f))
                 assertNull(model.state.value.displayedScore)

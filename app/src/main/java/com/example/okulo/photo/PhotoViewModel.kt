@@ -79,22 +79,32 @@ class PhotoViewModel internal constructor(
         tasks.invalidate()
         val current = state.value
         mutableState.value = PhotoState(
-            photo = current.photo, mode = mode, status = "照片已就绪", transform = current.transform
+            photo = current.photo, mode = mode, status = "照片已就绪", transform = current.transform,
+            aspect = current.aspect, manualCrop = current.displayedCrop
         )
         if (current.photo == null) selectedUri?.let(::selectPhoto)
     }
 
     fun analyze() {
-        val photo = state.value.photo ?: return
-        val mode = state.value.mode
+        val current = state.value
+        val photo = current.photo ?: return
+        val mode = current.mode
+        val ratio = current.aspect.normalizedRatio(photo.width, photo.height)
         val request = tasks.invalidate()
         mutableState.value = state.value.copy(busy = true, status = "正在准备分析…", error = null)
         tasks.submit(request, ::analysisFailureMessage) {
-            val result = engine.analyze(photo, mode, { tasks.isCurrent(request) }) { status ->
+            val result = engine.analyze(photo, mode, ratio, { tasks.isCurrent(request) }) { status ->
                 tasks.publish(request) { it.copy(status = status) }
             }
             tasks.publish(request) {
-                it.copy(result = result, busy = false, status = if (it.manualCrop == null) "分析完成" else "有新推荐")
+                it.copy(
+                    result = result,
+                    manualCrop = null,
+                    manualScore = null,
+                    manualMillis = null,
+                    busy = false,
+                    status = "分析完成"
+                )
             }
         }
     }
@@ -125,9 +135,15 @@ class PhotoViewModel internal constructor(
     fun setAspect(aspect: CropAspect) {
         val current = state.value
         val photo = current.photo ?: return
-        val crop = current.displayedCrop ?: return
-        updateCrop(fitCropAspect(crop, aspect.normalizedRatio(photo.width, photo.height)))
-        mutableState.value = state.value.copy(aspect = aspect)
+        if (current.aspect == aspect) return
+        tasks.invalidate()
+        mutableState.value = current.copy(
+            aspect = aspect,
+            manualCrop = current.displayedCrop?.let {
+                fitCropAspect(it, aspect.normalizedRatio(photo.width, photo.height))
+            },
+            result = null, manualScore = null, manualMillis = null, busy = false, error = null
+        )
     }
 
     fun updateCrop(box: CropBox) {
@@ -159,9 +175,10 @@ class PhotoViewModel internal constructor(
     }
 
     fun restoreRecommendation() {
+        if (state.value.result == null) return
         tasks.invalidate()
         mutableState.value = state.value.copy(
-            manualCrop = null, manualScore = null, manualMillis = null, aspect = CropAspect.Original,
+            manualCrop = null, manualScore = null, manualMillis = null,
             busy = false, error = null, status = "已恢复推荐"
         )
     }
@@ -175,6 +192,7 @@ class PhotoViewModel internal constructor(
         val current = state.value
         when {
             current.photo == null -> selectedUri?.let(::selectPhoto)
+            current.result == null -> analyze()
             current.manualCrop != null -> evaluateCrop()
             else -> analyze()
         }

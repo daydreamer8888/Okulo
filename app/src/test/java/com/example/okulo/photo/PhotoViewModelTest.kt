@@ -47,19 +47,26 @@ class PhotoViewModelTest {
     }
 
     @Test
-    fun changingAspectInvalidatesManualScoresAndRestoreUsesTheOriginalRatio() = PhotoTestHarness().use { fixture ->
+    fun chosenAspectSurvivesAnalysisModeAndRestoration() = PhotoTestHarness().use { fixture ->
         fixture.select()
+        val wide = CropBox(0f, 0.125f, 1f, 0.875f)
+        fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = wide) }
+        fixture.model.setAspect(CropAspect.Wide)
+        fixture.model.setMode(AnalysisMode.Standard)
         fixture.model.analyze()
         fixture.await { !fixture.model.state.value.busy }
-        fixture.model.setAspect(CropAspect.Wide)
-        val crop = checkNotNull(fixture.model.state.value.displayedCrop)
-        assertEquals(16f / 9f, crop.width * 4 / (crop.height * 3), 1e-6f)
-        assertNull(fixture.model.state.value.displayedScore)
-        fixture.model.setAspect(CropAspect.Free)
-        assertEquals(crop, fixture.model.state.value.displayedCrop)
+        assertEquals(CropAspect.Wide, fixture.model.state.value.aspect)
+        assertEquals(4f / 3f, checkNotNull(fixture.analyzer.requestedRatios.single()), 1e-6f)
+        assertEquals(wide, fixture.model.state.value.displayedCrop)
+        fixture.model.updateCrop(CropBox(0.1f, 0.2f, 0.9f, 0.8f))
         fixture.model.restoreRecommendation()
-        assertEquals(CropAspect.Original, fixture.model.state.value.aspect)
-        assertEquals(recommendation().crop, fixture.model.state.value.displayedCrop)
+        assertEquals(CropAspect.Wide, fixture.model.state.value.aspect)
+        assertEquals(wide, fixture.model.state.value.displayedCrop)
+        fixture.model.updateCrop(CropBox(0.1f, 0.2f, 0.9f, 0.8f))
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        assertNull(fixture.model.state.value.manualCrop)
+        assertEquals(wide, fixture.model.state.value.displayedCrop)
     }
 
     @Test
@@ -94,8 +101,8 @@ class PhotoViewModelTest {
         assertEquals(4f, model.state.value.displayedScore)
         model.analyze()
         fixture.await { !model.state.value.busy }
-        assertEquals(crop, model.state.value.displayedCrop)
-        assertEquals("有新推荐", model.state.value.status)
+        assertEquals(recommendation().crop, model.state.value.displayedCrop)
+        assertEquals("分析完成", model.state.value.status)
         model.restoreRecommendation()
         assertEquals(recommendation().crop, model.state.value.displayedCrop)
         assertEquals(3f, model.state.value.displayedScore)
