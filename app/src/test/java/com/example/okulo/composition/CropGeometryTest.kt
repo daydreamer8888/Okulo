@@ -7,6 +7,20 @@ import kotlin.math.abs
 
 class CropGeometryTest {
     @Test
+    fun requestedAspectFitsPortraitPhotosEvenWhenHalfTheSourceCannotBeRetained() {
+        val boxes = cropCandidates(checkNotNull(CropAspect.Wide.normalizedRatio(900, 1600)))
+        assertEquals(CropBox.FullFrame, boxes.first())
+        assertTrue(boxes.drop(1).any { abs(it.area - 0.31640625f) < 1e-6f })
+        for (box in boxes.drop(1)) {
+            assertEquals(16f / 9f, box.width * 900 / (box.height * 1600), 1e-5f)
+            assertTrue(box.left >= 0f && box.top >= 0f && box.right <= 1f && box.bottom <= 1f)
+            assertTrue(box.area >= 0.158203125f - 1e-6f)
+            assertTrue(box.area <= 0.31640625f + 1e-6f)
+        }
+        assertEquals(cropCandidates(), cropCandidates(1f))
+    }
+
+    @Test
     fun candidatesKeepSourceRatioAndAtLeastHalfItsArea() {
         val boxes = cropCandidates()
         assertEquals(CropBox.FullFrame, boxes.first())
