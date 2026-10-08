@@ -18,7 +18,8 @@ internal fun PhotoToolbar(
     onBack: () -> Unit,
     onSettings: () -> Unit,
     onSave: () -> Unit,
-    canSave: Boolean
+    canSave: Boolean,
+    onRestore: (() -> Unit)? = null
 ) {
     Row(
         Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 24.dp),
@@ -27,6 +28,7 @@ internal fun PhotoToolbar(
     ) {
         ActionIconButton(R.drawable.ic_arrow_back, "返回拍摄", onBack)
         Spacer(Modifier.weight(1f))
+        onRestore?.let { ActionIconButton(R.drawable.ic_restore, "恢复推荐", it) }
         ActionIconButton(R.drawable.ic_save, "保存裁剪", onSave, enabled = canSave)
         ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
     }
