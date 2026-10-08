@@ -95,6 +95,7 @@ private fun AnalysisPage(
         state = state,
         onPhoto = viewModel::selectPhoto,
         onMode = viewModel::setMode,
+        onAspect = viewModel::setAspect,
         onAnalyze = viewModel::analyze,
         onCancel = viewModel::cancel,
         onRetry = viewModel::retry,

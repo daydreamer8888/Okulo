@@ -7,6 +7,37 @@ import kotlin.random.Random
 
 class CropEditingTest {
     @Test
+    fun movingAndResizingAnUnequalCropPreservesItsAspect() {
+        val box = CropBox(0.1f, 0.2f, 0.9f, 0.6f)
+        val zoomed = transformCrop(box, CropPoint(0f, 0f), 0.5f, CropPoint(0.5f, 0.4f), ratio = 2f)
+        assertEquals(0.3f, zoomed.left, 1e-6f)
+        assertEquals(0.3f, zoomed.top, 1e-6f)
+        assertEquals(0.7f, zoomed.right, 1e-6f)
+        assertEquals(0.5f, zoomed.bottom, 1e-6f)
+        val resized = resizeCrop(box, CropCorner.BottomRight, -0.2f, -0.1f, lockedRatio = 2f)
+        assertEquals(0.6f, resized.width, 1e-6f)
+        assertEquals(0.3f, resized.height, 1e-6f)
+        assertEquals(box.left, resized.left, 1e-6f)
+        assertEquals(box.top, resized.top, 1e-6f)
+    }
+
+    @Test
+    fun freeCornersResizeIndependentlyAndFixedRatiosFitInsideThePhoto() {
+        val box = CropBox(0.1f, 0.2f, 0.9f, 0.6f)
+        val free = resizeCrop(box, CropCorner.BottomRight, -0.2f, 0.2f, lockedRatio = null)
+        assertEquals(0.6f, free.width, 1e-6f)
+        assertEquals(0.6f, free.height, 1e-6f)
+        assertEquals(0.1f, free.left, 1e-6f)
+        assertEquals(0.2f, free.top, 1e-6f)
+        val wide = fitCropAspect(CropBox.FullFrame, CropAspect.Wide.normalizedRatio(400, 300))
+        assertEquals(0f, wide.left, 1e-6f)
+        assertEquals(0.125f, wide.top, 1e-6f)
+        assertEquals(1f, wide.right, 1e-6f)
+        assertEquals(0.875f, wide.bottom, 1e-6f)
+        assertEquals(box, fitCropAspect(box, CropAspect.Free.normalizedRatio(400, 300)))
+    }
+
+    @Test
     fun movingAndZoomingKeepRatioAndStayInsidePhoto() {
         val random = Random(42)
         var crop = CropBox(0.1f, 0.1f, 0.9f, 0.9f)

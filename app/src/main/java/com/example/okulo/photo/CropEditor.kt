@@ -34,9 +34,10 @@ import com.example.okulo.composition.resizeCrop
 import com.example.okulo.composition.transformCrop
 
 @Composable
-internal fun CropEditor(bitmap: Bitmap, crop: CropBox, actions: CropActions) {
+internal fun CropEditor(bitmap: Bitmap, crop: CropBox, actions: CropActions, lockedRatio: Float? = 1f) {
     val current by rememberUpdatedState(crop)
     val callbacks by rememberUpdatedState(actions)
+    val locked by rememberUpdatedState(lockedRatio)
     Box(
         Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height)
             .testTag("crop-editor").pointerInput(bitmap) {
@@ -62,11 +63,20 @@ internal fun CropEditor(bitmap: Bitmap, crop: CropBox, actions: CropActions) {
                         val focus = event.calculateCentroid(useCurrent = false)
                         if (event.changes.count { it.pressed } > 1) corner = null
                         box = if (corner != null) {
-                            resizeCrop(box, corner, pan.x / size.width, pan.y / size.height)
+                            resizeCrop(
+                                box = box,
+                                corner = corner,
+                                dx = pan.x / size.width,
+                                dy = pan.y / size.height,
+                                lockedRatio = locked
+                            )
                         } else {
                             transformCrop(
-                                box, CropPoint(pan.x / size.width, pan.y / size.height),
-                                event.calculateZoom(), CropPoint(focus.x / size.width, focus.y / size.height)
+                                box = box,
+                                delta = CropPoint(pan.x / size.width, pan.y / size.height),
+                                zoom = event.calculateZoom(),
+                                focus = CropPoint(focus.x / size.width, focus.y / size.height),
+                                ratio = locked ?: (box.width / box.height)
                             )
                         }
                         callbacks.change(box)

@@ -2,6 +2,7 @@ package com.example.okulo.photo
 
 import android.net.Uri
 import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,6 +18,22 @@ import java.io.IOException
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class PhotoViewModelTest {
+    @Test
+    fun changingAspectInvalidatesManualScoresAndRestoreUsesTheOriginalRatio() = PhotoTestHarness().use { fixture ->
+        fixture.select()
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        fixture.model.setAspect(CropAspect.Wide)
+        val crop = checkNotNull(fixture.model.state.value.displayedCrop)
+        assertEquals(16f / 9f, crop.width * 4 / (crop.height * 3), 1e-6f)
+        assertNull(fixture.model.state.value.displayedScore)
+        fixture.model.setAspect(CropAspect.Free)
+        assertEquals(crop, fixture.model.state.value.displayedCrop)
+        fixture.model.restoreRecommendation()
+        assertEquals(CropAspect.Original, fixture.model.state.value.aspect)
+        assertEquals(recommendation().crop, fixture.model.state.value.displayedCrop)
+    }
+
     @Test
     fun newPhotosUseFastAnalysisUnlessTheUserChoosesStandard() = PhotoTestHarness().use { fixture ->
         assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)

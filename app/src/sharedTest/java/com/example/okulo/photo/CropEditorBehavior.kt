@@ -17,6 +17,24 @@ abstract class CropEditorBehavior {
     @get:Rule val compose = createComposeRule()
 
     @Test
+    fun freeAspectCornerDragChangesWidthWithoutForcingHeight() {
+        val crop = mutableStateOf(CropBox(0.2f, 0.2f, 0.8f, 0.8f))
+        val bitmap = Bitmap.createBitmap(500, 400, Bitmap.Config.ARGB_8888)
+        compose.setContent {
+            CropEditor(bitmap, crop.value, CropActions({ crop.value = it }), lockedRatio = null)
+        }
+        compose.onNodeWithTag("crop-editor").performTouchInput {
+            swipe(Offset(width * 0.8f, height * 0.8f), Offset(width * 0.6f, height * 0.8f))
+        }
+        compose.runOnIdle {
+            assertEquals(0.4f, crop.value.width, 0.02f)
+            assertEquals(0.6f, crop.value.height, 0.02f)
+            assertEquals(0.2f, crop.value.left, 1e-5f)
+            assertEquals(0.2f, crop.value.top, 1e-5f)
+        }
+    }
+
+    @Test
     fun dragAndCornerResizeUpdateCropAndFinishOncePerGesture() {
         val crop = mutableStateOf(CropBox(0.1f, 0.1f, 0.9f, 0.9f))
         val bitmap = Bitmap.createBitmap(500, 400, Bitmap.Config.ARGB_8888)
