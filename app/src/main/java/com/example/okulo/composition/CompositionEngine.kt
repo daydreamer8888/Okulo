@@ -7,6 +7,7 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
     override fun analyze(
         bitmap: Bitmap,
         mode: AnalysisMode,
+        normalizedRatio: Float?,
         isCurrent: () -> Boolean,
         status: (String) -> Unit
     ): CompositionResult {
@@ -17,7 +18,7 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
         val loadMillis = elapsed(loadStart)
         val started = System.nanoTime()
         status("正在分析照片…")
-        val candidates = cropCandidates()
+        val candidates = normalizedRatio?.let(::cropCandidates) ?: freeCropCandidates(bitmap.width, bitmap.height)
         val scores = score(bitmap, mode, candidates, isCurrent)
         val best = (1 until scores.size).maxBy { scores[it] }
         return CompositionResult(
