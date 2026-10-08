@@ -8,7 +8,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.theme.OkuloTheme
 import org.junit.After
@@ -34,6 +36,40 @@ class PhotoScreenBehaviorTest {
 
     @After
     fun restoreLocale() = Locale.setDefault(originalLocale)
+
+    @Test
+    fun aspectCanBeChosenBeforeAnalysisAndNewSearchKeepsTheEditorStationary() {
+        val state = mutableStateOf(PhotoState(photo = image()))
+        var analyses = 0
+        compose.setContent {
+            OkuloTheme {
+                PhotoScreen(
+                    state.value,
+                    {},
+                    {},
+                    { analyses++ },
+                    {},
+                    onAspect = { state.value = state.value.copy(aspect = it) }
+                )
+            }
+        }
+        compose.onNodeWithText("16:9").performScrollTo().performClick()
+        assertEquals(CropAspect.Wide, state.value.aspect)
+        compose.onNodeWithText("分析构图").performClick()
+        assertEquals(1, analyses)
+        compose.runOnIdle {
+            state.value = state.value.copy(manualCrop = CropBox(0.1f, 0.2f, 0.9f, 0.6f), aspect = CropAspect.Free)
+        }
+        val editorBounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithText("分析构图").assertDoesNotExist()
+        compose.onNodeWithContentDescription("分析构图").performClick()
+        assertEquals(2, analyses)
+        compose.onNodeWithContentDescription("恢复推荐").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(busy = true) }
+        compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
+        assertEquals(editorBounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithContentDescription("取消").performClick()
+    }
 
     @Test
     fun saveRequiresACropAndCannotBeRepeatedWhileWriting() {
