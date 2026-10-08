@@ -9,7 +9,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.theme.OkuloTheme
@@ -46,7 +45,6 @@ class PhotoScreenBehaviorTest {
                 PhotoScreen(
                     state.value,
                     {},
-                    {},
                     { analyses++ },
                     {},
                     onAspect = { state.value = state.value.copy(aspect = it) }
@@ -81,7 +79,7 @@ class PhotoScreenBehaviorTest {
             manualOriginalScore = 2f
         )
         compose.setContent {
-            OkuloTheme { PhotoScreen(state, {}, {}, {}, {}, showModelScores = true) }
+            OkuloTheme { PhotoScreen(state, {}, {}, {}, showModelScores = true) }
         }
         compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertExists()
         compose.onNodeWithContentDescription("分析构图").assertExists()
@@ -99,7 +97,6 @@ class PhotoScreenBehaviorTest {
             OkuloTheme {
                 PhotoScreen(
                     state.value,
-                    {},
                     {},
                     {},
                     {},
@@ -122,20 +119,17 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
-    fun analysisCancelRetryAndModeControlsRouteToTheCorrectAction() {
+    fun analysisCancelAndRetryRouteToTheCorrectAction() {
         val state = mutableStateOf(PhotoState())
         var analysis = 0
         var cancel = 0
         var retry = 0
-        var mode: AnalysisMode? = null
         compose.setContent {
             OkuloTheme {
-                PhotoScreen(state.value, {}, { mode = it }, { analysis++ }, { cancel++ }, onRetry = { retry++ })
+                PhotoScreen(state.value, {}, { analysis++ }, { cancel++ }, onRetry = { retry++ })
             }
         }
         compose.onNodeWithText("分析构图").assertIsNotEnabled()
-        compose.onNodeWithText("快速分析").performClick()
-        assertEquals(AnalysisMode.Fast, mode)
         compose.runOnIdle { state.value = PhotoState(photo = image()) }
         compose.onNodeWithText("分析构图").performClick()
         assertEquals(1, analysis)
@@ -160,7 +154,7 @@ class PhotoScreenBehaviorTest {
             state.value = state.value.copy(manualCrop = null, manualScore = null)
         })
         compose.setContent {
-            OkuloTheme { PhotoScreen(state.value, {}, {}, { analysis++ }, {}, cropActions = actions) }
+            OkuloTheme { PhotoScreen(state.value, {}, { analysis++ }, {}, cropActions = actions) }
         }
         compose.onNodeWithText("重新分析").assertDoesNotExist()
         compose.onNodeWithContentDescription("恢复推荐").assertDoesNotExist()
@@ -190,7 +184,7 @@ class PhotoScreenBehaviorTest {
         )
         val showScores = mutableStateOf(false)
         compose.setContent {
-            OkuloTheme { PhotoScreen(state, {}, {}, {}, {}, showModelScores = showScores.value) }
+            OkuloTheme { PhotoScreen(state, {}, {}, {}, showModelScores = showScores.value) }
         }
         compose.onNodeWithText("查看模型评分").assertDoesNotExist()
         compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertDoesNotExist()

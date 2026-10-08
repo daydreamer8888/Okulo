@@ -4,10 +4,14 @@ import android.app.Activity
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.ViewModelProvider
+import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.photo.PhotoViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Rule
@@ -23,6 +27,24 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class MainActivityTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test
+    fun analysisModeIsConfiguredInSettingsAndSurvivesRecreation() {
+        compose.onNodeWithContentDescription("设置").performClick()
+        compose.onNodeWithText("快速分析").assertIsSelected()
+        compose.onNodeWithText("标准分析").performClick().assertIsSelected()
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithContentDescription("分析照片").performClick()
+        compose.onNodeWithText("快速分析").assertDoesNotExist()
+        compose.onNodeWithText("标准分析").assertDoesNotExist()
+        compose.runOnIdle {
+            val model = ViewModelProvider(compose.activity)[PhotoViewModel::class.java]
+            assertEquals(AnalysisMode.Standard, model.state.value.mode)
+        }
+        compose.onNodeWithContentDescription("设置").performClick()
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("标准分析").assertIsSelected()
+    }
 
     @Test
     fun modelScoresAreOptInAndTheChoiceSurvivesRecreation() {

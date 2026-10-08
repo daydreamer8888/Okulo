@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
             }
             val cameraCapture = remember { CameraCapture(applicationContext) }
             val settings = remember { AppSettings(applicationContext) }
+            LaunchedEffect(settings.analysisMode) { viewModel.setMode(settings.analysisMode) }
             var page by rememberSaveable { mutableStateOf(AppPage.Camera) }
             var settingsOrigin by rememberSaveable { mutableStateOf(AppPage.Camera) }
             val openSettings = {
@@ -77,7 +78,13 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.weight(1f)
                             )
                         } else if (page == AppPage.Settings) {
-                            SettingsScreen(settings.showModelScores, settings::setModelScores, back)
+                            SettingsScreen(
+                                settings.showModelScores,
+                                settings::setModelScores,
+                                back,
+                                settings.analysisMode,
+                                settings::selectAnalysisMode
+                            )
                         } else {
                             AnalysisPage(viewModel, back, openSettings, settings.showModelScores)
                         }
@@ -100,7 +107,6 @@ private fun AnalysisPage(
     PhotoScreen(
         state = state,
         onPhoto = viewModel::selectPhoto,
-        onMode = viewModel::setMode,
         onAspect = viewModel::setAspect,
         onTransform = viewModel::transformPhoto,
         onSave = viewModel::saveCrop,
