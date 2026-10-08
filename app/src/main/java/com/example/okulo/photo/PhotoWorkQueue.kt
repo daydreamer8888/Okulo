@@ -39,7 +39,9 @@ internal class PhotoWorkQueue(
                 // The replacement request owns the screen.
             } catch (failure: Exception) {
                 Log.e("OkuloAnalysis", "Photo task failed", failure)
-                publish(request) { it.copy(busy = false, error = message(failure), status = "可以重试或选择其他照片") }
+                publish(request) {
+                    it.copy(busy = false, scoring = false, error = message(failure), status = "可以重试或选择其他照片")
+                }
             }
         }
     }

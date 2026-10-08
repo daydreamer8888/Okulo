@@ -1,7 +1,9 @@
 package com.example.okulo.photo
 
 import android.graphics.Bitmap
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -36,6 +38,35 @@ class PhotoScreenBehaviorTest {
 
     @After
     fun restoreLocale() = Locale.setDefault(originalLocale)
+
+    @Test
+    fun manualScoringKeepsEditingControlsStableAndAvailable() = PhotoTestHarness().use { fixture ->
+        fixture.select()
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        fixture.model.updateCrop(CropBox(0.2f, 0.2f, 0.8f, 0.6f))
+        val gate = fixture.gate()
+        fixture.analyzer.evaluate = { crop ->
+            gate.block()
+            recommendation().copy(crop = crop, cropScore = 4f)
+        }
+        compose.setContent {
+            OkuloTheme { PhotoScreen(fixture.model.state.collectAsState().value, {}, {}, {}) }
+        }
+        val analyzeBounds = compose.onNodeWithContentDescription("分析构图").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { fixture.model.evaluateCrop() }
+        gate.awaitEntry()
+        compose.onNodeWithText("自由").assertIsEnabled()
+        compose.onNodeWithContentDescription("分析构图").assertIsEnabled()
+        compose.onNodeWithContentDescription("取消").assertDoesNotExist()
+        compose.onNodeWithContentDescription("保存").assertIsEnabled()
+        compose.onNodeWithContentDescription("更多").assertIsEnabled()
+        assertEquals(analyzeBounds, compose.onNodeWithContentDescription("分析构图").fetchSemanticsNode().boundsInRoot)
+        gate.release()
+        fixture.await { fixture.model.state.value.manualScore != null }
+        compose.onNodeWithContentDescription("保存").assertIsEnabled()
+        Unit
+    }
 
     @Test
     fun editActionsFollowAspectSelectionAndTransformsRequireOpeningMore() {

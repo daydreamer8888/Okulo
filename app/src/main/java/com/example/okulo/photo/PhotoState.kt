@@ -11,6 +11,7 @@ internal data class PhotoState(
     val mode: AnalysisMode = AnalysisMode.Fast,
     val result: CompositionResult? = null,
     val busy: Boolean = false,
+    val scoring: Boolean = false,
     val status: String = "选择一张照片，看看裁剪建议",
     val error: String? = null,
     val manualCrop: CropBox? = null,

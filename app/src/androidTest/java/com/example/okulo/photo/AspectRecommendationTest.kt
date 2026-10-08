@@ -83,7 +83,7 @@ class AspectRecommendationTest {
     }
 
     private fun awaitIdle(model: PhotoViewModel) {
-        compose.waitUntil(45_000) { !model.state.value.busy }
+        compose.waitUntil(45_000) { !model.state.value.busy && !model.state.value.scoring }
         compose.waitForIdle()
         assertNull(model.state.value.error)
     }

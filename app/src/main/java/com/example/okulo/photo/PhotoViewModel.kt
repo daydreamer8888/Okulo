@@ -92,7 +92,7 @@ class PhotoViewModel internal constructor(
         val mode = current.mode
         val ratio = current.freeRatio ?: current.aspect.normalizedRatio(photo.width, photo.height)
         val request = tasks.invalidate()
-        mutableState.value = state.value.copy(busy = true, status = "正在准备分析…", error = null)
+        mutableState.value = state.value.copy(busy = true, scoring = false, status = "正在准备分析…", error = null)
         tasks.submit(request, ::analysisFailureMessage) {
             val result = engine.analyze(photo, mode, ratio, { tasks.isCurrent(request) }) { status ->
                 tasks.publish(request) { it.copy(status = status) }
@@ -104,6 +104,7 @@ class PhotoViewModel internal constructor(
                     manualScore = null,
                     manualMillis = null,
                     busy = false,
+                    scoring = false,
                     status = "分析完成"
                 )
             }
@@ -114,7 +115,7 @@ class PhotoViewModel internal constructor(
         val current = state.value
         val photo = current.photo ?: return
         val request = tasks.invalidate()
-        mutableState.value = current.copy(busy = true, error = null)
+        mutableState.value = current.copy(busy = true, scoring = false, error = null)
         tasks.submit(request, { "无法编辑这张照片，请重试" }) {
             val step = PhotoTransform().followedBy(operation)
             val edited = step.apply(photo)
@@ -151,7 +152,7 @@ class PhotoViewModel internal constructor(
             manualScore = null,
             manualOriginalScore = null,
             manualMillis = null,
-            busy = false,
+            busy = false, scoring = false,
             error = null
         )
     }
@@ -170,7 +171,7 @@ class PhotoViewModel internal constructor(
             result = if (reshaped) null else current.result,
             manualScore = null,
             manualMillis = null,
-            busy = false,
+            busy = false, scoring = false,
             error = null,
             status = "松手后重新评分"
         )
@@ -181,7 +182,7 @@ class PhotoViewModel internal constructor(
         val photo = current.photo ?: return
         val crop = current.manualCrop ?: return
         val request = tasks.invalidate()
-        mutableState.value = current.copy(busy = true, status = "正在评价裁剪…", error = null)
+        mutableState.value = current.copy(busy = false, scoring = true, status = "正在评价裁剪…", error = null)
         tasks.submit(request, ::analysisFailureMessage) {
             val result = engine.evaluate(photo, current.mode, crop) { tasks.isCurrent(request) }
             tasks.publish(request) {
@@ -190,6 +191,7 @@ class PhotoViewModel internal constructor(
                     manualOriginalScore = result.originalScore,
                     manualMillis = result.analysisMillis,
                     busy = false,
+                    scoring = false,
                     status = "裁剪评分已更新"
                 )
             }
@@ -201,13 +203,13 @@ class PhotoViewModel internal constructor(
         tasks.invalidate()
         mutableState.value = state.value.copy(
             manualCrop = null, manualScore = null, manualMillis = null,
-            busy = false, error = null, status = "已恢复推荐"
+            busy = false, scoring = false, error = null, status = "已恢复推荐"
         )
     }
 
     fun cancel() {
         tasks.invalidate()
-        mutableState.value = state.value.copy(busy = false, status = "已取消分析")
+        mutableState.value = state.value.copy(busy = false, scoring = false, status = "已取消分析")
     }
 
     fun retry() {
