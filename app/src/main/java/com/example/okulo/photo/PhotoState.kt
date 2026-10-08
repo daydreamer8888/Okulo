@@ -17,6 +17,7 @@ internal data class PhotoState(
     val manualScore: Float? = null,
     val manualMillis: Long? = null,
     val aspect: CropAspect = CropAspect.Original,
+    val freeRatio: Float? = null,
     val transform: PhotoTransform = PhotoTransform()
 ) {
     val displayedCrop: CropBox? get() = manualCrop ?: result?.crop

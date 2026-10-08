@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
 
 @Suppress("TooManyFunctions") // Public operations share one photo and request lifecycle.
 class PhotoViewModel internal constructor(
@@ -80,7 +81,7 @@ class PhotoViewModel internal constructor(
         val current = state.value
         mutableState.value = PhotoState(
             photo = current.photo, mode = mode, status = "照片已就绪", transform = current.transform,
-            aspect = current.aspect, manualCrop = current.displayedCrop
+            aspect = current.aspect, manualCrop = current.displayedCrop, freeRatio = current.freeRatio
         )
         if (current.photo == null) selectedUri?.let(::selectPhoto)
     }
@@ -89,7 +90,7 @@ class PhotoViewModel internal constructor(
         val current = state.value
         val photo = current.photo ?: return
         val mode = current.mode
-        val ratio = current.aspect.normalizedRatio(photo.width, photo.height)
+        val ratio = current.freeRatio ?: current.aspect.normalizedRatio(photo.width, photo.height)
         val request = tasks.invalidate()
         mutableState.value = state.value.copy(busy = true, status = "正在准备分析…", error = null)
         tasks.submit(request, ::analysisFailureMessage) {
@@ -126,6 +127,9 @@ class PhotoViewModel internal constructor(
                         PhotoOperation.RotateClockwise -> current.aspect.rotated()
                         else -> current.aspect
                     },
+                    freeRatio = current.freeRatio?.let {
+                        if (operation == PhotoOperation.RotateClockwise) 1f / it else it
+                    },
                     transform = current.transform.followedBy(operation)
                 )
             }
@@ -135,10 +139,11 @@ class PhotoViewModel internal constructor(
     fun setAspect(aspect: CropAspect) {
         val current = state.value
         val photo = current.photo ?: return
-        if (current.aspect == aspect) return
+        if (current.aspect == aspect && current.freeRatio == null) return
         tasks.invalidate()
         mutableState.value = current.copy(
             aspect = aspect,
+            freeRatio = null,
             manualCrop = current.displayedCrop?.let {
                 fitCropAspect(it, aspect.normalizedRatio(photo.width, photo.height))
             },
@@ -147,11 +152,22 @@ class PhotoViewModel internal constructor(
     }
 
     fun updateCrop(box: CropBox) {
-        if (state.value.displayedCrop == null) return
+        val current = state.value
+        val previous = current.displayedCrop ?: return
+        if (box == previous) return
+        val ratio = box.width / box.height
+        val previousRatio = previous.width / previous.height
+        val reshaped = current.aspect == CropAspect.Free && abs(ratio / previousRatio - 1f) > ASPECT_TOLERANCE
         tasks.invalidate()
-        mutableState.value = state.value.copy(
-            manualCrop = box, manualScore = null, manualMillis = null,
-            busy = false, error = null, status = "松手后重新评分"
+        mutableState.value = current.copy(
+            manualCrop = box,
+            freeRatio = if (reshaped) ratio else current.freeRatio,
+            result = if (reshaped) null else current.result,
+            manualScore = null,
+            manualMillis = null,
+            busy = false,
+            error = null,
+            status = "松手后重新评分"
         )
     }
 
@@ -200,6 +216,8 @@ class PhotoViewModel internal constructor(
 
     override fun onCleared() { tasks.close() }
 }
+
+private const val ASPECT_TOLERANCE = 1e-5f
 
 private fun analysisFailureMessage(failure: Exception): String = when (failure) {
     is IllegalStateException -> failure.message ?: "分析失败，请重试"

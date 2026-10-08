@@ -70,6 +70,34 @@ class PhotoViewModelTest {
     }
 
     @Test
+    fun freeSearchUsesManyAspectsUntilTheUserChangesTheShape() = PhotoTestHarness().use { fixture ->
+        fixture.select()
+        fixture.model.setAspect(CropAspect.Free)
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        val moved = CropBox(0.15f, 0.1f, 0.95f, 0.9f)
+        fixture.model.updateCrop(moved)
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        assertEquals(listOf(null, null), fixture.analyzer.requestedRatios)
+        val resized = CropBox(0.1f, 0.2f, 0.9f, 0.6f)
+        fixture.model.updateCrop(resized)
+        fixture.model.evaluateCrop()
+        fixture.await { !fixture.model.state.value.busy }
+        assertEquals(resized, fixture.model.state.value.displayedCrop)
+        assertEquals(2, fixture.analyzer.analysisCalls.get())
+        assertNull(fixture.model.state.value.result)
+        fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = CropBox(0f, 0.2f, 1f, 0.7f)) }
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        assertEquals(2f, checkNotNull(fixture.analyzer.requestedRatios.last()), 1e-6f)
+        fixture.model.setAspect(CropAspect.Free)
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        assertNull(fixture.analyzer.requestedRatios.last())
+    }
+
+    @Test
     fun newPhotosUseFastAnalysisUnlessTheUserChoosesStandard() = PhotoTestHarness().use { fixture ->
         assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
         fixture.select()
