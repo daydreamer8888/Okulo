@@ -13,27 +13,31 @@ import kotlin.math.roundToInt
 
 private const val MAX_PHOTO_SIDE = 2048
 
-fun readPhoto(resolver: ContentResolver, uri: Uri): Bitmap =
+fun readPhoto(resolver: ContentResolver, uri: Uri): Bitmap = readPhotoScaled(resolver, uri, MAX_PHOTO_SIDE)
+
+internal fun readFullPhoto(resolver: ContentResolver, uri: Uri): Bitmap = readPhotoScaled(resolver, uri, Int.MAX_VALUE)
+
+private fun readPhotoScaled(resolver: ContentResolver, uri: Uri, maximumSide: Int): Bitmap =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         ImageDecoder.decodeBitmap(ImageDecoder.createSource(resolver, uri)) { decoder, info, _ ->
             decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
             decoder.setTargetColorSpace(ColorSpace.get(ColorSpace.Named.SRGB))
-            val scale = minOf(1.0, MAX_PHOTO_SIDE.toDouble() / maxOf(info.size.width, info.size.height))
+            val scale = minOf(1.0, maximumSide.toDouble() / maxOf(info.size.width, info.size.height))
             decoder.setTargetSize(
                 (info.size.width * scale).roundToInt().coerceAtLeast(1),
                 (info.size.height * scale).roundToInt().coerceAtLeast(1)
             )
         }
     } else {
-        readLegacyPhoto(resolver, uri)
+        readLegacyPhoto(resolver, uri, maximumSide)
     }
 
-private fun readLegacyPhoto(resolver: ContentResolver, uri: Uri): Bitmap {
+private fun readLegacyPhoto(resolver: ContentResolver, uri: Uri, maximumSide: Int): Bitmap {
     val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, options) }
     check(options.outWidth > 0 && options.outHeight > 0) { "无法读取这张照片" }
     options.inSampleSize = 1
-    while (maxOf(options.outWidth, options.outHeight) / options.inSampleSize > MAX_PHOTO_SIDE) {
+    while (maxOf(options.outWidth, options.outHeight) / options.inSampleSize > maximumSide) {
         options.inSampleSize *= 2
     }
     options.inJustDecodeBounds = false
