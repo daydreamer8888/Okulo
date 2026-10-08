@@ -3,17 +3,15 @@ package com.example.okulo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import com.example.okulo.camera.CameraCapture
 import com.example.okulo.camera.CameraScreen
 import com.example.okulo.photo.CropActions
@@ -40,18 +37,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             val cameraCapture = remember { CameraCapture(applicationContext) }
             var cameraPage by rememberSaveable { mutableStateOf(true) }
+            BackHandler(enabled = !cameraPage) { cameraPage = true }
             SideEffect {
-                val bars = if (cameraPage) {
-                    SystemBarStyle.dark(AndroidColor.BLACK)
-                } else {
-                    SystemBarStyle.auto(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
-                }
+                val bars = SystemBarStyle.dark(AndroidColor.BLACK)
                 enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
             }
-            OkuloTheme(darkTheme = cameraPage || isSystemInDarkTheme(), dynamicColor = !cameraPage) {
+            OkuloTheme(darkTheme = true, dynamicColor = false) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    containerColor = if (cameraPage) Color.Black else MaterialTheme.colorScheme.background
+                    containerColor = MaterialTheme.colorScheme.background
                 ) { padding ->
                     Column(Modifier.fillMaxSize().padding(padding)) {
                         if (cameraPage) {
@@ -61,7 +55,6 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.weight(1f)
                             )
                         } else {
-                            TextButton(onClick = { cameraPage = true }) { Text("返回拍摄") }
                             val state by viewModel.state.collectAsState()
                             PhotoScreen(
                                 state = state,
@@ -75,7 +68,8 @@ class MainActivity : ComponentActivity() {
                                     viewModel::evaluateCrop,
                                     viewModel::restoreRecommendation
                                 ),
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                onBack = { cameraPage = true }
                             )
                         }
                     }
