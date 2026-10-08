@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.okulo.R
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.ActionIconButton
@@ -52,7 +51,6 @@ import kotlin.math.floor
 internal fun PhotoScreen(
     state: PhotoState,
     onPhoto: (Uri) -> Unit,
-    onMode: (AnalysisMode) -> Unit,
     onAnalyze: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
@@ -93,11 +91,6 @@ internal fun PhotoScreen(
             }
             OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
                 Text(if (state.photo == null) "选择照片" else "换一张照片")
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AnalysisMode.entries.forEach { mode ->
-                    FilterChip(selected = state.mode == mode, onClick = { onMode(mode) }, label = { Text(mode.title) })
-                }
             }
             AnalysisActions(state, onAnalyze, onCancel, onRetry)
             state.photo?.let { photo ->

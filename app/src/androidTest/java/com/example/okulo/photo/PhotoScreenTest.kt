@@ -8,7 +8,6 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.theme.OkuloTheme
@@ -24,25 +23,22 @@ class PhotoScreenTest {
     @Test
     fun emptyScreenAllowsPickingAndDisablesAnalysis() {
         compose.setContent {
-            OkuloTheme { PhotoScreen(PhotoState(), {}, {}, {}, {}) }
+            OkuloTheme { PhotoScreen(PhotoState(), {}, {}, {}) }
         }
         compose.onNodeWithText("选择照片").assertIsEnabled()
         compose.onNodeWithText("分析构图").assertIsNotEnabled()
     }
 
     @Test
-    fun modeSwitchAndCancelRemainAvailableDuringAnalysis() {
-        var mode: AnalysisMode? = null
+    fun cancelRemainsAvailableDuringAnalysis() {
         var cancelled = false
         compose.setContent {
             OkuloTheme {
-                PhotoScreen(PhotoState(busy = true), {}, { mode = it }, {}, { cancelled = true })
+                PhotoScreen(PhotoState(busy = true), {}, {}, { cancelled = true })
             }
         }
         compose.onNodeWithText("选择照片").assertIsEnabled()
-        compose.onNodeWithText("快速分析").performClick()
         compose.onNodeWithText("取消").performClick()
-        assertEquals(AnalysisMode.Fast, mode)
         assertTrue(cancelled)
     }
 
@@ -51,7 +47,7 @@ class PhotoScreenTest {
         val bitmap = Bitmap.createBitmap(48, 32, Bitmap.Config.ARGB_8888)
         val result = CompositionResult(CropBox(0.1f, 0.1f, 0.9f, 0.9f), 2f, 3f, 0, 1200, 250)
         compose.setContent {
-            OkuloTheme { PhotoScreen(PhotoState(photo = bitmap, result = result), {}, {}, {}, {}) }
+            OkuloTheme { PhotoScreen(PhotoState(photo = bitmap, result = result), {}, {}, {}) }
         }
         compose.onNodeWithText("原图").assertIsDisplayed()
         compose.onNodeWithText("裁剪预览").assertExists()
