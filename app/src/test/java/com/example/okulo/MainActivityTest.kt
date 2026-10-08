@@ -76,13 +76,13 @@ class MainActivityTest {
     fun launchAndCancelledPhotoSelectionKeepAnalysisDisabled() {
         compose.onNodeWithContentDescription("分析照片").performClick()
         compose.onNodeWithText("选择照片").assertExists()
-        compose.onNodeWithText("分析构图").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("分析构图").assertIsNotEnabled()
         compose.onNodeWithText("选择照片").performClick()
         val request = shadowOf(compose.activity).nextStartedActivityForResult
         assertNotNull(request)
         assertEquals("image/*", request.intent.type)
         compose.runOnIdle { shadowOf(compose.activity).receiveResult(request.intent, Activity.RESULT_CANCELED, null) }
-        compose.onNodeWithText("分析构图").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("分析构图").assertIsNotEnabled()
         compose.onNodeWithText("选择照片").assertExists()
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.example.okulo.composition.CompositionResult
@@ -26,7 +27,7 @@ class PhotoScreenTest {
             OkuloTheme { PhotoScreen(PhotoState(), {}, {}, {}) }
         }
         compose.onNodeWithText("选择照片").assertIsEnabled()
-        compose.onNodeWithText("分析构图").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("分析构图").assertIsNotEnabled()
     }
 
     @Test
@@ -38,7 +39,7 @@ class PhotoScreenTest {
             }
         }
         compose.onNodeWithText("选择照片").assertIsEnabled()
-        compose.onNodeWithText("取消").performClick()
+        compose.onNodeWithContentDescription("取消").performClick()
         assertTrue(cancelled)
     }
 
