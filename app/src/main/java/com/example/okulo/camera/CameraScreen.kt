@@ -34,7 +34,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
-internal fun CameraScreen(capture: CameraCapture, onImportPhoto: () -> Unit, modifier: Modifier = Modifier) {
+internal fun CameraScreen(
+    capture: CameraCapture,
+    onImportPhoto: () -> Unit,
+    modifier: Modifier = Modifier,
+    onSettings: () -> Unit = {}
+) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     fun hasPermission() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -57,6 +62,7 @@ internal fun CameraScreen(capture: CameraCapture, onImportPhoto: () -> Unit, mod
     }
     CameraLayout(
         onImportPhoto = onImportPhoto,
+        onSettings = onSettings,
         modifier = modifier,
         capture = capture.state,
         onMessageDismissed = capture::dismissMessage,

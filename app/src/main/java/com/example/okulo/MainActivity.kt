@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,6 +27,8 @@ import com.example.okulo.camera.CameraScreen
 import com.example.okulo.photo.CropActions
 import com.example.okulo.photo.PhotoScreen
 import com.example.okulo.photo.PhotoViewModel
+import com.example.okulo.settings.AppSettings
+import com.example.okulo.settings.SettingsScreen
 import com.example.okulo.ui.theme.OkuloTheme
 import android.graphics.Color as AndroidColor
 
@@ -37,9 +40,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val cameraCapture = remember { CameraCapture(applicationContext) }
-            var cameraPage by rememberSaveable { mutableStateOf(true) }
-            BackHandler(enabled = !cameraPage) { cameraPage = true }
-            val darkTheme = cameraPage || isSystemInDarkTheme()
+            val settings = remember { AppSettings(applicationContext) }
+            var page by rememberSaveable { mutableStateOf(AppPage.Camera) }
+            var settingsOrigin by rememberSaveable { mutableStateOf(AppPage.Camera) }
+            val openSettings = {
+                settingsOrigin = page
+                page = AppPage.Settings
+            }
+            val back = { page = if (page == AppPage.Settings) settingsOrigin else AppPage.Camera }
+            BackHandler(enabled = page != AppPage.Camera, onBack = back)
+            val darkTheme = page == AppPage.Camera || isSystemInDarkTheme()
             SideEffect {
                 val bars = if (darkTheme) {
                     SystemBarStyle.dark(AndroidColor.BLACK)
@@ -54,29 +64,17 @@ class MainActivity : ComponentActivity() {
                     containerColor = MaterialTheme.colorScheme.background
                 ) { padding ->
                     Column(Modifier.fillMaxSize().padding(padding)) {
-                        if (cameraPage) {
+                        if (page == AppPage.Camera) {
                             CameraScreen(
                                 cameraCapture,
-                                onImportPhoto = { cameraPage = false },
+                                onImportPhoto = { page = AppPage.Photo },
+                                onSettings = openSettings,
                                 modifier = Modifier.weight(1f)
                             )
+                        } else if (page == AppPage.Settings) {
+                            SettingsScreen(settings.showModelScores, settings::setModelScores, back)
                         } else {
-                            val state by viewModel.state.collectAsState()
-                            PhotoScreen(
-                                state = state,
-                                onPhoto = viewModel::selectPhoto,
-                                onMode = viewModel::setMode,
-                                onAnalyze = viewModel::analyze,
-                                onCancel = viewModel::cancel,
-                                onRetry = viewModel::retry,
-                                cropActions = CropActions(
-                                    viewModel::updateCrop,
-                                    viewModel::evaluateCrop,
-                                    viewModel::restoreRecommendation
-                                ),
-                                modifier = Modifier.weight(1f),
-                                onBack = { cameraPage = true }
-                            )
+                            AnalysisPage(viewModel, back, openSettings, settings.showModelScores)
                         }
                     }
                 }
@@ -84,3 +82,27 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+@Composable
+private fun AnalysisPage(
+    viewModel: PhotoViewModel,
+    onBack: () -> Unit,
+    onSettings: () -> Unit,
+    showScores: Boolean
+) {
+    val state by viewModel.state.collectAsState()
+    PhotoScreen(
+        state = state,
+        onPhoto = viewModel::selectPhoto,
+        onMode = viewModel::setMode,
+        onAnalyze = viewModel::analyze,
+        onCancel = viewModel::cancel,
+        onRetry = viewModel::retry,
+        cropActions = CropActions(viewModel::updateCrop, viewModel::evaluateCrop, viewModel::restoreRecommendation),
+        onBack = onBack,
+        onSettings = onSettings,
+        showModelScores = showScores
+    )
+}
+
+private enum class AppPage { Camera, Photo, Settings }

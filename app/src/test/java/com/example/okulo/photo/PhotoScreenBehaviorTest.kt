@@ -97,7 +97,10 @@ class PhotoScreenBehaviorTest {
             manualScore = 4f,
             manualMillis = 35
         )
-        compose.setContent { OkuloTheme { PhotoScreen(state, {}, {}, {}, {}) } }
+        val showScores = mutableStateOf(false)
+        compose.setContent {
+            OkuloTheme { PhotoScreen(state, {}, {}, {}, {}, showModelScores = showScores.value) }
+        }
         compose.onNodeWithText("查看模型评分").assertDoesNotExist()
         compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertDoesNotExist()
         compose.onNodeWithText("分析用时 1.20 秒 · 比较了 250 个方案").assertDoesNotExist()
@@ -105,6 +108,11 @@ class PhotoScreenBehaviorTest {
         compose.onNodeWithText("拖动框内移动，拖动四角或双指缩放").assertDoesNotExist()
         compose.onNodeWithText("保留原图 16%").assertDoesNotExist()
         compose.onNodeWithText("裁剪范围较小").assertDoesNotExist()
+        compose.runOnIdle { showScores.value = true }
+        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertExists()
+        compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
+        compose.runOnIdle { showScores.value = false }
+        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertDoesNotExist()
     }
 
     private fun image(): Bitmap = Bitmap.createBitmap(48, 32, Bitmap.Config.ARGB_8888)

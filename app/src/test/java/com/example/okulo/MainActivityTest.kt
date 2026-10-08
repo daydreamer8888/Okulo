@@ -2,6 +2,8 @@ package com.example.okulo
 
 import android.app.Activity
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -21,6 +23,20 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class MainActivityTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test
+    fun modelScoresAreOptInAndTheChoiceSurvivesRecreation() {
+        compose.onNodeWithContentDescription("设置").performClick()
+        compose.onNodeWithText("查看模型评分").assertIsOff().performClick().assertIsOn()
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithContentDescription("分析照片").performClick()
+        compose.onNodeWithContentDescription("设置").performClick()
+        compose.onNodeWithText("查看模型评分").assertIsOn()
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("查看模型评分").assertIsOn().performClick().assertIsOff()
+        compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.onNodeWithText("选择照片").assertExists()
+    }
 
     @Test
     fun analysisToolbarAndSystemBackBothReturnToTheCamera() {
