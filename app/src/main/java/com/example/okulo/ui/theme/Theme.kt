@@ -1,3 +1,5 @@
+@file:Suppress("MagicNumber") // Neutral color roles for the camera and photo analysis surfaces.
+
 package com.example.okulo.ui.theme
 
 import android.os.Build
@@ -8,12 +10,27 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Color.White,
+    onPrimary = Color.Black,
+    secondary = Color(0xFFE0E0E0),
+    secondaryContainer = Color(0xFF303030),
+    onSecondaryContainer = Color.White,
+    background = Color.Black,
+    onBackground = Color.White,
+    surface = Color(0xFF121212),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF242424),
+    onSurfaceVariant = Color(0xFFB8B8B8),
+    surfaceTint = Color.White,
+    surfaceContainerLow = Color(0xFF141414),
+    surfaceContainer = Color(0xFF181818),
+    surfaceContainerHigh = Color(0xFF202020),
+    surfaceContainerHighest = Color(0xFF282828),
+    outline = Color(0xFF737373)
 )
 
 private val LightColorScheme = lightColorScheme(

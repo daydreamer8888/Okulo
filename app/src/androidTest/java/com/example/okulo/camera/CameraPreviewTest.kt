@@ -48,7 +48,7 @@ class CameraPreviewTest {
         compose.waitUntil(10_000) {
             compose.runOnIdle { preview.previewStreamState.value == PreviewView.StreamState.IDLE }
         }
-        compose.onNodeWithText("返回拍摄").performClick()
+        compose.onNodeWithContentDescription("返回拍摄").performClick()
         compose.onNodeWithText("开启相机").assertDoesNotExist()
         onView(withContentDescription("后置主摄实时预览")).check { view, error ->
             if (error != null) throw error

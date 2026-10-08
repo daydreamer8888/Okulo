@@ -8,7 +8,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,11 +19,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -32,9 +36,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.okulo.R
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropBox
 import java.util.Locale
@@ -50,26 +57,38 @@ internal fun PhotoScreen(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
     onRetry: () -> Unit = onAnalyze,
-    cropActions: CropActions = CropActions()
+    cropActions: CropActions = CropActions(),
+    onBack: () -> Unit = {}
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
-    Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text("Okulo", style = MaterialTheme.typography.headlineLarge)
-        Text("寻找照片里的好构图", style = MaterialTheme.typography.titleMedium)
-        OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
-            Text(if (state.photo == null) "选择照片" else "换一张照片")
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            AnalysisMode.entries.forEach { mode ->
-                FilterChip(selected = state.mode == mode, onClick = { onMode(mode) }, label = { Text(mode.title) })
+    Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        PhotoToolbar(onBack)
+        Column(
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            if (state.photo == null) {
+                Box(Modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
+                    Icon(
+                        painterResource(R.drawable.ic_photo),
+                        null,
+                        Modifier.size(56.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
+            OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
+                Text(if (state.photo == null) "选择照片" else "换一张照片")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                AnalysisMode.entries.forEach { mode ->
+                    FilterChip(selected = state.mode == mode, onClick = { onMode(mode) }, label = { Text(mode.title) })
+                }
+            }
+            AnalysisActions(state, onAnalyze, onCancel, onRetry)
+            state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
+            Spacer(Modifier.height(12.dp))
         }
-        AnalysisActions(state, onAnalyze, onCancel, onRetry)
-        state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
-        Spacer(Modifier.height(12.dp))
     }
 }
 
