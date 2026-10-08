@@ -5,6 +5,7 @@ import android.view.View
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.PreviewView
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.Lifecycle
@@ -43,7 +44,7 @@ class CameraPreviewTest {
             assertTrue("Camera preview must contain an image", pixels.any { it != pixels[0] })
             frame.recycle()
         }
-        compose.onNodeWithText("分析照片").performClick()
+        compose.onNodeWithContentDescription("分析照片").performClick()
         compose.waitUntil(10_000) {
             compose.runOnIdle { preview.previewStreamState.value == PreviewView.StreamState.IDLE }
         }

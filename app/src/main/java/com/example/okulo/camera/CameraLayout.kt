@@ -16,20 +16,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.okulo.R
+import com.example.okulo.ui.ActionIconButton
 
 private const val CAMERA_ASPECT_RATIO = 4f / 3f
 
@@ -52,14 +48,7 @@ internal fun CameraLayout(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(
-                    onClick = onImportPhoto,
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
-                ) {
-                    Icon(painterResource(R.drawable.ic_photo), null, Modifier.size(24.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("分析照片")
-                }
+                ActionIconButton(R.drawable.ic_photo, "分析照片", onImportPhoto)
             }
             Box(Modifier.width(previewWidth).aspectRatio(ratio)) { viewfinder() }
             Column(
