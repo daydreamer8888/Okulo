@@ -40,7 +40,8 @@ class AspectRecommendationTest {
                 model.selectPhoto(Uri.fromFile(source))
             }
             awaitIdle(model)
-            compose.onNodeWithText("16:9").performScrollTo().performClick()
+            compose.onNodeWithContentDescription("裁剪比例").performScrollTo().performClick()
+            compose.onNodeWithText("16:9").performClick()
             compose.onNodeWithContentDescription("分析构图").performClick()
             awaitIdle(model)
             val wide = checkNotNull(model.state.value.displayedCrop) { model.state.value.error.orEmpty() }
@@ -59,7 +60,8 @@ class AspectRecommendationTest {
             compose.onNodeWithContentDescription("恢复推荐").performClick()
             assertEquals(CropAspect.Wide, model.state.value.aspect)
             assertEquals(wide, model.state.value.displayedCrop)
-            compose.onNodeWithText("自由").performScrollTo().performClick()
+            compose.onNodeWithContentDescription("裁剪比例").performScrollTo().performClick()
+            compose.onNodeWithText("自由").performClick()
             compose.onNodeWithContentDescription("分析构图").performClick()
             awaitIdle(model)
             assertTrue(checkNotNull(model.state.value.result).candidateCount <= 250)

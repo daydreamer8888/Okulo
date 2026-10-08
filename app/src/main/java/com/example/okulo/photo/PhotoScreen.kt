@@ -9,7 +9,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +23,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -106,20 +104,6 @@ internal fun PhotoScreen(
                 )
             }
             Spacer(Modifier.height(12.dp))
-        }
-    }
-}
-
-@Composable
-private fun PhotoAspectControls(state: PhotoState, onAspect: (CropAspect) -> Unit) {
-    Row(Modifier.horizontalScroll(rememberScrollState()), Arrangement.spacedBy(8.dp)) {
-        CropAspect.entries.forEach { aspect ->
-            FilterChip(
-                selected = state.aspect == aspect,
-                onClick = { onAspect(aspect) },
-                enabled = !state.busy,
-                label = { Text(aspect.title) }
-            )
         }
     }
 }
