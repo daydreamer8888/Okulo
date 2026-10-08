@@ -47,7 +47,7 @@ class PhotoScreenTest {
     }
 
     @Test
-    fun completedResultShowsOriginalPreviewAndElapsedTime() {
+    fun completedResultShowsOriginalAndPreviewWithoutRepeatingAnalysis() {
         val bitmap = Bitmap.createBitmap(48, 32, Bitmap.Config.ARGB_8888)
         val result = CompositionResult(CropBox(0.1f, 0.1f, 0.9f, 0.9f), 2f, 3f, 0, 1200, 250)
         compose.setContent {
@@ -55,7 +55,7 @@ class PhotoScreenTest {
         }
         compose.onNodeWithText("原图").assertIsDisplayed()
         compose.onNodeWithText("裁剪预览").assertExists()
-        compose.onNodeWithText("重新分析").assertIsEnabled()
+        compose.onNodeWithText("重新分析").assertDoesNotExist()
     }
 
     @Test

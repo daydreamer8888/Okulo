@@ -12,7 +12,6 @@ import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.theme.OkuloTheme
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -65,51 +64,47 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
-    fun scoresTrackManualEditsAndRestoreTheRecommendation() {
-        val bitmap = image()
-        val state = mutableStateOf(PhotoState(photo = bitmap, result = recommendation()))
-        var restored = false
+    fun completedRecommendationCanBeRestoredWithoutRepeatingAnalysis() {
+        val state = mutableStateOf(PhotoState(photo = image(), result = recommendation(), status = "分析完成"))
+        var analysis = 0
+        var restores = 0
         val actions = CropActions(restore = {
-            restored = true
-            state.value = state.value.copy(manualCrop = null, manualScore = null, manualMillis = null)
+            restores++
+            state.value = state.value.copy(manualCrop = null, manualScore = null)
         })
         compose.setContent {
-            OkuloTheme { PhotoScreen(state.value, {}, {}, {}, {}, cropActions = actions) }
+            OkuloTheme { PhotoScreen(state.value, {}, {}, { analysis++ }, {}, cropActions = actions) }
         }
-        compose.onNodeWithText("原图 2.000 · 裁剪 3.000").assertDoesNotExist()
-        compose.onNodeWithText("查看模型评分").performScrollTo().performClick()
-        compose.onNodeWithText("原图 2.000 · 裁剪 3.000").assertExists()
-        compose.onNodeWithText("模型准备 0.15 秒").assertExists()
-        compose.runOnIdle {
-            state.value = state.value.copy(manualCrop = CropBox(0.2f, 0.2f, 0.6f, 0.6f))
-        }
-        compose.onNodeWithText("原图 2.000 · 裁剪 3.000").assertDoesNotExist()
-        compose.onNodeWithText("裁剪评分待更新").assertExists()
-        compose.onNodeWithText("裁剪范围较小").assertExists()
-        compose.runOnIdle { state.value = state.value.copy(manualScore = 4f, manualMillis = 35) }
-        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertExists()
-        compose.onNodeWithText("裁剪评分用时 0.04 秒").assertExists()
-        compose.onNodeWithText("恢复推荐").performScrollTo().performClick()
-        assertTrue(restored)
-        compose.onNodeWithText("原图 2.000 · 裁剪 3.000").assertExists()
-        compose.onNodeWithText("裁剪范围较小").assertDoesNotExist()
+        compose.onNodeWithText("重新分析").assertDoesNotExist()
         compose.onNodeWithText("恢复推荐").assertDoesNotExist()
-        compose.onNodeWithText("收起模型评分").performScrollTo().performClick()
-        compose.onNodeWithText("原图 2.000 · 裁剪 3.000").assertDoesNotExist()
+        compose.onNodeWithText("分析完成").assertDoesNotExist()
+        compose.runOnIdle {
+            state.value = state.value.copy(manualCrop = CropBox(0.2f, 0.2f, 0.6f, 0.6f), status = "裁剪评分已更新")
+        }
+        compose.onNodeWithText("恢复推荐").performScrollTo().performClick()
+        assertEquals(1, restores)
+        assertEquals(0, analysis)
+        compose.onNodeWithText("恢复推荐").assertDoesNotExist()
+        compose.onNodeWithText("裁剪评分已更新").assertDoesNotExist()
     }
 
     @Test
-    fun changingPhotosResetsExpandedScoresAndHidesOldTiming() {
-        val state = mutableStateOf(PhotoState(photo = image(), result = recommendation()))
-        compose.setContent { OkuloTheme { PhotoScreen(state.value, {}, {}, {}, {}) } }
-        compose.onNodeWithText("查看模型评分").performScrollTo().performClick()
-        compose.onNodeWithText("原图 2.000 · 裁剪 3.000").assertExists()
-        compose.runOnIdle {
-            state.value = PhotoState(photo = image(), result = recommendation().copy(loadMillis = 0))
-        }
-        compose.onNodeWithText("收起模型评分").assertDoesNotExist()
-        compose.onNodeWithText("查看模型评分").assertExists()
-        compose.onNodeWithText("模型准备 0.15 秒").assertDoesNotExist()
+    fun normalEditingOmitsModelDiagnosticsAndGestureInstructions() {
+        val state = PhotoState(
+            photo = image(),
+            result = recommendation(),
+            manualCrop = CropBox(0.2f, 0.2f, 0.6f, 0.6f),
+            manualScore = 4f,
+            manualMillis = 35
+        )
+        compose.setContent { OkuloTheme { PhotoScreen(state, {}, {}, {}, {}) } }
+        compose.onNodeWithText("查看模型评分").assertDoesNotExist()
+        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertDoesNotExist()
+        compose.onNodeWithText("分析用时 1.20 秒 · 比较了 250 个方案").assertDoesNotExist()
+        compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
+        compose.onNodeWithText("拖动框内移动，拖动四角或双指缩放").assertDoesNotExist()
+        compose.onNodeWithText("保留原图 16%").assertDoesNotExist()
+        compose.onNodeWithText("裁剪范围较小").assertDoesNotExist()
     }
 
     private fun image(): Bitmap = Bitmap.createBitmap(48, 32, Bitmap.Config.ARGB_8888)
