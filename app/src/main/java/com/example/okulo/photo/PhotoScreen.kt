@@ -72,7 +72,8 @@ internal fun PhotoScreen(
             onBack = onBack,
             onSettings = onSettings,
             onSave = rememberPhotoSaveAction(onSave),
-            canSave = state.displayedCrop != null && !state.busy && !saving
+            canSave = state.displayedCrop != null && !state.busy && !saving,
+            onRestore = if (state.result != null && state.manualCrop != null) cropActions.restore else null
         )
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
@@ -96,7 +97,7 @@ internal fun PhotoScreen(
                     FilterChip(selected = state.mode == mode, onClick = { onMode(mode) }, label = { Text(mode.title) })
                 }
             }
-            AnalysisActions(state, onAnalyze, onCancel, onRetry, cropActions.restore)
+            AnalysisActions(state, onAnalyze, onCancel, onRetry)
             state.photo?.let { photo ->
                 PhotoEditingControls(state, onAspect, onTransform)
                 PhotoResults(state, photo, cropActions)
@@ -175,10 +176,9 @@ private fun AnalysisActions(
     state: PhotoState,
     onAnalyze: () -> Unit,
     onCancel: () -> Unit,
-    onRetry: () -> Unit,
-    onRestore: () -> Unit
+    onRetry: () -> Unit
 ) {
-    if (state.busy) {
+    if (state.busy && state.result == null) {
         LinearProgressIndicator(Modifier.fillMaxWidth())
         TextButton(onClick = onCancel) { Text("取消") }
     } else if (state.error != null) {
@@ -186,8 +186,6 @@ private fun AnalysisActions(
         Button(onClick = onRetry) { Text("重试") }
     } else if (state.result == null) {
         Button(onClick = onAnalyze, enabled = state.photo != null) { Text("分析构图") }
-    } else if (state.manualCrop != null) {
-        Button(onClick = onRestore) { Text("恢复推荐") }
     }
 }
 

@@ -5,9 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.theme.OkuloTheme
@@ -110,15 +110,19 @@ class PhotoScreenBehaviorTest {
             OkuloTheme { PhotoScreen(state.value, {}, {}, { analysis++ }, {}, cropActions = actions) }
         }
         compose.onNodeWithText("重新分析").assertDoesNotExist()
-        compose.onNodeWithText("恢复推荐").assertDoesNotExist()
+        compose.onNodeWithContentDescription("恢复推荐").assertDoesNotExist()
         compose.onNodeWithText("分析完成").assertDoesNotExist()
+        val editorBounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
         compose.runOnIdle {
             state.value = state.value.copy(manualCrop = CropBox(0.2f, 0.2f, 0.6f, 0.6f), status = "裁剪评分已更新")
         }
-        compose.onNodeWithText("恢复推荐").performScrollTo().performClick()
+        assertEquals(editorBounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        compose.runOnIdle { state.value = state.value.copy(busy = true) }
+        assertEquals(editorBounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithContentDescription("恢复推荐").performClick()
         assertEquals(1, restores)
         assertEquals(0, analysis)
-        compose.onNodeWithText("恢复推荐").assertDoesNotExist()
+        compose.onNodeWithContentDescription("恢复推荐").assertDoesNotExist()
         compose.onNodeWithText("裁剪评分已更新").assertDoesNotExist()
     }
 
