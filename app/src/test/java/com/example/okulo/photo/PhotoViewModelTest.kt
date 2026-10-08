@@ -22,10 +22,10 @@ class PhotoViewModelTest {
     fun rotationAndMirroringKeepTheSelectedRegionAndInvalidateOldScores() = PhotoTestHarness().use { fixture ->
         fixture.select()
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         fixture.model.updateCrop(CropBox(0.1f, 0.2f, 0.6f, 0.8f))
         fixture.model.transformPhoto(PhotoOperation.RotateClockwise)
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(3, fixture.model.state.value.photo?.width)
         assertEquals(4, fixture.model.state.value.photo?.height)
         val rotated = checkNotNull(fixture.model.state.value.displayedCrop)
@@ -36,9 +36,9 @@ class PhotoViewModelTest {
         assertNull(fixture.model.state.value.result)
         assertNull(fixture.model.state.value.displayedScore)
         fixture.model.transformPhoto(PhotoOperation.FlipHorizontal)
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         fixture.model.transformPhoto(PhotoOperation.FlipHorizontal)
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         val restored = checkNotNull(fixture.model.state.value.displayedCrop)
         assertEquals(rotated.left, restored.left, 1e-6f)
         assertEquals(rotated.right, restored.right, 1e-6f)
@@ -54,7 +54,7 @@ class PhotoViewModelTest {
         fixture.model.setAspect(CropAspect.Wide)
         fixture.model.setMode(AnalysisMode.Standard)
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(CropAspect.Wide, fixture.model.state.value.aspect)
         assertEquals(4f / 3f, checkNotNull(fixture.analyzer.requestedRatios.single()), 1e-6f)
         assertEquals(wide, fixture.model.state.value.displayedCrop)
@@ -64,7 +64,7 @@ class PhotoViewModelTest {
         assertEquals(wide, fixture.model.state.value.displayedCrop)
         fixture.model.updateCrop(CropBox(0.1f, 0.2f, 0.9f, 0.8f))
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertNull(fixture.model.state.value.manualCrop)
         assertEquals(wide, fixture.model.state.value.displayedCrop)
     }
@@ -74,16 +74,16 @@ class PhotoViewModelTest {
         fixture.select()
         fixture.model.setAspect(CropAspect.Free)
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         val moved = CropBox(0.15f, 0.1f, 0.95f, 0.9f)
         fixture.model.updateCrop(moved)
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(listOf(null, null), fixture.analyzer.requestedRatios)
         val resized = CropBox(0.1f, 0.2f, 0.9f, 0.6f)
         fixture.model.updateCrop(resized)
         fixture.model.evaluateCrop()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(resized, fixture.model.state.value.displayedCrop)
         assertEquals(2f, fixture.model.state.value.originalScore)
         assertEquals(4f, fixture.model.state.value.displayedScore)
@@ -91,11 +91,11 @@ class PhotoViewModelTest {
         assertNull(fixture.model.state.value.result)
         fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = CropBox(0f, 0.2f, 1f, 0.7f)) }
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(2f, checkNotNull(fixture.analyzer.requestedRatios.last()), 1e-6f)
         fixture.model.setAspect(CropAspect.Free)
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertNull(fixture.analyzer.requestedRatios.last())
     }
 
@@ -104,16 +104,16 @@ class PhotoViewModelTest {
         fixture.select()
         fixture.model.setAspect(CropAspect.Free)
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         fixture.model.updateCrop(CropBox(0.1f, 0.2f, 0.9f, 0.6f))
         fixture.model.transformPhoto(PhotoOperation.RotateClockwise)
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         fixture.model.transformPhoto(PhotoOperation.FlipHorizontal)
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         fixture.model.setMode(AnalysisMode.Standard)
         fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = CropBox(0.1f, 0.1f, 0.5f, 0.9f)) }
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(CropAspect.Free, fixture.model.state.value.aspect)
         assertEquals(0.5f, checkNotNull(fixture.analyzer.requestedRatios.last()), 1e-6f)
         val crop = checkNotNull(fixture.model.state.value.displayedCrop)
@@ -147,7 +147,7 @@ class PhotoViewModelTest {
         assertNull(fixture.model.state.value.result)
         assertTrue(fixture.model.state.value.busy)
         fresh.release()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(wide, fixture.model.state.value.displayedCrop)
         assertEquals(4f / 3f, checkNotNull(fixture.analyzer.requestedRatios.last()), 1e-6f)
     }
@@ -157,7 +157,7 @@ class PhotoViewModelTest {
         fixture.select()
         assertEquals(CropAspect.Free, fixture.model.state.value.aspect)
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertNull(fixture.analyzer.requestedRatios.single())
         assertEquals(CropAspect.Free, CropAspect.entries.first())
         assertEquals(CropAspect.Original, CropAspect.entries[1])
@@ -170,7 +170,7 @@ class PhotoViewModelTest {
         assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
         fixture.model.setMode(AnalysisMode.Standard)
         fixture.model.selectPhoto(Uri.parse("content://photos/two"))
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(AnalysisMode.Standard, fixture.model.state.value.mode)
     }
 
@@ -184,17 +184,17 @@ class PhotoViewModelTest {
         fixture.select()
         assertSame(fixture.bitmap, model.state.value.photo)
         model.analyze()
-        fixture.await { !model.state.value.busy }
+        fixture.await { !model.state.value.busy && !model.state.value.scoring }
         assertEquals(recommendation(), model.state.value.result)
         val crop = CropBox(0.2f, 0.2f, 0.6f, 0.6f)
         model.updateCrop(crop)
         assertNull(model.state.value.displayedScore)
         model.evaluateCrop()
-        fixture.await { !model.state.value.busy }
+        fixture.await { !model.state.value.busy && !model.state.value.scoring }
         assertEquals(crop, model.state.value.displayedCrop)
         assertEquals(4f, model.state.value.displayedScore)
         model.analyze()
-        fixture.await { !model.state.value.busy }
+        fixture.await { !model.state.value.busy && !model.state.value.scoring }
         assertEquals(recommendation().crop, model.state.value.displayedCrop)
         assertEquals("分析完成", model.state.value.status)
         model.restoreRecommendation()
@@ -224,7 +224,7 @@ class PhotoViewModelTest {
         assertNull(fixture.model.state.value.result)
         assertTrue(fixture.model.state.value.busy)
         fresh.release()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
         assertEquals(recommendation(), fixture.model.state.value.result)
         assertEquals(2, fixture.analyzer.analysisCalls.get())
@@ -234,7 +234,7 @@ class PhotoViewModelTest {
     fun replacingPhotoRejectsAnOldFailureAndClearsCrop() = PhotoTestHarness().use { fixture ->
         fixture.select()
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         fixture.model.updateCrop(CropBox(0.2f, 0.2f, 0.6f, 0.6f))
         val gate = fixture.gate()
         fixture.analyzer.evaluate = {
@@ -245,7 +245,7 @@ class PhotoViewModelTest {
         gate.awaitEntry()
         fixture.model.selectPhoto(Uri.parse("content://photos/two"))
         gate.release()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertNull(fixture.model.state.value.error)
         assertNull(fixture.model.state.value.result)
         assertNull(fixture.model.state.value.manualCrop)
@@ -256,7 +256,7 @@ class PhotoViewModelTest {
     fun restoringRecommendationRejectsAnInFlightManualScore() = PhotoTestHarness().use { fixture ->
         fixture.select()
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         val gate = fixture.gate()
         fixture.analyzer.evaluate = { crop ->
             gate.block()
@@ -269,7 +269,7 @@ class PhotoViewModelTest {
         assertFalse("Restoring must cancel the pending manual score", fixture.analyzer.isCurrent())
         gate.release()
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertNull(fixture.model.state.value.manualScore)
         assertEquals(3f, fixture.model.state.value.displayedScore)
         assertEquals(recommendation().crop, fixture.model.state.value.displayedCrop)
@@ -306,7 +306,7 @@ class PhotoViewModelTest {
         gate.awaitEntry()
         fixture.model.setMode(AnalysisMode.Standard)
         gate.release()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(2, reads)
         assertEquals(AnalysisMode.Standard, fixture.model.state.value.mode)
         assertSame(fixture.bitmap, fixture.model.state.value.photo)
@@ -322,22 +322,22 @@ class PhotoViewModelTest {
         assertEquals("照片读取失败，请重新选择", fixture.model.state.value.error)
         fixture.reader = { fixture.bitmap }
         fixture.model.retry()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         fixture.analyzer.analyze = { _, _ -> throw IOException("model missing") }
         fixture.model.analyze()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals("无法准备本地模型，请检查存储空间后重试", fixture.model.state.value.error)
         fixture.analyzer.analyze = { _, _ -> recommendation() }
         fixture.model.retry()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         fixture.model.updateCrop(CropBox(0.2f, 0.2f, 0.6f, 0.6f))
         fixture.analyzer.evaluate = { throw IllegalStateException("invalid score") }
         fixture.model.evaluateCrop()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals("invalid score", fixture.model.state.value.error)
         fixture.analyzer.evaluate = { crop -> recommendation().copy(crop = crop, cropScore = 4f) }
         fixture.model.retry()
-        fixture.await { !fixture.model.state.value.busy }
+        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(2, fixture.analyzer.analysisCalls.get())
         assertEquals(2, fixture.analyzer.evaluationCalls.get())
         assertEquals(4f, fixture.model.state.value.manualScore)
@@ -349,7 +349,7 @@ class PhotoViewModelTest {
         for (failure in listOf(IllegalStateException(), IllegalArgumentException("invalid input"))) {
             fixture.analyzer.analyze = { _, _ -> throw failure }
             fixture.model.analyze()
-            fixture.await { !fixture.model.state.value.busy }
+            fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
             assertTrue(checkNotNull(fixture.model.state.value.error).contains("分析"))
             assertEquals("可以重试或选择其他照片", fixture.model.state.value.status)
         }
