@@ -7,8 +7,10 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionAnalyzer
+import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.createCompositionAnalyzer
+import com.example.okulo.composition.fitCropAspect
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -57,6 +59,14 @@ class PhotoViewModel internal constructor(
         }
     }
 
+    fun setAspect(aspect: CropAspect) {
+        val current = state.value
+        val photo = current.photo ?: return
+        val crop = current.displayedCrop ?: return
+        updateCrop(fitCropAspect(crop, aspect.normalizedRatio(photo.width, photo.height)))
+        mutableState.value = state.value.copy(aspect = aspect)
+    }
+
     fun updateCrop(box: CropBox) {
         if (state.value.result == null) return
         tasks.invalidate()
@@ -88,7 +98,7 @@ class PhotoViewModel internal constructor(
     fun restoreRecommendation() {
         tasks.invalidate()
         mutableState.value = state.value.copy(
-            manualCrop = null, manualScore = null, manualMillis = null,
+            manualCrop = null, manualScore = null, manualMillis = null, aspect = CropAspect.Original,
             busy = false, error = null, status = "已恢复推荐"
         )
     }

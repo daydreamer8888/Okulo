@@ -9,6 +9,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import java.util.Locale
 import kotlin.math.ceil
@@ -56,7 +58,8 @@ internal fun PhotoScreen(
     cropActions: CropActions = CropActions(),
     onBack: () -> Unit = {},
     onSettings: () -> Unit = {},
-    showModelScores: Boolean = false
+    showModelScores: Boolean = false,
+    onAspect: (CropAspect) -> Unit = {}
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -84,7 +87,20 @@ internal fun PhotoScreen(
                 }
             }
             AnalysisActions(state, onAnalyze, onCancel, onRetry, cropActions.restore)
-            state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
+            state.photo?.let { photo ->
+                if (state.displayedCrop != null) {
+                    Row(Modifier.horizontalScroll(rememberScrollState()), Arrangement.spacedBy(8.dp)) {
+                        CropAspect.entries.forEach { aspect ->
+                            FilterChip(
+                                selected = state.aspect == aspect,
+                                onClick = { onAspect(aspect) },
+                                label = { Text(aspect.title) }
+                            )
+                        }
+                    }
+                }
+                PhotoResults(state, photo, cropActions)
+            }
             if (showModelScores && state.result != null && state.displayedScore != null) {
                 Text(
                     String.format(
@@ -108,7 +124,7 @@ private fun PhotoResults(state: PhotoState, photo: Bitmap, actions: CropActions)
         return
     }
     Text("原图", style = MaterialTheme.typography.titleSmall)
-    CropEditor(photo, crop, actions)
+    CropEditor(photo, crop, actions, state.aspect.normalizedRatio(photo.width, photo.height))
     val preview = remember(photo, crop) { cropPreview(photo, crop) }
     PhotoCard("裁剪预览", preview)
 }
