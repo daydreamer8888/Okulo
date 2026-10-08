@@ -7,6 +7,47 @@ import kotlin.random.Random
 
 class CropEditingTest {
     @Test
+    fun edgeResizingKeepsTheOppositeEdgeAndHonorsFreeOrLockedAspects() {
+        val box = CropBox(0.2f, 0.3f, 0.8f, 0.7f)
+        val free = listOf(
+            CropBox(0.3f, 0.3f, 0.8f, 0.7f),
+            CropBox(0.2f, 0.4f, 0.8f, 0.7f),
+            CropBox(0.2f, 0.3f, 0.7f, 0.7f),
+            CropBox(0.2f, 0.3f, 0.8f, 0.6f)
+        )
+        val deltas = listOf(0.1f, 0.1f, -0.1f, -0.1f)
+        for ((index, edge) in CropEdge.entries.withIndex()) {
+            val resized = resizeCropEdge(box, edge, deltas[index], lockedRatio = null)
+            assertBox(free[index], resized)
+            val locked = resizeCropEdge(box, edge, deltas[index], lockedRatio = 1.5f)
+            assertEquals(1.5f, locked.width / locked.height, 1e-6f)
+            if (edge == CropEdge.Left || edge == CropEdge.Right) {
+                assertEquals(0.5f, locked.width, 1e-6f)
+                assertEquals(1f, locked.top + locked.bottom, 1e-6f)
+                assertEquals(resized.left, locked.left, 1e-6f)
+                assertEquals(resized.right, locked.right, 1e-6f)
+            } else {
+                assertEquals(0.3f, locked.height, 1e-6f)
+                assertEquals(1f, locked.left + locked.right, 1e-6f)
+                assertEquals(resized.top, locked.top, 1e-6f)
+                assertEquals(resized.bottom, locked.bottom, 1e-6f)
+            }
+            val bounded = resizeCropEdge(box, edge, -10f, lockedRatio = 1.5f)
+            assertTrue(bounded.left >= 0f && bounded.top >= 0f && bounded.right <= 1f && bounded.bottom <= 1f)
+            assertEquals(1.5f, bounded.width / bounded.height, 1e-5f)
+            val minimal = resizeCropEdge(box, edge, 10f, lockedRatio = null)
+            assertTrue(minimal.width >= MIN_EDIT_SIDE - 1e-6f && minimal.height >= MIN_EDIT_SIDE - 1e-6f)
+        }
+    }
+
+    private fun assertBox(expected: CropBox, actual: CropBox) {
+        assertEquals(expected.left, actual.left, 1e-6f)
+        assertEquals(expected.top, actual.top, 1e-6f)
+        assertEquals(expected.right, actual.right, 1e-6f)
+        assertEquals(expected.bottom, actual.bottom, 1e-6f)
+    }
+
+    @Test
     fun movingAndResizingAnUnequalCropPreservesItsAspect() {
         val box = CropBox(0.1f, 0.2f, 0.9f, 0.6f)
         val zoomed = transformCrop(box, CropPoint(0f, 0f), 0.5f, CropPoint(0.5f, 0.4f), ratio = 2f)
