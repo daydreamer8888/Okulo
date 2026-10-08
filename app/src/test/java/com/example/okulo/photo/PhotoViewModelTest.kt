@@ -100,6 +100,59 @@ class PhotoViewModelTest {
     }
 
     @Test
+    fun rotatingAFreeCropCarriesItsChosenAspectIntoTheNextMode() = PhotoTestHarness().use { fixture ->
+        fixture.select()
+        fixture.model.setAspect(CropAspect.Free)
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        fixture.model.updateCrop(CropBox(0.1f, 0.2f, 0.9f, 0.6f))
+        fixture.model.transformPhoto(PhotoOperation.RotateClockwise)
+        fixture.await { !fixture.model.state.value.busy }
+        fixture.model.transformPhoto(PhotoOperation.FlipHorizontal)
+        fixture.await { !fixture.model.state.value.busy }
+        fixture.model.setMode(AnalysisMode.Standard)
+        fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = CropBox(0.1f, 0.1f, 0.5f, 0.9f)) }
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        assertEquals(CropAspect.Free, fixture.model.state.value.aspect)
+        assertEquals(0.5f, checkNotNull(fixture.analyzer.requestedRatios.last()), 1e-6f)
+        val crop = checkNotNull(fixture.model.state.value.displayedCrop)
+        assertEquals(0.5f, crop.width / crop.height, 1e-6f)
+    }
+
+    @Test
+    fun switchingAspectRejectsAnInFlightRecommendation() = PhotoTestHarness().use { fixture ->
+        fixture.select()
+        val old = fixture.gate()
+        val fresh = fixture.gate()
+        val wide = CropBox(0f, 0.125f, 1f, 0.875f)
+        var calls = 0
+        fixture.analyzer.analyze = { _, _ ->
+            if (calls++ == 0) {
+                old.block()
+                recommendation()
+            } else {
+                fresh.block()
+                recommendation().copy(crop = wide)
+            }
+        }
+        fixture.model.analyze()
+        old.awaitEntry()
+        fixture.model.setAspect(CropAspect.Wide)
+        assertFalse(fixture.analyzer.isCurrent())
+        fixture.model.analyze()
+        old.release()
+        fresh.awaitEntry()
+        fixture.await { fixture.model.state.value.status == "正在分析照片…" }
+        assertNull(fixture.model.state.value.result)
+        assertTrue(fixture.model.state.value.busy)
+        fresh.release()
+        fixture.await { !fixture.model.state.value.busy }
+        assertEquals(wide, fixture.model.state.value.displayedCrop)
+        assertEquals(4f / 3f, checkNotNull(fixture.analyzer.requestedRatios.last()), 1e-6f)
+    }
+
+    @Test
     fun newPhotosUseFastAnalysisUnlessTheUserChoosesStandard() = PhotoTestHarness().use { fixture ->
         assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
         fixture.select()
