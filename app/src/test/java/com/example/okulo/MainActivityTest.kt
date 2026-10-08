@@ -14,6 +14,7 @@ import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.photo.PhotoViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,6 +28,15 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class MainActivityTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test
+    fun cameraSettingsUseTheTrailingActionPosition() {
+        val analysis = compose.onNodeWithContentDescription("分析照片").fetchSemanticsNode().boundsInRoot
+        val settings = compose.onNodeWithContentDescription("设置").fetchSemanticsNode().boundsInRoot
+        assertTrue(settings.left > analysis.right)
+        compose.onNodeWithContentDescription("设置").performClick()
+        compose.onNodeWithText("设置").assertExists()
+    }
 
     @Test
     fun analysisModeIsConfiguredInSettingsAndSurvivesRecreation() {

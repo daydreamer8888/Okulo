@@ -49,8 +49,8 @@ internal fun CameraLayout(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
                 ActionIconButton(R.drawable.ic_photo, "分析照片", onImportPhoto)
+                ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
             }
             Box(Modifier.width(previewWidth).aspectRatio(ratio)) { viewfinder() }
             Column(
