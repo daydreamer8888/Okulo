@@ -32,6 +32,30 @@ fun cropCandidates(): List<CropBox> = buildList {
     }
 }
 
+/** The first entry is the source-score baseline, followed by target-aspect candidates. */
+fun cropCandidates(normalizedRatio: Float): List<CropBox> {
+    require(normalizedRatio.isFinite() && normalizedRatio > 0f)
+    if (normalizedRatio == 1f) return cropCandidates()
+    val areas = (0..AREA_LEVELS).map { 1.0 - it * AREA_STEP }
+    return listOf(CropBox.FullFrame) + aspectGrid(normalizedRatio, GRID_POINTS, areas)
+}
+
+private fun aspectGrid(ratio: Float, points: Int, areas: List<Double>): List<CropBox> = buildList {
+    val maximumWidth = minOf(1.0, ratio.toDouble())
+    val maximumHeight = minOf(1.0, 1.0 / ratio)
+    for (area in areas) {
+        val width = maximumWidth * sqrt(area)
+        val height = maximumHeight * sqrt(area)
+        repeat(points) { column ->
+            repeat(points) { row ->
+                val left = (1.0 - width) * column / (points - 1)
+                val top = (1.0 - height) * row / (points - 1)
+                add(CropBox(left.toFloat(), top.toFloat(), (left + width).toFloat(), (top + height).toFloat()))
+            }
+        }
+    }
+}.distinct()
+
 fun intersectionOverUnion(a: CropBox, b: CropBox): Float {
     val intersection = (minOf(a.right, b.right) - maxOf(a.left, b.left)).coerceAtLeast(0f) *
         (minOf(a.bottom, b.bottom) - maxOf(a.top, b.top)).coerceAtLeast(0f)
