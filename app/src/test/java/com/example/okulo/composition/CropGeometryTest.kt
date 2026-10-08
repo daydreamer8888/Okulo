@@ -7,6 +7,20 @@ import kotlin.math.abs
 
 class CropGeometryTest {
     @Test
+    fun freeSearchCoversMultipleAspectsWithinTheOriginalCandidateBudget() {
+        val boxes = freeCropCandidates(400, 300)
+        assertEquals(CropBox.FullFrame, boxes.first())
+        assertTrue(boxes.size <= 251)
+        for (expected in listOf(1f, 4f / 3f, 16f / 9f, 9f / 16f)) {
+            assertTrue(boxes.drop(1).any { abs(it.width * 400 / (it.height * 300) - expected) < 1e-5f })
+        }
+        for (box in boxes.drop(1)) {
+            assertTrue(box.width > 0f && box.height > 0f)
+            assertTrue(box.left >= 0f && box.top >= 0f && box.right <= 1f && box.bottom <= 1f)
+        }
+    }
+
+    @Test
     fun requestedAspectFitsPortraitPhotosEvenWhenHalfTheSourceCannotBeRetained() {
         val boxes = cropCandidates(checkNotNull(CropAspect.Wide.normalizedRatio(900, 1600)))
         assertEquals(CropBox.FullFrame, boxes.first())
