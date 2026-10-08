@@ -24,14 +24,19 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.CropCorner
+import com.example.okulo.composition.CropEdge
 import com.example.okulo.composition.CropPoint
 import com.example.okulo.composition.resizeCrop
+import com.example.okulo.composition.resizeCropEdge
 import com.example.okulo.composition.transformCrop
+import kotlin.math.abs
 
 @Composable
 internal fun CropEditor(bitmap: Bitmap, crop: CropBox, actions: CropActions, lockedRatio: Float? = 1f) {
@@ -44,13 +49,8 @@ internal fun CropEditor(bitmap: Bitmap, crop: CropBox, actions: CropActions, loc
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     var box = current
-                    var corner =
-                        hitCorner(box, down.position, size.width.toFloat(), size.height.toFloat(), 24.dp.toPx())
-                    val x = down.position.x / size.width
-                    val y = down.position.y / size.height
-                    if (corner == null && (x !in box.left..box.right || y !in box.top..box.bottom)) {
-                        return@awaitEachGesture
-                    }
+                    val drag = CropDrag(box, down.position, size, 24.dp.toPx())
+                    if (!drag.accepted) return@awaitEachGesture
                     down.consume()
                     callbacks.change(box)
                     do {
@@ -59,26 +59,7 @@ internal fun CropEditor(bitmap: Bitmap, crop: CropBox, actions: CropActions, loc
                             event.changes.forEach { it.consume() }
                             break
                         }
-                        val pan = event.calculatePan()
-                        val focus = event.calculateCentroid(useCurrent = false)
-                        if (event.changes.count { it.pressed } > 1) corner = null
-                        box = if (corner != null) {
-                            resizeCrop(
-                                box = box,
-                                corner = corner,
-                                dx = pan.x / size.width,
-                                dy = pan.y / size.height,
-                                lockedRatio = locked
-                            )
-                        } else {
-                            transformCrop(
-                                box = box,
-                                delta = CropPoint(pan.x / size.width, pan.y / size.height),
-                                zoom = event.calculateZoom(),
-                                focus = CropPoint(focus.x / size.width, focus.y / size.height),
-                                ratio = locked ?: (box.width / box.height)
-                            )
-                        }
+                        box = drag.update(box, event, locked)
                         callbacks.change(box)
                         event.changes.forEach { it.consume() }
                     } while (true)
@@ -89,6 +70,46 @@ internal fun CropEditor(bitmap: Bitmap, crop: CropBox, actions: CropActions, loc
         Image(bitmap.asImageBitmap(), contentDescription = "可调整裁剪框的原图", modifier = Modifier.fillMaxSize())
         CropOverlay(crop)
     }
+}
+
+private class CropDrag(box: CropBox, point: Offset, private val size: IntSize, radius: Float) {
+    private var corner = hitCorner(box, point, size.width.toFloat(), size.height.toFloat(), radius)
+    private var edge = if (corner == null) {
+        hitEdge(box, point, size.width.toFloat(), size.height.toFloat(), radius)
+    } else {
+        null
+    }
+    val accepted = corner != null || edge != null || containsPoint(box, point)
+
+    fun update(box: CropBox, event: PointerEvent, ratio: Float?): CropBox {
+        if (event.changes.count { it.pressed } > 1) {
+            corner = null
+            edge = null
+        }
+        val pan = event.calculatePan()
+        val focus = event.calculateCentroid(useCurrent = false)
+        val activeCorner = corner
+        val activeEdge = edge
+        return when {
+            activeCorner != null -> resizeCrop(box, activeCorner, pan.x / size.width, pan.y / size.height, ratio)
+            activeEdge != null -> resizeCropEdge(
+                box,
+                activeEdge,
+                if (activeEdge.horizontal) pan.x / size.width else pan.y / size.height,
+                ratio
+            )
+            else -> transformCrop(
+                box,
+                CropPoint(pan.x / size.width, pan.y / size.height),
+                event.calculateZoom(),
+                CropPoint(focus.x / size.width, focus.y / size.height),
+                ratio ?: (box.width / box.height)
+            )
+        }
+    }
+
+    private fun containsPoint(box: CropBox, point: Offset): Boolean =
+        point.x / size.width in box.left..box.right && point.y / size.height in box.top..box.bottom
 }
 
 @Composable
@@ -121,3 +142,15 @@ private fun cornerPosition(box: CropBox, corner: CropCorner, width: Float, heigh
 private fun hitCorner(box: CropBox, point: Offset, width: Float, height: Float, radius: Float): CropCorner? =
     CropCorner.entries.minByOrNull { (cornerPosition(box, it, width, height) - point).getDistance() }
         ?.takeIf { (cornerPosition(box, it, width, height) - point).getDistance() <= radius }
+
+private fun hitEdge(box: CropBox, point: Offset, width: Float, height: Float, radius: Float): CropEdge? {
+    val x = point.x / width
+    val y = point.y / height
+    return CropEdge.entries.firstOrNull { edge ->
+        if (edge.horizontal) {
+            y in box.top..box.bottom && abs(x - if (edge.direction < 0) box.left else box.right) <= radius / width
+        } else {
+            x in box.left..box.right && abs(y - if (edge.direction < 0) box.top else box.bottom) <= radius / height
+        }
+    }
+}
