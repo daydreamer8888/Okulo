@@ -42,6 +42,16 @@ class PhotoScreenBehaviorTest {
     fun restoreLocale() = Locale.setDefault(originalLocale)
 
     @Test
+    fun emptyScreenFocusesOnPickingBeforeEditingActionsAppear() {
+        compose.setContent { OkuloTheme { PhotoScreen(PhotoState(), {}, {}, {}) } }
+        compose.onNodeWithText("选择照片").assertIsEnabled()
+        compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
+        compose.onNodeWithContentDescription("保存").assertDoesNotExist()
+        compose.onNodeWithContentDescription("更多").assertDoesNotExist()
+        compose.onNodeWithContentDescription("返回拍摄").assertIsEnabled()
+    }
+
+    @Test
     fun manualScoringKeepsEditingControlsStableAndAvailable() = PhotoTestHarness().use { fixture ->
         fixture.select()
         fixture.model.analyze()
@@ -181,7 +191,7 @@ class PhotoScreenBehaviorTest {
                 )
             }
         }
-        compose.onNodeWithContentDescription("保存").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("保存").assertDoesNotExist()
         compose.runOnIdle { state.value = PhotoState(photo = image(), result = recommendation()) }
         compose.onNodeWithContentDescription("保存").performClick()
         compose.onNodeWithContentDescription("保存").assertIsNotEnabled()
@@ -202,7 +212,7 @@ class PhotoScreenBehaviorTest {
                 PhotoScreen(state.value, {}, { analysis++ }, { cancel++ }, onRetry = { retry++ })
             }
         }
-        compose.onNodeWithContentDescription("分析构图").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
         compose.runOnIdle { state.value = PhotoState(photo = image()) }
         compose.onNodeWithContentDescription("分析构图").performClick()
         assertEquals(1, analysis)

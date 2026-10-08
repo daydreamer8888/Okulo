@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import androidx.exifinterface.media.ExifInterface
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -22,12 +21,12 @@ class PhotoScreenTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
-    fun emptyScreenAllowsPickingAndDisablesAnalysis() {
+    fun emptyScreenAllowsPickingWithoutEditingActions() {
         compose.setContent {
             OkuloTheme { PhotoScreen(PhotoState(), {}, {}, {}) }
         }
         compose.onNodeWithText("选择照片").assertIsEnabled()
-        compose.onNodeWithContentDescription("分析构图").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
     }
 
     @Test

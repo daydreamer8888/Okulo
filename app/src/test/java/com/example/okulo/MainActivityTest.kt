@@ -1,7 +1,6 @@
 package com.example.okulo
 
 import android.app.Activity
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
@@ -83,16 +82,16 @@ class MainActivityTest {
     }
 
     @Test
-    fun launchAndCancelledPhotoSelectionKeepAnalysisDisabled() {
+    fun launchAndCancelledPhotoSelectionKeepEditingActionsHidden() {
         compose.onNodeWithContentDescription("分析照片").performClick()
         compose.onNodeWithText("选择照片").assertExists()
-        compose.onNodeWithContentDescription("分析构图").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
         compose.onNodeWithText("选择照片").performClick()
         val request = shadowOf(compose.activity).nextStartedActivityForResult
         assertNotNull(request)
         assertEquals("image/*", request.intent.type)
         compose.runOnIdle { shadowOf(compose.activity).receiveResult(request.intent, Activity.RESULT_CANCELED, null) }
-        compose.onNodeWithContentDescription("分析构图").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
         compose.onNodeWithText("选择照片").assertExists()
     }
 }
