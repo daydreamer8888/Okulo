@@ -8,7 +8,11 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -24,6 +28,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import com.example.okulo.camera.CameraCapture
 import com.example.okulo.camera.CameraScreen
 import com.example.okulo.photo.CropActions
@@ -31,6 +37,8 @@ import com.example.okulo.photo.PhotoScreen
 import com.example.okulo.photo.PhotoViewModel
 import com.example.okulo.settings.AppSettings
 import com.example.okulo.settings.SettingsScreen
+import com.example.okulo.ui.PAGE_TRANSITION_MILLIS
+import com.example.okulo.ui.PageTransition
 import com.example.okulo.ui.theme.OkuloTheme
 import android.graphics.Color as AndroidColor
 
@@ -41,59 +49,93 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            LaunchedEffect(viewModel) {
-                viewModel.saveEvents.collect { Toast.makeText(applicationContext, it, Toast.LENGTH_SHORT).show() }
-            }
-            val cameraCapture = remember { CameraCapture(applicationContext) }
-            val settings = remember { AppSettings(applicationContext) }
-            LaunchedEffect(settings.analysisMode) { viewModel.setMode(settings.analysisMode) }
-            var page by rememberSaveable { mutableStateOf(AppPage.Camera) }
-            var settingsOrigin by rememberSaveable { mutableStateOf(AppPage.Camera) }
-            val openSettings = {
-                settingsOrigin = page
-                page = AppPage.Settings
-            }
-            val back = { page = if (page == AppPage.Settings) settingsOrigin else AppPage.Camera }
-            BackHandler(enabled = page != AppPage.Camera, onBack = back)
-            val darkTheme = page == AppPage.Camera || isSystemInDarkTheme()
-            SideEffect {
-                val bars = if (darkTheme) {
+            OkuloApp(viewModel) { dark ->
+                val bars = if (dark) {
                     SystemBarStyle.dark(AndroidColor.BLACK)
                 } else {
                     SystemBarStyle.light(AndroidColor.WHITE, AndroidColor.WHITE)
                 }
                 enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
             }
-            OkuloTheme(darkTheme = darkTheme, dynamicColor = false) {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    containerColor = MaterialTheme.colorScheme.background
-                ) { padding ->
+        }
+    }
+}
+
+@Composable
+private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    LaunchedEffect(viewModel) {
+        viewModel.saveEvents.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+    }
+    val capture = remember { CameraCapture(context.applicationContext) }
+    val settings = remember { AppSettings(context.applicationContext) }
+    LaunchedEffect(settings.analysisMode) { viewModel.setMode(settings.analysisMode) }
+    var page by rememberSaveable { mutableStateOf(AppPage.Camera) }
+    var settingsOrigin by rememberSaveable { mutableStateOf(AppPage.Camera) }
+    val navigation = AppNavigation(
+        page,
+        back = { page = if (page == AppPage.Settings) settingsOrigin else AppPage.Camera },
+        settings = {
+            if (page != AppPage.Settings) {
+                settingsOrigin = page
+                page = AppPage.Settings
+            }
+        },
+        analyze = { page = AppPage.Photo }
+    )
+    BackHandler(enabled = page != AppPage.Camera, onBack = navigation.back)
+    val systemDark = isSystemInDarkTheme()
+    val dark = page == AppPage.Camera || systemDark
+    SideEffect { onTheme(dark) }
+    val background by animateColorAsState(
+        if (dark) Color.Black else Color.White,
+        tween(PAGE_TRANSITION_MILLIS),
+        label = "page-background"
+    )
+    Box(Modifier.fillMaxSize().background(background)) {
+        PageTransition(page, Modifier.fillMaxSize()) { visible ->
+            OkuloTheme(darkTheme = visible == AppPage.Camera || systemDark, dynamicColor = false) {
+                Scaffold(Modifier.fillMaxSize(), containerColor = MaterialTheme.colorScheme.background) { padding ->
                     Column(Modifier.fillMaxSize().padding(padding)) {
-                        if (page == AppPage.Camera) {
-                            CameraScreen(
-                                cameraCapture,
-                                onImportPhoto = { page = AppPage.Photo },
-                                onSettings = openSettings,
-                                modifier = Modifier.weight(1f)
-                            )
-                        } else if (page == AppPage.Settings) {
-                            SettingsScreen(
-                                settings.showModelScores,
-                                settings::setModelScores,
-                                back,
-                                settings.analysisMode,
-                                settings::selectAnalysisMode
-                            )
-                        } else {
-                            AnalysisPage(viewModel, back, openSettings, settings.showModelScores)
-                        }
+                        AppPageContent(viewModel, settings, capture, navigation.copy(page = visible))
                     }
                 }
             }
         }
     }
 }
+
+@Composable
+private fun AppPageContent(
+    viewModel: PhotoViewModel,
+    settings: AppSettings,
+    capture: CameraCapture,
+    navigation: AppNavigation
+) {
+    when (navigation.page) {
+        AppPage.Camera -> CameraScreen(
+            capture,
+            onImportPhoto = navigation.analyze,
+            onSettings = navigation.settings,
+            modifier = Modifier.fillMaxSize()
+        )
+        AppPage.Settings -> SettingsScreen(
+            settings.showModelScores,
+            settings::setModelScores,
+            navigation.back,
+            settings.analysisMode,
+            settings::selectAnalysisMode
+        )
+        AppPage.Photo -> AnalysisPage(viewModel, navigation.back, navigation.settings, settings.showModelScores)
+    }
+}
+
+private data class AppNavigation(
+    val page: AppPage,
+    val back: () -> Unit,
+    val settings: () -> Unit,
+    val analyze: () -> Unit
+)
 
 @Composable
 private fun AnalysisPage(
