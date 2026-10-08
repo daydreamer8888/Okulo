@@ -59,6 +59,7 @@ internal fun CameraScreen(capture: CameraCapture, onImportPhoto: () -> Unit, mod
         onImportPhoto = onImportPhoto,
         modifier = modifier,
         capture = capture.state,
+        onMessageDismissed = capture::dismissMessage,
         onCapture = {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
                 ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=

@@ -37,6 +37,10 @@ internal class CameraCapture(private val context: Context) {
         state = state.copy(message = "保存权限未开启，请允许后重试。")
     }
 
+    fun dismissMessage() {
+        state = state.copy(message = null)
+    }
+
     fun takePhoto() {
         if (!state.ready || state.saving) return
         state = state.copy(saving = true, message = null)
