@@ -5,6 +5,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -26,16 +27,22 @@ internal fun ActionIconButton(
     label: String,
     onClick: () -> Unit,
     enabled: Boolean = true,
-    iconModifier: Modifier = Modifier
+    iconModifier: Modifier = Modifier,
+    tonal: Boolean = false
 ) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
         tooltip = { PlainTooltip { Text(label) } },
         state = rememberTooltipState()
     ) {
-        IconButton(onClick = onClick, enabled = enabled) {
+        val content: @Composable () -> Unit = {
             val tint by animateColorAsState(LocalContentColor.current, tween(ICON_STATE_MILLIS), label = "icon-color")
             Icon(painterResource(icon), contentDescription = label, modifier = iconModifier.size(24.dp), tint = tint)
+        }
+        if (tonal) {
+            FilledTonalIconButton(onClick = onClick, enabled = enabled, content = content)
+        } else {
+            IconButton(onClick = onClick, enabled = enabled, content = content)
         }
     }
 }

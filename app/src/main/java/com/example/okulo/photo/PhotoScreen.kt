@@ -24,11 +24,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -83,7 +82,7 @@ internal fun PhotoScreen(
                         Modifier.size(56.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Button(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
+                    FilledTonalButton(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
                         Text("选择照片")
                     }
                 }
@@ -130,7 +129,7 @@ private fun PhotoBottomTools(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(onClick = onPick) { Text("换一张照片") }
+                FilledTonalButton(onClick = onPick) { Text("换一张照片") }
                 PhotoAspectControls(state, onAspect)
             }
         }
@@ -160,7 +159,7 @@ private fun PhotoResults(state: PhotoState, photo: Bitmap, actions: CropActions)
 private fun AnalysisFeedback(state: PhotoState, onRetry: () -> Unit) {
     if (state.error != null) {
         Text(state.error, color = MaterialTheme.colorScheme.error)
-        Button(onClick = onRetry) { Text("重试") }
+        FilledTonalButton(onClick = onRetry) { Text("重试") }
     }
 }
 
