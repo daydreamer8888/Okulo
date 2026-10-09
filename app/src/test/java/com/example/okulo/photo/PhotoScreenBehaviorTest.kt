@@ -121,7 +121,7 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
-    fun draggingKeepsOriginalScoreAndUsesAPlaceholderUntilTheNewCropIsScored() = PhotoTestHarness().use { fixture ->
+    fun draggingKeepsOriginalScoreAndShowsProgressUntilTheNewCropIsScored() = PhotoTestHarness().use { fixture ->
         fixture.select()
         fixture.model.analyze()
         fixture.await { !fixture.model.state.value.busy }
@@ -130,13 +130,16 @@ class PhotoScreenBehaviorTest {
                 PhotoScreen(fixture.model.state.collectAsState().value, {}, {}, {}, showModelScores = true)
             }
         }
-        compose.onNodeWithText("原图 2.000 · 裁剪 3.000").assertIsDisplayed()
+        compose.onNodeWithText("2.00").assertIsDisplayed()
+        compose.onNodeWithText("3.00").assertIsDisplayed()
         val bounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
         compose.runOnIdle { fixture.model.updateCrop(CropBox(0.2f, 0.2f, 1f, 1f)) }
-        compose.onNodeWithText("原图 2.000 · 裁剪 ~").assertExists()
+        compose.onNodeWithText("2.00").assertExists()
+        compose.onNodeWithContentDescription("正在更新裁剪评分").assertIsDisplayed()
         assertEquals(bounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
         compose.runOnIdle { fixture.model.updateCrop(CropBox(0.2f, 0.2f, 0.8f, 0.6f)) }
-        compose.onNodeWithText("原图 2.000 · 裁剪 ~").assertExists()
+        compose.onNodeWithText("2.00").assertExists()
+        compose.onNodeWithContentDescription("正在更新裁剪评分").assertIsDisplayed()
         val gate = fixture.gate()
         fixture.analyzer.evaluate = { crop ->
             gate.block()
@@ -144,10 +147,11 @@ class PhotoScreenBehaviorTest {
         }
         compose.runOnIdle { fixture.model.evaluateCrop() }
         gate.awaitEntry()
-        compose.onNodeWithText("原图 2.000 · 裁剪 ~").assertExists()
+        compose.onNodeWithText("2.00").assertExists()
+        compose.onNodeWithContentDescription("正在更新裁剪评分").assertIsDisplayed()
         gate.release()
         fixture.await { !fixture.model.state.value.scoring }
-        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertExists()
+        compose.onNodeWithText("4.00").assertExists()
         Unit
     }
 
@@ -292,7 +296,7 @@ class PhotoScreenBehaviorTest {
         compose.setContent {
             OkuloTheme { PhotoScreen(state, {}, {}, {}, showModelScores = true) }
         }
-        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertExists()
+        compose.onNodeWithText("4.00").assertExists()
         compose.onNodeWithContentDescription("分析构图").assertExists()
         compose.onNodeWithContentDescription("恢复").assertIsNotEnabled()
     }
@@ -414,17 +418,17 @@ class PhotoScreenBehaviorTest {
             OkuloTheme { PhotoScreen(state, {}, {}, {}, showModelScores = showScores.value) }
         }
         compose.onNodeWithText("显示评分").assertDoesNotExist()
-        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertDoesNotExist()
+        compose.onNodeWithText("4.00").assertDoesNotExist()
         compose.onNodeWithText("分析用时 1.20 秒 · 比较了 250 个方案").assertDoesNotExist()
         compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
         compose.onNodeWithText("拖动框内移动，拖动四角或双指缩放").assertDoesNotExist()
         compose.onNodeWithText("保留原图 16%").assertDoesNotExist()
         compose.onNodeWithText("裁剪范围较小").assertExists()
         compose.runOnIdle { showScores.value = true }
-        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertExists()
+        compose.onNodeWithText("4.00").assertExists()
         compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
         compose.runOnIdle { showScores.value = false }
-        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertDoesNotExist()
+        compose.onNodeWithText("4.00").assertDoesNotExist()
     }
 
     private fun image(): Bitmap = Bitmap.createBitmap(48, 32, Bitmap.Config.ARGB_8888)

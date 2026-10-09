@@ -33,7 +33,6 @@ import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.rememberFeedbackMessage
 import kotlinx.coroutines.flow.Flow
-import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -84,16 +83,7 @@ internal fun PhotoScreen(
             }
             AnalysisFeedback(state, onRetry)
             state.photo?.let { photo ->
-                PhotoViewPanel(state, photo, cropActions, Modifier.weight(1f))
-            }
-            if (showModelScores && state.originalScore != null) {
-                val cropScore = state.displayedScore?.let { String.format(Locale.getDefault(), "%.3f", it) } ?: "~"
-                Text(
-                    String.format(Locale.getDefault(), "原图 %.3f · 裁剪 %s", state.originalScore, cropScore),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
+                PhotoViewPanel(state, photo, cropActions, Modifier.weight(1f), showModelScores)
             }
         }
         if (state.photo != null || state.busy) {
