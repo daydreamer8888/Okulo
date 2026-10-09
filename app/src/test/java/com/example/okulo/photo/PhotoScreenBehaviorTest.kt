@@ -1,8 +1,11 @@
 package com.example.okulo.photo
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
@@ -14,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.dp
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.theme.OkuloTheme
@@ -41,6 +45,25 @@ class PhotoScreenBehaviorTest {
 
     @After
     fun restoreLocale() = Locale.setDefault(originalLocale)
+
+    @Test
+    fun reshapingACropAtTheBottomKeepsTheEditorAndPreviewFrameStationary() {
+        val state = mutableStateOf(PhotoState(photo = image(), result = recommendation()))
+        compose.setContent {
+            OkuloTheme {
+                Box(Modifier.size(360.dp, 500.dp)) { PhotoScreen(state.value, {}, {}, {}) }
+            }
+        }
+        compose.onNodeWithContentDescription("裁剪预览").performScrollTo()
+        val editor = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        val preview = compose.onNodeWithContentDescription("裁剪预览").fetchSemanticsNode().boundsInRoot
+        assertTrue("The page must be scrolled before resizing", editor.top < 150f)
+        for (crop in listOf(CropBox(0.1f, 0.3f, 0.9f, 0.7f), CropBox(0.3f, 0.1f, 0.7f, 0.9f))) {
+            compose.runOnIdle { state.value = state.value.copy(manualCrop = crop) }
+            assertEquals(editor, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+            assertEquals(preview, compose.onNodeWithContentDescription("裁剪预览").fetchSemanticsNode().boundsInRoot)
+        }
+    }
 
     @Test
     fun draggingKeepsOriginalScoreAndUsesAPlaceholderUntilTheNewCropIsScored() = PhotoTestHarness().use { fixture ->
