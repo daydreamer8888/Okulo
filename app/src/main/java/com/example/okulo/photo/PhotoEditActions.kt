@@ -32,21 +32,32 @@ internal data class PhotoEditActions(
 internal fun PhotoActionRow(state: PhotoState, actions: PhotoEditActions, saving: Boolean) {
     Row(Modifier.fillMaxWidth().height(56.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (state.busy) {
-            ActionIconButton(R.drawable.ic_close, "取消", actions.cancel)
+            ActionIconButton(R.drawable.ic_close, "取消", actions.cancel, tonal = true)
         } else {
             val canAnalyze = state.photo != null &&
                 (state.result == null || (state.aspect == CropAspect.Free && state.manualCrop != null))
-            ActionIconButton(R.drawable.ic_analyze, "分析构图", actions.analyze, enabled = canAnalyze && !saving)
+            ActionIconButton(
+                R.drawable.ic_analyze,
+                "分析构图",
+                actions.analyze,
+                enabled = canAnalyze && !saving,
+                tonal = true
+            )
         }
         ActionIconButton(
             R.drawable.ic_save,
             "保存",
             actions.save,
-            enabled = state.displayedCrop != null && !state.busy && !saving
+            enabled = state.displayedCrop != null && !state.busy && !saving,
+            tonal = true
         )
-        if (state.result != null && state.manualCrop != null) {
-            ActionIconButton(R.drawable.ic_restore, "恢复推荐", actions.restore)
-        }
+        ActionIconButton(
+            R.drawable.ic_restore,
+            "恢复",
+            actions.restore,
+            enabled = state.result != null && state.manualCrop != null && !state.busy && !saving,
+            tonal = true
+        )
         Spacer(Modifier.weight(1f))
         PhotoTransformMenu(state.photo != null && !state.busy && !saving, actions.transform)
     }

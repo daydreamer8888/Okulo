@@ -57,7 +57,7 @@ class AspectRecommendationTest {
                     )
                 )
             }
-            compose.onNodeWithContentDescription("恢复推荐").performClick()
+            compose.onNodeWithContentDescription("恢复").performClick()
             assertEquals(CropAspect.Wide, model.state.value.aspect)
             assertEquals(wide, model.state.value.displayedCrop)
             compose.onNodeWithContentDescription("裁剪比例").performScrollTo().performClick()
