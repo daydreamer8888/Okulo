@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
+import com.example.okulo.ui.rememberFeedbackMessage
+import kotlinx.coroutines.flow.Flow
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -58,11 +60,12 @@ internal fun PhotoScreen(
     onAspect: (CropAspect) -> Unit = {},
     onTransform: (PhotoOperation) -> Unit = {},
     onSave: () -> Unit = {},
-    saving: Boolean = false
+    saving: Boolean = false,
+    saveEvents: Flow<String>? = null
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        PhotoToolbar(onBack, onSettings)
+        PhotoToolbar(onBack, onSettings, rememberFeedbackMessage(saveEvents))
         Box(Modifier.fillMaxWidth().height(4.dp)) {
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         }

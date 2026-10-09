@@ -1,7 +1,6 @@
 package com.example.okulo
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -64,9 +63,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
     val context = LocalContext.current
-    LaunchedEffect(viewModel) {
-        viewModel.saveEvents.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
-    }
     val capture = remember { CameraCapture(context.applicationContext) }
     val settings = remember { AppSettings(context.applicationContext) }
     LaunchedEffect(settings.analysisMode) { viewModel.setMode(settings.analysisMode) }
@@ -159,7 +155,8 @@ private fun AnalysisPage(
         cropActions = CropActions(viewModel::updateCrop, viewModel::evaluateCrop, viewModel::restoreRecommendation),
         onBack = onBack,
         onSettings = onSettings,
-        showModelScores = showScores
+        showModelScores = showScores,
+        saveEvents = viewModel.saveEvents
     )
 }
 
