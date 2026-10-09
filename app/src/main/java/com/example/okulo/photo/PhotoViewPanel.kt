@@ -10,11 +10,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -32,7 +30,13 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun PhotoViewPanel(state: PhotoState, photo: Bitmap, actions: CropActions, modifier: Modifier = Modifier) {
+internal fun PhotoViewPanel(
+    state: PhotoState,
+    photo: Bitmap,
+    actions: CropActions,
+    modifier: Modifier = Modifier,
+    showModelScores: Boolean = false
+) {
     var showPreview by rememberSaveable(photo) { mutableStateOf(false) }
     val crop = state.displayedCrop
     val preview = showPreview && crop != null
@@ -60,13 +64,8 @@ internal fun PhotoViewPanel(state: PhotoState, photo: Bitmap, actions: CropActio
                 }
             }
         }
-        Box(Modifier.fillMaxWidth().heightIn(min = 24.dp).padding(horizontal = 16.dp)) {
-            if (crop != null && crop.area < SMALL_CROP_AREA) {
-                Text("裁剪范围较小", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
-            }
-        }
+        PhotoScoreFooter(state, showModelScores)
     }
 }
 
 private const val VIEW_FADE_MILLIS = 120
-private const val SMALL_CROP_AREA = 0.5f

@@ -8,6 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -32,6 +35,49 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class PhotoViewTabsTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun auxiliaryScoreCardKeepsPortraitSizeAcrossVisibilityAndLoadingChanges() {
+        val bitmap = Bitmap.createBitmap(200, 400, Bitmap.Config.ARGB_8888)
+        val result = recommendation().copy(originalScore = 2.803f, cropScore = 3.126f)
+        val state = mutableStateOf(PhotoState(photo = bitmap, result = result))
+        val showScores = mutableStateOf(false)
+        compose.setContent {
+            OkuloTheme {
+                Box(Modifier.size(360.dp, 500.dp)) {
+                    PhotoScreen(state.value, {}, {}, {}, showModelScores = showScores.value)
+                }
+            }
+        }
+        val editor = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        val tools = compose.onNodeWithContentDescription("保存").fetchSemanticsNode().boundsInRoot
+        val card = compose.onNodeWithTag("photo-scores")
+        card.assertDoesNotExist()
+        compose.runOnIdle { showScores.value = true }
+        card.assertIsDisplayed()
+        val cardBounds = card.fetchSemanticsNode().boundsInRoot
+        compose.onNode(hasText("2.80") and hasAnyAncestor(hasTestTag("photo-scores"))).assertIsDisplayed()
+        compose.onNodeWithText("3.13").assertIsDisplayed()
+        assertTrue("Scores must remain a small lower-right surface", cardBounds.width < 200f)
+        assertTrue(cardBounds.top > editor.bottom)
+        assertTrue(cardBounds.right > editor.center.x)
+        assertEquals(editor, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        compose.runOnIdle { state.value = state.value.copy(manualCrop = state.value.result?.crop) }
+        compose.onNodeWithContentDescription("正在更新裁剪评分").assertIsDisplayed()
+        compose.onNodeWithText("~").assertDoesNotExist()
+        compose.onNodeWithText("…").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(scoring = true) }
+        compose.onNodeWithContentDescription("正在更新裁剪评分").assertIsDisplayed()
+        assertEquals(cardBounds, card.fetchSemanticsNode().boundsInRoot)
+        compose.runOnIdle { state.value = state.value.copy(scoring = false, manualScore = 3.184f) }
+        compose.onNodeWithText("3.18").assertIsDisplayed()
+        compose.onNodeWithContentDescription("正在更新裁剪评分").assertDoesNotExist()
+        assertEquals(cardBounds, card.fetchSemanticsNode().boundsInRoot)
+        compose.runOnIdle { showScores.value = false }
+        card.assertDoesNotExist()
+        assertEquals(editor, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        assertEquals(tools, compose.onNodeWithContentDescription("保存").fetchSemanticsNode().boundsInRoot)
+    }
 
     @Test
     fun previewKeepsTheEditedCropAndToolsWithoutAcceptingCropGestures() {
