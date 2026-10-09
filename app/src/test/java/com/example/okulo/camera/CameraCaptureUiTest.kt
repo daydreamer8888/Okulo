@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,6 +22,26 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CameraCaptureUiTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun saveFeedbackUsesToolbarSpaceWithoutMovingOrCoveringCameraActions() {
+        val state = mutableStateOf(CaptureUiState(ready = true, message = "已保存到相册"))
+        compose.setContent { CameraLayout({}, capture = state.value) {} }
+        compose.mainClock.autoAdvance = false
+        val notice = compose.onNodeWithText("已保存到相册").fetchSemanticsNode().boundsInRoot
+        val entry = compose.onNodeWithContentDescription("导入照片").fetchSemanticsNode().boundsInRoot
+        val gear = compose.onNodeWithContentDescription("设置").fetchSemanticsNode().boundsInRoot
+        val shutter = compose.onNodeWithContentDescription("拍照").fetchSemanticsNode().boundsInRoot
+        assertEquals(entry.center.y, notice.center.y, 1f)
+        assertTrue(notice.right <= entry.left)
+        assertTrue(notice.right <= gear.left)
+        assertTrue(notice.bottom < shutter.top)
+        compose.mainClock.autoAdvance = true
+        compose.runOnIdle { state.value = state.value.copy(message = null) }
+        compose.onNodeWithText("已保存到相册").assertDoesNotExist()
+        assertEquals(shutter, compose.onNodeWithContentDescription("拍照").fetchSemanticsNode().boundsInRoot)
+        assertEquals(entry, compose.onNodeWithContentDescription("导入照片").fetchSemanticsNode().boundsInRoot)
+    }
 
     @Test
     fun saveConfirmationExpiresAndAppearsAgainForTheNextPhoto() {

@@ -45,11 +45,14 @@ internal fun CameraLayout(
         val previewWidth = minOf(maxWidth, (maxHeight - 208.dp).coerceAtLeast(0.dp) * ratio)
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
-                Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ActionIconButton(R.drawable.ic_photo, "分析照片", onImportPhoto)
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    CaptureFeedback(capture, onMessageDismissed)
+                }
+                ActionIconButton(R.drawable.ic_photo, "导入照片", onImportPhoto)
                 ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
             }
             Box(Modifier.width(previewWidth).aspectRatio(ratio)) { viewfinder() }
@@ -79,7 +82,6 @@ internal fun CameraLayout(
                     }
                     Spacer(Modifier.size(56.dp))
                 }
-                CaptureFeedback(capture, onMessageDismissed)
             }
         }
     }
