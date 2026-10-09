@@ -54,8 +54,11 @@ class PhotoFlowTest {
             assertEquals(250, result.candidateCount)
             assertTrue(result.crop.area >= 0.5f - 1e-6f)
             val manual = CropBox(0.2f, 0.2f, 0.6f, 0.6f)
-            instrumentation.runOnMainSync { model.updateCrop(manual); model.evaluateCrop() }
-            waitUntil { !model.state.value.busy }
+            instrumentation.runOnMainSync {
+                model.updateCrop(manual)
+                model.evaluateCrop()
+            }
+            waitUntil { !model.state.value.busy && !model.state.value.scoring }
             assertNotNull(model.state.value.manualScore)
             instrumentation.runOnMainSync { model.analyze() }
             waitUntil { !model.state.value.busy }
