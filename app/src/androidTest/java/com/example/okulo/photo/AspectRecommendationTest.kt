@@ -3,6 +3,7 @@ package com.example.okulo.photo
 import android.net.Uri
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -66,18 +67,27 @@ class AspectRecommendationTest {
             compose.runOnIdle { assertEquals(CropAspect.Free, model.state.value.aspect) }
             compose.onNodeWithContentDescription("分析构图").performClick()
             awaitIdle(model)
-            assertTrue(checkNotNull(model.state.value.result).candidateCount <= 600)
+            val freeRecommendation = checkNotNull(model.state.value.result)
+            assertTrue(freeRecommendation.candidateCount <= 600)
             compose.runOnIdle { model.updateCrop(CropBox(0.2f, 0.2f, 0.8f, 0.8f)) }
             compose.waitForIdle()
             compose.onNodeWithTag("crop-editor").assertIsDisplayed()
             compose.waitForIdle()
             compose.onNodeWithTag("crop-editor").performTouchInput {
-                swipe(Offset(width * 0.8f, height * 0.8f), Offset(width * 0.6f, height * 0.8f))
+                swipe(Offset(width * 0.8f, height * 0.5f), Offset(width * 0.6f, height * 0.5f))
             }
             awaitIdle(model)
             val manual = checkNotNull(model.state.value.manualCrop)
             assertEquals(2f / 3f, manual.width / manual.height, 0.02f)
             assertTrue(checkNotNull(model.state.value.manualScore).isFinite())
+            compose.onNodeWithContentDescription("恢复").assertIsEnabled().performClick()
+            compose.runOnIdle {
+                assertEquals(freeRecommendation.crop, model.state.value.displayedCrop)
+                assertNull(model.state.value.manualCrop)
+                assertNull(model.state.value.freeRatio)
+                model.updateCrop(manual)
+            }
+            compose.waitForIdle()
             compose.onNodeWithContentDescription("分析构图").performClick()
             awaitIdle(model)
             assertNull(model.state.value.manualCrop)
