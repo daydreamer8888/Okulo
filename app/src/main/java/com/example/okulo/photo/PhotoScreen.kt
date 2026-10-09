@@ -12,6 +12,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -66,7 +68,7 @@ internal fun PhotoScreen(
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         }
         Column(
-            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (state.photo == null) {
@@ -85,24 +87,6 @@ internal fun PhotoScreen(
                         Text("选择照片")
                     }
                 }
-            } else {
-                OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
-                    Text("换一张照片")
-                }
-            }
-            if (state.photo != null) PhotoAspectControls(state, onAspect)
-            if (state.photo != null || state.busy) {
-                PhotoActionRow(
-                    state,
-                    PhotoEditActions(
-                        onAnalyze,
-                        onCancel,
-                        rememberPhotoSaveAction(onSave),
-                        cropActions.restore,
-                        onTransform
-                    ),
-                    saving
-                )
             }
             AnalysisFeedback(state, onRetry)
             state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
@@ -112,6 +96,45 @@ internal fun PhotoScreen(
             }
             Spacer(Modifier.height(12.dp))
         }
+        if (state.photo != null || state.busy) {
+            PhotoBottomTools(
+                state,
+                { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
+                onAspect,
+                PhotoEditActions(
+                    onAnalyze,
+                    onCancel,
+                    rememberPhotoSaveAction(onSave),
+                    cropActions.restore,
+                    onTransform
+                ),
+                saving
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PhotoBottomTools(
+    state: PhotoState,
+    onPick: () -> Unit,
+    onAspect: (CropAspect) -> Unit,
+    actions: PhotoEditActions,
+    saving: Boolean
+) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        if (state.photo != null) {
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(onClick = onPick) { Text("换一张照片") }
+                PhotoAspectControls(state, onAspect)
+            }
+        }
+        PhotoActionRow(state, actions, saving)
     }
 }
 
