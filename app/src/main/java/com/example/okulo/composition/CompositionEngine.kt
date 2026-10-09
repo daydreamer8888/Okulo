@@ -18,9 +18,22 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
         val loadMillis = elapsed(loadStart)
         val started = System.nanoTime()
         status("正在分析照片…")
-        val candidates = normalizedRatio?.let(::cropCandidates) ?: freeCropCandidates(bitmap.width, bitmap.height)
-        val scores = score(bitmap, mode, candidates, isCurrent)
-        val best = (1 until scores.size).maxBy { scores[it] }
+        var candidates = normalizedRatio?.let(::cropCandidates) ?: freeCropCandidates(bitmap.width, bitmap.height)
+        val coarseScores = score(bitmap, mode, candidates, isCurrent)
+        val refinement = if (normalizedRatio == null) {
+            refineFreeCrops(bitmap.width, bitmap.height, candidates, coarseScores)
+        } else {
+            emptyList()
+        }
+        val scores = if (refinement.isEmpty()) {
+            coarseScores
+        } else {
+            val fineScores = score(bitmap, mode, refinement, isCurrent)
+            candidates = candidates + refinement
+            coarseScores + fineScores
+        }
+        val firstEligible = if (normalizedRatio == null) 0 else 1
+        val best = (firstEligible until scores.size).maxBy { scores[it] }
         return CompositionResult(
             candidates[best],
             scores[0],
