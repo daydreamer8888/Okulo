@@ -2,16 +2,55 @@ package com.example.okulo.composition
 
 import android.graphics.Bitmap
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.util.concurrent.CancellationException
 import kotlin.math.abs
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class FreeSearchTest {
+    @Test
+    fun cancellationAtRefinementProgressSkipsTheSecondInference() {
+        val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
+        var current = true
+        var calls = 0
+        var cancelled = false
+        val model = object : CropScoringModel {
+            override fun load(mode: AnalysisMode) = Unit
+            override fun close() = Unit
+            override fun score(
+                bitmap: Bitmap,
+                mode: AnalysisMode,
+                candidates: List<CropBox>,
+                isCurrent: () -> Boolean
+            ): FloatArray {
+                calls++
+                return FloatArray(candidates.size) { 1f }
+            }
+        }
+        try {
+            CompositionEngine(model).use { engine ->
+                try {
+                    engine.analyze(photo, AnalysisMode.Fast, null, { current }) { status ->
+                        if (status == "正在细化构图…") current = false
+                    }
+                } catch (_: CancellationException) {
+                    cancelled = true
+                }
+                assertTrue(cancelled)
+                assertFalse(current)
+                assertEquals(1, calls)
+            }
+        } finally {
+            photo.recycle()
+        }
+    }
+
     @Test
     fun refinementImprovesTheCoarseWinnerAndKeepsEveryAspectWithinSixHundredCrops() {
         val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)

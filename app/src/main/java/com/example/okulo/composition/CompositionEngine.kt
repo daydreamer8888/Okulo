@@ -28,6 +28,7 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
         val scores = if (refinement.isEmpty()) {
             coarseScores
         } else {
+            status("正在细化构图…")
             val fineScores = score(bitmap, mode, refinement, isCurrent)
             candidates = candidates + refinement
             coarseScores + fineScores
@@ -63,6 +64,7 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
         candidates: List<CropBox>,
         isCurrent: () -> Boolean
     ): FloatArray {
+        checkCurrent(isCurrent)
         val scores = model.score(bitmap, mode, candidates, isCurrent)
         checkCurrent(isCurrent)
         check(scores.size == candidates.size && scores.all { it.isFinite() }) { "模型评分异常，请重试" }
