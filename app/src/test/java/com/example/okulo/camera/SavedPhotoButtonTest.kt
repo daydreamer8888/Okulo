@@ -28,6 +28,13 @@ class SavedPhotoButtonTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Test
+    fun missingPhotosLeaveNoUnavailableViewerAction() {
+        compose.setContent { SavedPhotoButton(null) {} }
+        compose.onNodeWithContentDescription("查看最新照片").assertDoesNotExist()
+        compose.onNodeWithTag("saved-photo-thumbnail", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
     fun returningAfterDeletionRemovesThePhotoAndDisablesItsViewer() {
         val file = File.createTempFile("saved-photo", ".jpg", compose.activity.cacheDir)
         val image = Bitmap.createBitmap(32, 48, Bitmap.Config.ARGB_8888)
