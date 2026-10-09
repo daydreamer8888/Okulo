@@ -106,15 +106,9 @@ internal fun PhotoScreen(
             }
             AnalysisFeedback(state, onRetry)
             state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
-            if (showModelScores && state.originalScore != null && state.displayedScore != null) {
-                Text(
-                    String.format(
-                        Locale.getDefault(),
-                        "原图 %.3f · 裁剪 %.3f",
-                        state.originalScore,
-                        state.displayedScore
-                    )
-                )
+            if (showModelScores && state.originalScore != null) {
+                val cropScore = state.displayedScore?.let { String.format(Locale.getDefault(), "%.3f", it) } ?: "~"
+                Text(String.format(Locale.getDefault(), "原图 %.3f · 裁剪 %s", state.originalScore, cropScore))
             }
             Spacer(Modifier.height(12.dp))
         }
