@@ -150,7 +150,7 @@ class PhotoViewModel internal constructor(
             },
             result = null,
             manualScore = null,
-            manualOriginalScore = null,
+            manualOriginalScore = current.originalScore,
             manualMillis = null,
             busy = false, scoring = false,
             error = null
@@ -169,6 +169,7 @@ class PhotoViewModel internal constructor(
             manualCrop = box,
             freeRatio = if (reshaped) ratio else current.freeRatio,
             result = if (reshaped) null else current.result,
+            manualOriginalScore = current.originalScore,
             manualScore = null,
             manualMillis = null,
             busy = false, scoring = false,

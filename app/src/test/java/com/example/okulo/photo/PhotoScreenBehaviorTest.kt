@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.theme.OkuloTheme
@@ -40,6 +41,37 @@ class PhotoScreenBehaviorTest {
 
     @After
     fun restoreLocale() = Locale.setDefault(originalLocale)
+
+    @Test
+    fun draggingKeepsOriginalScoreAndUsesAPlaceholderUntilTheNewCropIsScored() = PhotoTestHarness().use { fixture ->
+        fixture.select()
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        compose.setContent {
+            OkuloTheme {
+                PhotoScreen(fixture.model.state.collectAsState().value, {}, {}, {}, showModelScores = true)
+            }
+        }
+        compose.onNodeWithText("原图 2.000 · 裁剪 3.000").performScrollTo()
+        val bounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { fixture.model.updateCrop(CropBox(0.2f, 0.2f, 1f, 1f)) }
+        compose.onNodeWithText("原图 2.000 · 裁剪 ~").assertExists()
+        assertEquals(bounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        compose.runOnIdle { fixture.model.updateCrop(CropBox(0.2f, 0.2f, 0.8f, 0.6f)) }
+        compose.onNodeWithText("原图 2.000 · 裁剪 ~").assertExists()
+        val gate = fixture.gate()
+        fixture.analyzer.evaluate = { crop ->
+            gate.block()
+            recommendation().copy(crop = crop, cropScore = 4f)
+        }
+        compose.runOnIdle { fixture.model.evaluateCrop() }
+        gate.awaitEntry()
+        compose.onNodeWithText("原图 2.000 · 裁剪 ~").assertExists()
+        gate.release()
+        fixture.await { !fixture.model.state.value.scoring }
+        compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertExists()
+        Unit
+    }
 
     @Test
     fun everyAnalysisShowsProgressWithoutMovingTheExistingEditor() {
