@@ -4,6 +4,9 @@ import android.app.Activity
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -40,8 +43,12 @@ class MainActivityTest {
     @Test
     fun analysisModeIsConfiguredInSettingsAndSurvivesRecreation() {
         compose.onNodeWithContentDescription("设置").performClick()
-        compose.onNodeWithText("快速分析").assertIsSelected()
-        compose.onNodeWithText("标准分析").performClick().assertIsSelected()
+        compose.onNodeWithText("快速分析").assertExists()
+        compose.onNodeWithText("标准分析").assertDoesNotExist()
+        compose.onNodeWithText("分析模式").performClick()
+        compose.onNode(hasText("快速分析") and hasAnyAncestor(isDialog())).assertIsSelected()
+        compose.onNodeWithText("标准分析").performClick()
+        compose.onNodeWithText("标准分析").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithContentDescription("分析照片").performClick()
         compose.onNodeWithText("快速分析").assertDoesNotExist()
@@ -52,19 +59,23 @@ class MainActivityTest {
         }
         compose.onNodeWithContentDescription("设置").performClick()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("标准分析").assertIsSelected()
+        compose.onNodeWithText("标准分析").assertExists()
+        compose.onNodeWithText("快速分析").assertDoesNotExist()
+        compose.onNodeWithText("分析模式").performClick()
+        compose.onNode(hasText("标准分析") and hasAnyAncestor(isDialog())).assertIsSelected()
     }
 
     @Test
     fun modelScoresAreOptInAndTheChoiceSurvivesRecreation() {
         compose.onNodeWithContentDescription("设置").performClick()
-        compose.onNodeWithText("查看模型评分").assertIsOff().performClick().assertIsOn()
+        compose.onNodeWithText("仅用于比较同一照片的裁剪方案").assertExists()
+        compose.onNodeWithText("显示评分").assertIsOff().performClick().assertIsOn()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithContentDescription("分析照片").performClick()
         compose.onNodeWithContentDescription("设置").performClick()
-        compose.onNodeWithText("查看模型评分").assertIsOn()
+        compose.onNodeWithText("显示评分").assertIsOn()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("查看模型评分").assertIsOn().performClick().assertIsOff()
+        compose.onNodeWithText("显示评分").assertIsOn().performClick().assertIsOff()
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithText("选择照片").assertExists()
     }

@@ -1,27 +1,39 @@
 package com.example.okulo.settings
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.ui.ActionIconButton
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingsScreen(
     showScores: Boolean,
@@ -30,36 +42,50 @@ internal fun SettingsScreen(
     analysisMode: AnalysisMode,
     onMode: (AnalysisMode) -> Unit
 ) {
-    Column(Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            ActionIconButton(R.drawable.ic_arrow_back, "返回", onBack)
-            Text("设置", style = MaterialTheme.typography.titleMedium)
+    var choosingMode by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+        TopAppBar(
+            title = { Text("设置") },
+            navigationIcon = { ActionIconButton(R.drawable.ic_arrow_back, "返回", onBack) },
+            windowInsets = WindowInsets(0, 0, 0, 0)
+        )
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            Text("分析", Modifier.padding(16.dp), style = MaterialTheme.typography.labelLarge)
+            ListItem(
+                headlineContent = { Text("分析模式") },
+                supportingContent = { Text(analysisMode.title) },
+                trailingContent = { Icon(painterResource(R.drawable.ic_chevron_right), null) },
+                modifier = Modifier.clickable { choosingMode = true }
+            )
+            ListItem(
+                headlineContent = { Text("显示评分") },
+                supportingContent = { Text("仅用于比较同一照片的裁剪方案") },
+                trailingContent = { Switch(checked = showScores, onCheckedChange = null) },
+                modifier = Modifier.toggleable(showScores, role = Role.Switch, onValueChange = onScores)
+            )
         }
-        Text("分析模式", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 16.dp))
-        Column(Modifier.selectableGroup()) {
+    }
+    if (choosingMode) {
+        AnalysisModeSheet(analysisMode, { choosingMode = false }) {
+            choosingMode = false
+            onMode(it)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AnalysisModeSheet(selected: AnalysisMode, onDismiss: () -> Unit, onMode: (AnalysisMode) -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Text("分析模式", Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
+        Column(Modifier.verticalScroll(rememberScrollState()).selectableGroup()) {
             AnalysisMode.entries.forEach { mode ->
-                Row(
-                    Modifier.fillMaxWidth().selectable(
-                        selected = analysisMode == mode,
-                        role = Role.RadioButton,
-                        onClick = { onMode(mode) }
-                    ).padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    RadioButton(selected = analysisMode == mode, onClick = null)
-                    Text(mode.title)
-                }
+                ListItem(
+                    headlineContent = { Text(mode.title) },
+                    trailingContent = { RadioButton(selected == mode, onClick = null) },
+                    modifier = Modifier.selectable(selected == mode, role = Role.RadioButton) { onMode(mode) }
+                )
             }
-        }
-        Row(
-            Modifier.fillMaxWidth().toggleable(showScores, role = Role.Switch, onValueChange = onScores)
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("查看模型评分")
-            Switch(checked = showScores, onCheckedChange = null)
         }
     }
 }
