@@ -128,8 +128,20 @@ private fun CropOverlay(crop: CropBox) {
         }
         drawPath(shade, Color.Black.copy(alpha = 0.4f))
         drawRect(Color.White, bounds.topLeft, bounds.size, style = Stroke(3.dp.toPx()))
+        for (fraction in listOf(1f / 3f, 2f / 3f)) {
+            val x = bounds.left + bounds.width * fraction
+            val y = bounds.top + bounds.height * fraction
+            val guide = Color.White.copy(alpha = 0.35f)
+            drawLine(guide, Offset(x, bounds.top), Offset(x, bounds.bottom), 1.dp.toPx())
+            drawLine(guide, Offset(bounds.left, y), Offset(bounds.right, y), 1.dp.toPx())
+        }
+        val stroke = 3.dp.toPx()
+        val length = minOf(12.dp.toPx(), bounds.width / 2f, bounds.height / 2f)
         CropCorner.entries.forEach { corner ->
-            drawCircle(Color.White, 6.dp.toPx(), cornerPosition(crop, corner, size.width, size.height))
+            val point = cornerPosition(crop, corner, size.width, size.height) +
+                Offset(-corner.horizontal * stroke / 2f, -corner.vertical * stroke / 2f)
+            drawLine(Color.White, point, point + Offset(-corner.horizontal * length, 0f), stroke)
+            drawLine(Color.White, point, point + Offset(0f, -corner.vertical * length), stroke)
         }
     }
 }

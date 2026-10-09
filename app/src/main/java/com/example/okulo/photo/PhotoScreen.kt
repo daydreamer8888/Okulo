@@ -64,7 +64,7 @@ internal fun PhotoScreen(
     saveEvents: Flow<String>? = null
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
-    Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         PhotoToolbar(onBack, onSettings, rememberFeedbackMessage(saveEvents))
         Box(Modifier.fillMaxWidth().height(4.dp)) {
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -94,7 +94,11 @@ internal fun PhotoScreen(
             state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
             if (showModelScores && state.originalScore != null) {
                 val cropScore = state.displayedScore?.let { String.format(Locale.getDefault(), "%.3f", it) } ?: "~"
-                Text(String.format(Locale.getDefault(), "原图 %.3f · 裁剪 %s", state.originalScore, cropScore))
+                Text(
+                    String.format(Locale.getDefault(), "原图 %.3f · 裁剪 %s", state.originalScore, cropScore),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Spacer(Modifier.height(12.dp))
         }

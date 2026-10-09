@@ -410,7 +410,7 @@ class PhotoScreenBehaviorTest {
         compose.setContent {
             OkuloTheme { PhotoScreen(state, {}, {}, {}, showModelScores = showScores.value) }
         }
-        compose.onNodeWithText("查看模型评分").assertDoesNotExist()
+        compose.onNodeWithText("显示评分").assertDoesNotExist()
         compose.onNodeWithText("原图 2.000 · 裁剪 4.000").assertDoesNotExist()
         compose.onNodeWithText("分析用时 1.20 秒 · 比较了 250 个方案").assertDoesNotExist()
         compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
