@@ -33,7 +33,7 @@ class MainActivityTest {
 
     @Test
     fun cameraSettingsUseTheTrailingActionPosition() {
-        val analysis = compose.onNodeWithContentDescription("分析照片").fetchSemanticsNode().boundsInRoot
+        val analysis = compose.onNodeWithContentDescription("导入照片").fetchSemanticsNode().boundsInRoot
         val settings = compose.onNodeWithContentDescription("设置").fetchSemanticsNode().boundsInRoot
         assertTrue(settings.left > analysis.right)
         compose.onNodeWithContentDescription("设置").performClick()
@@ -50,7 +50,7 @@ class MainActivityTest {
         compose.onNodeWithText("标准分析").performClick()
         compose.onNodeWithText("标准分析").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
-        compose.onNodeWithContentDescription("分析照片").performClick()
+        compose.onNodeWithContentDescription("导入照片").performClick()
         compose.onNodeWithText("快速分析").assertDoesNotExist()
         compose.onNodeWithText("标准分析").assertDoesNotExist()
         compose.runOnIdle {
@@ -71,7 +71,7 @@ class MainActivityTest {
         compose.onNodeWithText("仅用于比较同一照片的裁剪方案").assertExists()
         compose.onNodeWithText("显示评分").assertIsOff().performClick().assertIsOn()
         compose.onNodeWithContentDescription("返回").performClick()
-        compose.onNodeWithContentDescription("分析照片").performClick()
+        compose.onNodeWithContentDescription("导入照片").performClick()
         compose.onNodeWithContentDescription("设置").performClick()
         compose.onNodeWithText("显示评分").assertIsOn()
         compose.activityRule.scenario.recreate()
@@ -82,19 +82,19 @@ class MainActivityTest {
 
     @Test
     fun analysisToolbarAndSystemBackBothReturnToTheCamera() {
-        compose.onNodeWithContentDescription("分析照片").performClick()
+        compose.onNodeWithContentDescription("导入照片").performClick()
         compose.onNodeWithText("选择照片").assertExists()
         compose.onNodeWithContentDescription("返回拍摄").performClick()
-        compose.onNodeWithContentDescription("分析照片").assertExists()
-        compose.onNodeWithContentDescription("分析照片").performClick()
+        compose.onNodeWithContentDescription("导入照片").assertExists()
+        compose.onNodeWithContentDescription("导入照片").performClick()
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
-        compose.onNodeWithContentDescription("分析照片").assertExists()
+        compose.onNodeWithContentDescription("导入照片").assertExists()
         compose.onNodeWithText("选择照片").assertDoesNotExist()
     }
 
     @Test
     fun launchAndCancelledPhotoSelectionKeepEditingActionsHidden() {
-        compose.onNodeWithContentDescription("分析照片").performClick()
+        compose.onNodeWithContentDescription("导入照片").performClick()
         compose.onNodeWithText("选择照片").assertExists()
         compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
         compose.onNodeWithText("选择照片").performClick()

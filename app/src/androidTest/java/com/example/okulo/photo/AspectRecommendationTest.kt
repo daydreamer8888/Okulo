@@ -34,7 +34,7 @@ class AspectRecommendationTest {
         }
         lateinit var model: PhotoViewModel
         try {
-            compose.onNodeWithContentDescription("分析照片").performClick()
+            compose.onNodeWithContentDescription("导入照片").performClick()
             compose.runOnIdle {
                 model = ViewModelProvider(compose.activity)[PhotoViewModel::class.java]
                 model.selectPhoto(Uri.fromFile(source))
