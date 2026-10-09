@@ -49,8 +49,9 @@ class PhotoScreenTest {
         compose.setContent {
             OkuloTheme { PhotoScreen(PhotoState(photo = bitmap, result = result), {}, {}, {}) }
         }
-        compose.onNodeWithText("原图").assertIsDisplayed()
-        compose.onNodeWithText("裁剪预览").assertExists()
+        compose.onNodeWithContentDescription("可调整裁剪框的原图").assertIsDisplayed()
+        compose.onNodeWithText("预览").performClick()
+        compose.onNodeWithContentDescription("裁剪预览").assertIsDisplayed()
         compose.onNodeWithText("重新分析").assertDoesNotExist()
     }
 
