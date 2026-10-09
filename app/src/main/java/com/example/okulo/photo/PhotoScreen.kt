@@ -9,8 +9,8 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -125,7 +125,12 @@ private fun PhotoResults(state: PhotoState, photo: Bitmap, actions: CropActions)
     Text("原图", style = MaterialTheme.typography.titleSmall)
     CropEditor(photo, crop, actions, state.aspect.normalizedRatio(photo.width, photo.height))
     val preview = remember(photo, crop) { cropPreview(photo, crop) }
-    PhotoCard("裁剪预览", preview, smallCrop = crop.area < 0.5f)
+    PhotoCard(
+        "裁剪预览",
+        preview,
+        smallCrop = crop.area < 0.5f,
+        frameRatio = photo.width.toFloat() / photo.height
+    )
 }
 
 @Composable
@@ -137,7 +142,12 @@ private fun AnalysisFeedback(state: PhotoState, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun PhotoCard(title: String, bitmap: Bitmap, smallCrop: Boolean = false) {
+private fun PhotoCard(
+    title: String,
+    bitmap: Bitmap,
+    smallCrop: Boolean = false,
+    frameRatio: Float = bitmap.width.toFloat() / bitmap.height
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(title, style = MaterialTheme.typography.titleSmall)
@@ -152,7 +162,7 @@ private fun PhotoCard(title: String, bitmap: Bitmap, smallCrop: Boolean = false)
         Image(
             bitmap.asImageBitmap(),
             contentDescription = title,
-            modifier = Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height)
+            modifier = Modifier.fillMaxWidth().aspectRatio(frameRatio)
         )
     }
 }
