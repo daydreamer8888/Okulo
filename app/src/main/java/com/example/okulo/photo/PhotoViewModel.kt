@@ -100,6 +100,7 @@ class PhotoViewModel internal constructor(
             tasks.publish(request) {
                 it.copy(
                     result = result,
+                    recommendationFreeRatio = current.freeRatio,
                     manualCrop = null,
                     manualScore = null,
                     manualMillis = null,
@@ -168,7 +169,6 @@ class PhotoViewModel internal constructor(
         mutableState.value = current.copy(
             manualCrop = box,
             freeRatio = if (reshaped) ratio else current.freeRatio,
-            result = if (reshaped) null else current.result,
             manualOriginalScore = current.originalScore,
             manualScore = null,
             manualMillis = null,
@@ -204,6 +204,7 @@ class PhotoViewModel internal constructor(
         tasks.invalidate()
         mutableState.value = state.value.copy(
             manualCrop = null, manualScore = null, manualMillis = null,
+            freeRatio = state.value.recommendationFreeRatio,
             busy = false, scoring = false, error = null, status = "已恢复推荐"
         )
     }

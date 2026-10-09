@@ -19,6 +19,30 @@ import java.io.IOException
 @Config(sdk = [28])
 class PhotoViewModelTest {
     @Test
+    fun reshapedFreeCropsRestoreTheLatestRecommendationAndItsSearchRatio() = PhotoTestHarness().use { fixture ->
+        fixture.select()
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        val first = fixture.model.state.value.result
+        fixture.model.updateCrop(CropBox(0.1f, 0.2f, 0.9f, 0.6f))
+        fixture.model.restoreRecommendation()
+        assertEquals(first, fixture.model.state.value.result)
+        assertEquals(first?.crop, fixture.model.state.value.displayedCrop)
+        assertNull(fixture.model.state.value.freeRatio)
+        fixture.model.updateCrop(CropBox(0.1f, 0.2f, 0.9f, 0.6f))
+        fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = CropBox(0.1f, 0.2f, 0.9f, 0.6f)) }
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        val latest = fixture.model.state.value.result
+        fixture.model.updateCrop(CropBox(0.2f, 0.2f, 0.6f, 0.6f))
+        fixture.model.restoreRecommendation()
+        assertEquals(latest, fixture.model.state.value.result)
+        assertEquals(latest?.crop, fixture.model.state.value.displayedCrop)
+        assertEquals(2f, checkNotNull(fixture.model.state.value.freeRatio), 1e-5f)
+        assertNull(fixture.model.state.value.manualCrop)
+    }
+
+    @Test
     fun rotationAndMirroringKeepTheSelectedRegionAndInvalidateOldScores() = PhotoTestHarness().use { fixture ->
         fixture.select()
         fixture.model.analyze()
@@ -88,7 +112,7 @@ class PhotoViewModelTest {
         assertEquals(2f, fixture.model.state.value.originalScore)
         assertEquals(4f, fixture.model.state.value.displayedScore)
         assertEquals(2, fixture.analyzer.analysisCalls.get())
-        assertNull(fixture.model.state.value.result)
+        assertEquals(recommendation(), fixture.model.state.value.result)
         fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = CropBox(0f, 0.2f, 1f, 0.7f)) }
         fixture.model.analyze()
         fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
