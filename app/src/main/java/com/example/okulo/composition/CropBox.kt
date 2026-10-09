@@ -40,18 +40,19 @@ fun cropCandidates(normalizedRatio: Float): List<CropBox> {
     return listOf(CropBox.FullFrame) + aspectGrid(normalizedRatio, GRID_POINTS, areas)
 }
 
-/** Sample multiple aspects without multiplying the inference candidate budget. */
+/** Balance aspect coverage within four hundred unique coarse-search crops. */
 fun freeCropCandidates(width: Int, height: Int): List<CropBox> {
     require(width > 0 && height > 0)
     val ratios = CropAspect.entries.mapNotNull { it.normalizedRatio(width, height) }.distinct()
-    val candidates = ratios.flatMap { aspectGrid(it, FREE_GRID_POINTS, FREE_AREAS) }.distinct()
-    return listOf(CropBox.FullFrame) + candidates
+    val levels = (FREE_COARSE_BUDGET / ratios.size - FREE_GRID_POINTS) /
+        (FREE_GRID_POINTS * FREE_GRID_POINTS) + 1
+    val areas = (0 until levels).map { 1.0 - it * MIN_AREA / (levels - 1) }
+    val candidates = ratios.flatMap { aspectGrid(it, FREE_GRID_POINTS, areas) }.distinct()
+    return listOf(CropBox.FullFrame) + candidates.filterNot { it == CropBox.FullFrame }
 }
 
 private const val FREE_GRID_POINTS = 3
-
-@Suppress("MagicNumber") // Retained area fractions of each aspect's largest fitting crop.
-private val FREE_AREAS = listOf(1.0, 0.8, 0.65, 0.5)
+private const val FREE_COARSE_BUDGET = 400
 
 private fun aspectGrid(ratio: Float, points: Int, areas: List<Double>): List<CropBox> = buildList {
     val maximumWidth = minOf(1.0, ratio.toDouble())
