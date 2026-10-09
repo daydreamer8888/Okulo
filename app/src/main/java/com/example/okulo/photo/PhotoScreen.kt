@@ -7,33 +7,25 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.okulo.R
@@ -70,7 +62,7 @@ internal fun PhotoScreen(
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         }
         Column(
-            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (state.photo == null) {
@@ -91,16 +83,18 @@ internal fun PhotoScreen(
                 }
             }
             AnalysisFeedback(state, onRetry)
-            state.photo?.let { photo -> PhotoResults(state, photo, cropActions) }
+            state.photo?.let { photo ->
+                PhotoViewPanel(state, photo, cropActions, Modifier.weight(1f))
+            }
             if (showModelScores && state.originalScore != null) {
                 val cropScore = state.displayedScore?.let { String.format(Locale.getDefault(), "%.3f", it) } ?: "~"
                 Text(
                     String.format(Locale.getDefault(), "原图 %.3f · 裁剪 %s", state.originalScore, cropScore),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
-            Spacer(Modifier.height(12.dp))
         }
         if (state.photo != null || state.busy) {
             PhotoBottomTools(
@@ -145,54 +139,10 @@ private fun PhotoBottomTools(
 }
 
 @Composable
-private fun PhotoResults(state: PhotoState, photo: Bitmap, actions: CropActions) {
-    val crop = state.displayedCrop
-    if (crop == null) {
-        PhotoCard("原图", photo)
-        return
-    }
-    Text("原图", style = MaterialTheme.typography.titleSmall)
-    CropEditor(photo, crop, actions, state.aspect.normalizedRatio(photo.width, photo.height))
-    val preview = remember(photo, crop) { cropPreview(photo, crop) }
-    PhotoCard(
-        "裁剪预览",
-        preview,
-        smallCrop = crop.area < 0.5f,
-        frameRatio = photo.width.toFloat() / photo.height
-    )
-}
-
-@Composable
 private fun AnalysisFeedback(state: PhotoState, onRetry: () -> Unit) {
     if (state.error != null) {
         Text(state.error, color = MaterialTheme.colorScheme.error)
         FilledTonalButton(onClick = onRetry) { Text("重试") }
-    }
-}
-
-@Composable
-private fun PhotoCard(
-    title: String,
-    bitmap: Bitmap,
-    smallCrop: Boolean = false,
-    frameRatio: Float = bitmap.width.toFloat() / bitmap.height
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(title, style = MaterialTheme.typography.titleSmall)
-            if (smallCrop) {
-                Text(
-                    "裁剪范围较小",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-        Image(
-            bitmap.asImageBitmap(),
-            contentDescription = title,
-            modifier = Modifier.fillMaxWidth().aspectRatio(frameRatio)
-        )
     }
 }
 

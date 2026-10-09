@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
@@ -16,7 +17,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
@@ -77,7 +77,7 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
-    fun bottomToolsStayReachableWhileThePhotoAndPreviewScroll() {
+    fun bottomToolsStayReachableWhileSwitchingBetweenEditingAndPreview() {
         compose.setContent {
             OkuloTheme {
                 Box(Modifier.size(360.dp, 500.dp)) {
@@ -90,7 +90,7 @@ class PhotoScreenBehaviorTest {
         val save = compose.onNodeWithContentDescription("保存").fetchSemanticsNode().boundsInRoot
         assertEquals(change.center.y, aspect.center.y, 1f)
         assertTrue(save.top >= aspect.bottom)
-        compose.onNodeWithContentDescription("裁剪预览").performScrollTo()
+        compose.onNodeWithText("预览").performClick()
         assertEquals(change, compose.onNodeWithText("换一张照片").fetchSemanticsNode().boundsInRoot)
         assertEquals(aspect, compose.onNodeWithContentDescription("裁剪比例").fetchSemanticsNode().boundsInRoot)
         assertEquals(save, compose.onNodeWithContentDescription("保存").fetchSemanticsNode().boundsInRoot)
@@ -99,21 +99,24 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
-    fun reshapingACropAtTheBottomKeepsTheEditorAndPreviewFrameStationary() {
+    fun reshapingACropKeepsBothViewFramesStationary() {
         val state = mutableStateOf(PhotoState(photo = image(), result = recommendation()))
         compose.setContent {
             OkuloTheme {
                 Box(Modifier.size(360.dp, 500.dp)) { PhotoScreen(state.value, {}, {}, {}) }
             }
         }
-        compose.onNodeWithContentDescription("裁剪预览").performScrollTo()
         val editor = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        val frame = compose.onNodeWithTag("photo-image-area").fetchSemanticsNode().boundsInRoot
+        compose.onNodeWithText("预览").performClick()
         val preview = compose.onNodeWithContentDescription("裁剪预览").fetchSemanticsNode().boundsInRoot
-        assertTrue("The page must be scrolled before resizing", editor.top < 150f)
         for (crop in listOf(CropBox(0.1f, 0.3f, 0.9f, 0.7f), CropBox(0.3f, 0.1f, 0.7f, 0.9f))) {
             compose.runOnIdle { state.value = state.value.copy(manualCrop = crop) }
-            assertEquals(editor, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
             assertEquals(preview, compose.onNodeWithContentDescription("裁剪预览").fetchSemanticsNode().boundsInRoot)
+            assertEquals(frame, compose.onNodeWithTag("photo-image-area").fetchSemanticsNode().boundsInRoot)
+            compose.onNodeWithText("编辑").performClick()
+            assertEquals(editor, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+            compose.onNodeWithText("预览").performClick()
         }
     }
 
@@ -127,7 +130,7 @@ class PhotoScreenBehaviorTest {
                 PhotoScreen(fixture.model.state.collectAsState().value, {}, {}, {}, showModelScores = true)
             }
         }
-        compose.onNodeWithText("原图 2.000 · 裁剪 3.000").performScrollTo()
+        compose.onNodeWithText("原图 2.000 · 裁剪 3.000").assertIsDisplayed()
         val bounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
         compose.runOnIdle { fixture.model.updateCrop(CropBox(0.2f, 0.2f, 1f, 1f)) }
         compose.onNodeWithText("原图 2.000 · 裁剪 ~").assertExists()

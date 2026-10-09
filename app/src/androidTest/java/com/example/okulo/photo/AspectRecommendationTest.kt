@@ -8,7 +8,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.lifecycle.ViewModelProvider
@@ -70,7 +69,7 @@ class AspectRecommendationTest {
             assertTrue(checkNotNull(model.state.value.result).candidateCount <= 600)
             compose.runOnIdle { model.updateCrop(CropBox(0.2f, 0.2f, 0.8f, 0.8f)) }
             compose.waitForIdle()
-            compose.onNodeWithTag("crop-editor").performScrollTo()
+            compose.onNodeWithTag("crop-editor").assertIsDisplayed()
             compose.waitForIdle()
             compose.onNodeWithTag("crop-editor").performTouchInput {
                 swipe(Offset(width * 0.8f, height * 0.8f), Offset(width * 0.6f, height * 0.8f))
