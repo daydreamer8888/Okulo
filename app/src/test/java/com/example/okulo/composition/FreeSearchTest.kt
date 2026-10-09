@@ -15,6 +15,37 @@ import kotlin.math.abs
 @Config(sdk = [28])
 class FreeSearchTest {
     @Test
+    fun inferiorRefinementKeepsTheWinningCoarseCropOrUncroppedSource() {
+        val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
+        try {
+            for (winner in listOf(CropBox.FullFrame, CropBox(0f, 0f, 0.70710677f, 0.70710677f))) {
+                var calls = 0
+                val model = object : CropScoringModel {
+                    override fun load(mode: AnalysisMode) = Unit
+                    override fun close() = Unit
+                    override fun score(
+                        bitmap: Bitmap,
+                        mode: AnalysisMode,
+                        candidates: List<CropBox>,
+                        isCurrent: () -> Boolean
+                    ): FloatArray {
+                        calls++
+                        return candidates.map { if (it == winner) 42f else 1f }.toFloatArray()
+                    }
+                }
+                CompositionEngine(model).use { engine ->
+                    val result = engine.analyze(photo, AnalysisMode.Fast, null, { true }, {})
+                    assertEquals(2, calls)
+                    assertEquals(winner, result.crop)
+                    assertEquals(42f, result.cropScore, 0f)
+                }
+            }
+        } finally {
+            photo.recycle()
+        }
+    }
+
+    @Test
     fun cancellationAtRefinementProgressSkipsTheSecondInference() {
         val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
         var current = true
