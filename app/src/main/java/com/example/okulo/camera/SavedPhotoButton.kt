@@ -11,6 +11,7 @@ import android.util.Size
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.IconButton
@@ -44,6 +45,10 @@ private const val LEGACY_SAMPLE_SIZE = 16
 
 @Composable
 internal fun SavedPhotoButton(uri: Uri?, onClick: () -> Unit) {
+    if (uri == null) {
+        Spacer(Modifier.size(56.dp))
+        return
+    }
     val resolver = LocalContext.current.contentResolver
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var revision by remember { mutableIntStateOf(0) }
