@@ -42,6 +42,24 @@ class PhotoScreenBehaviorTest {
     fun restoreLocale() = Locale.setDefault(originalLocale)
 
     @Test
+    fun everyAnalysisShowsProgressWithoutMovingTheExistingEditor() {
+        val state = mutableStateOf(PhotoState(photo = image(), result = recommendation()))
+        val progress = androidx.compose.ui.test.SemanticsMatcher.keyIsDefined(
+            androidx.compose.ui.semantics.SemanticsProperties.ProgressBarRangeInfo
+        )
+        compose.setContent { OkuloTheme { PhotoScreen(state.value, {}, {}, {}) } }
+        val bounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        compose.onNode(progress).assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(busy = true) }
+        compose.onNode(progress).assertExists()
+        assertEquals(bounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        compose.runOnIdle { state.value = state.value.copy(busy = false) }
+        compose.onNode(progress).assertDoesNotExist()
+        compose.runOnIdle { state.value = PhotoState(busy = true) }
+        compose.onNode(progress).assertExists()
+    }
+
+    @Test
     fun emptyScreenFocusesOnPickingBeforeEditingActionsAppear() {
         compose.setContent { OkuloTheme { PhotoScreen(PhotoState(), {}, {}, {}) } }
         compose.onNodeWithText("选择照片").assertIsEnabled()
