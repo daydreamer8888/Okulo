@@ -25,7 +25,7 @@ class CompositionEngineContractTest {
             val result = engine.analyze(photo, AnalysisMode.Fast, null, { true }, {})
             assertEquals(1f, result.crop.width * 400 / (result.crop.height * 300), 1e-5f)
             assertEquals(8f, result.cropScore, 0f)
-            assertTrue(result.candidateCount <= 250)
+            assertTrue(result.candidateCount <= 400)
         }
         photo.recycle()
     }

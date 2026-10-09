@@ -64,7 +64,7 @@ class AspectRecommendationTest {
             compose.onNodeWithText("自由").performClick()
             compose.onNodeWithContentDescription("分析构图").performClick()
             awaitIdle(model)
-            assertTrue(checkNotNull(model.state.value.result).candidateCount <= 250)
+            assertTrue(checkNotNull(model.state.value.result).candidateCount <= 400)
             compose.runOnIdle { model.updateCrop(CropBox(0.2f, 0.2f, 0.8f, 0.8f)) }
             compose.onNodeWithTag("crop-editor").performScrollTo().performTouchInput {
                 swipe(Offset(width * 0.8f, height * 0.8f), Offset(width * 0.6f, height * 0.8f))

@@ -7,16 +7,27 @@ import kotlin.math.abs
 
 class CropGeometryTest {
     @Test
-    fun freeSearchCoversMultipleAspectsWithinTheOriginalCandidateBudget() {
-        val boxes = freeCropCandidates(400, 300)
-        assertEquals(CropBox.FullFrame, boxes.first())
-        assertTrue(boxes.size <= 251)
-        for (expected in listOf(1f, 4f / 3f, 16f / 9f, 9f / 16f)) {
-            assertTrue(boxes.drop(1).any { abs(it.width * 400 / (it.height * 300) - expected) < 1e-5f })
-        }
-        for (box in boxes.drop(1)) {
-            assertTrue(box.width > 0f && box.height > 0f)
-            assertTrue(box.left >= 0f && box.top >= 0f && box.right <= 1f && box.bottom <= 1f)
+    fun freeSearchBalancesEveryAspectAcrossPositionsAndSizesWithinFourHundredCrops() {
+        for ((width, height) in listOf(400 to 300, 300 to 400, 400 to 273)) {
+            val boxes = freeCropCandidates(width, height)
+            assertEquals(CropBox.FullFrame, boxes.first())
+            assertEquals(boxes.size, boxes.distinct().size)
+            assertTrue(boxes.size <= 401)
+            val ratios = CropAspect.entries.mapNotNull { it.normalizedRatio(width, height) }.distinct()
+            val counts = ratios.map { ratio ->
+                val matching = boxes.drop(1).filter { abs(it.width / it.height / ratio - 1f) < 1e-5f }
+                assertTrue("Aspect $ratio is undersampled", matching.size >= 45)
+                assertTrue(matching.any { it.left == 0f && it.top == 0f })
+                assertTrue(matching.any { abs(it.right - 1f) < 1e-6f && abs(it.bottom - 1f) < 1e-6f })
+                assertTrue(matching.any { abs((it.left + it.right) / 2 - 0.5f) < 1e-6f })
+                assertTrue(matching.map { it.area }.distinct().size >= 6)
+                matching.size
+            }
+            assertTrue(counts.max() - counts.min() <= 3)
+            for (box in boxes) {
+                assertTrue(box.width > 0f && box.height > 0f)
+                assertTrue(box.left >= 0f && box.top >= 0f && box.right <= 1f && box.bottom <= 1f)
+            }
         }
     }
 
