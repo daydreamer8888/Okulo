@@ -47,6 +47,28 @@ class PhotoScreenBehaviorTest {
     fun restoreLocale() = Locale.setDefault(originalLocale)
 
     @Test
+    fun bottomToolsStayReachableWhileThePhotoAndPreviewScroll() {
+        compose.setContent {
+            OkuloTheme {
+                Box(Modifier.size(360.dp, 500.dp)) {
+                    PhotoScreen(PhotoState(photo = image(), result = recommendation()), {}, {}, {})
+                }
+            }
+        }
+        val change = compose.onNodeWithText("换一张照片").fetchSemanticsNode().boundsInRoot
+        val aspect = compose.onNodeWithContentDescription("裁剪比例").fetchSemanticsNode().boundsInRoot
+        val save = compose.onNodeWithContentDescription("保存").fetchSemanticsNode().boundsInRoot
+        assertEquals(change.center.y, aspect.center.y, 1f)
+        assertTrue(save.top >= aspect.bottom)
+        compose.onNodeWithContentDescription("裁剪预览").performScrollTo()
+        assertEquals(change, compose.onNodeWithText("换一张照片").fetchSemanticsNode().boundsInRoot)
+        assertEquals(aspect, compose.onNodeWithContentDescription("裁剪比例").fetchSemanticsNode().boundsInRoot)
+        assertEquals(save, compose.onNodeWithContentDescription("保存").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithContentDescription("保存").assertIsEnabled()
+        compose.onNodeWithText("裁剪").assertExists()
+    }
+
+    @Test
     fun reshapingACropAtTheBottomKeepsTheEditorAndPreviewFrameStationary() {
         val state = mutableStateOf(PhotoState(photo = image(), result = recommendation()))
         compose.setContent {
@@ -166,7 +188,7 @@ class PhotoScreenBehaviorTest {
         val editor = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
         assertTrue(analyze.top >= aspect.bottom)
         assertEquals(analyze.top, save.top, 1f)
-        assertTrue(analyze.bottom <= editor.top)
+        assertTrue(editor.bottom <= aspect.top)
         compose.onNodeWithContentDescription("向右旋转").assertDoesNotExist()
         compose.onNodeWithText("向右旋转").assertDoesNotExist()
         compose.onNodeWithContentDescription("更多").performClick()
