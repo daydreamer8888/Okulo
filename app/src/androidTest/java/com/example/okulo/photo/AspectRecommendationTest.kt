@@ -2,6 +2,7 @@ package com.example.okulo.photo
 
 import android.net.Uri
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -40,8 +41,9 @@ class AspectRecommendationTest {
                 model.selectPhoto(Uri.fromFile(source))
             }
             awaitIdle(model)
-            compose.onNodeWithContentDescription("裁剪比例").performScrollTo().performClick()
+            compose.onNodeWithContentDescription("裁剪比例").assertIsDisplayed().performClick()
             compose.onNodeWithText("16:9").performClick()
+            compose.runOnIdle { assertEquals(CropAspect.Wide, model.state.value.aspect) }
             compose.onNodeWithContentDescription("分析构图").performClick()
             awaitIdle(model)
             val wide = checkNotNull(model.state.value.displayedCrop) { model.state.value.error.orEmpty() }
@@ -60,13 +62,17 @@ class AspectRecommendationTest {
             compose.onNodeWithContentDescription("恢复").performClick()
             assertEquals(CropAspect.Wide, model.state.value.aspect)
             assertEquals(wide, model.state.value.displayedCrop)
-            compose.onNodeWithContentDescription("裁剪比例").performScrollTo().performClick()
+            compose.onNodeWithContentDescription("裁剪比例").assertIsDisplayed().performClick()
             compose.onNodeWithText("自由").performClick()
+            compose.runOnIdle { assertEquals(CropAspect.Free, model.state.value.aspect) }
             compose.onNodeWithContentDescription("分析构图").performClick()
             awaitIdle(model)
             assertTrue(checkNotNull(model.state.value.result).candidateCount <= 600)
             compose.runOnIdle { model.updateCrop(CropBox(0.2f, 0.2f, 0.8f, 0.8f)) }
-            compose.onNodeWithTag("crop-editor").performScrollTo().performTouchInput {
+            compose.waitForIdle()
+            compose.onNodeWithTag("crop-editor").performScrollTo()
+            compose.waitForIdle()
+            compose.onNodeWithTag("crop-editor").performTouchInput {
                 swipe(Offset(width * 0.8f, height * 0.8f), Offset(width * 0.6f, height * 0.8f))
             }
             awaitIdle(model)
