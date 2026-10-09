@@ -9,6 +9,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -61,6 +62,9 @@ internal fun PhotoScreen(
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
     Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         PhotoToolbar(onBack, onSettings)
+        Box(Modifier.fillMaxWidth().height(4.dp)) {
+            if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        }
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -132,9 +136,7 @@ private fun PhotoResults(state: PhotoState, photo: Bitmap, actions: CropActions)
 
 @Composable
 private fun AnalysisFeedback(state: PhotoState, onRetry: () -> Unit) {
-    if (state.busy && state.displayedCrop == null) {
-        LinearProgressIndicator(Modifier.fillMaxWidth())
-    } else if (state.error != null) {
+    if (state.error != null) {
         Text(state.error, color = MaterialTheme.colorScheme.error)
         Button(onClick = onRetry) { Text("重试") }
     }
