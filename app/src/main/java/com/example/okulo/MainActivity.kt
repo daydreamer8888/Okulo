@@ -1,5 +1,6 @@
 package com.example.okulo
 
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -51,7 +52,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            OkuloApp(viewModel) { dark ->
+            OkuloApp(viewModel, onCameraPage = { camera ->
+                requestedOrientation = if (camera) {
+                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                } else {
+                    ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                }
+            }) { dark ->
                 val bars = if (dark) {
                     SystemBarStyle.dark(AndroidColor.BLACK)
                 } else {
@@ -64,7 +71,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
+private fun OkuloApp(viewModel: PhotoViewModel, onCameraPage: (Boolean) -> Unit, onTheme: (Boolean) -> Unit) {
     val context = LocalContext.current
     val camera = remember { CameraSession(context.applicationContext) }
     CameraSessionLifetime(camera)
@@ -97,7 +104,10 @@ private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
         AppTheme.Dark -> true
     }
     val dark = page == AppPage.Camera || selectedDark
-    SideEffect { onTheme(dark) }
+    SideEffect {
+        onTheme(dark)
+        onCameraPage(page == AppPage.Camera)
+    }
     val background by animateColorAsState(
         if (dark) Color.Black else Color.White,
         tween(PAGE_TRANSITION_MILLIS),
