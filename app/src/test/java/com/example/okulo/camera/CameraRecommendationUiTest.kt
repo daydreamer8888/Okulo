@@ -43,6 +43,32 @@ class CameraRecommendationUiTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
+    fun signedScoresAndLoadingKeepTheCardAndLabelsInPlace() {
+        val result = recommendation()
+        val state = mutableStateOf(CameraCompositionState(result, result.crop, 2.8f, 3.13f))
+        compose.setContent {
+            OkuloTheme(darkTheme = true) {
+                CameraLayout({}, composition = state.value, showScores = true) {}
+            }
+        }
+        val card = compose.onNodeWithTag("composition-scores").fetchSemanticsNode().boundsInRoot
+        val original = compose.onNodeWithText("原图").fetchSemanticsNode().boundsInRoot
+        val crop = compose.onNodeWithText("裁剪").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { state.value = state.value.copy(originalScore = -2.5f, cropScore = -11.75f) }
+        compose.onNodeWithText("-11.75").assertExists()
+        assertEquals(card, compose.onNodeWithTag("composition-scores").fetchSemanticsNode().boundsInRoot)
+        assertEquals(original, compose.onNodeWithText("原图").fetchSemanticsNode().boundsInRoot)
+        assertEquals(crop, compose.onNodeWithText("裁剪").fetchSemanticsNode().boundsInRoot)
+        compose.runOnIdle { state.value = state.value.copy(cropScore = null, scoring = true) }
+        compose.onNodeWithContentDescription("正在更新裁剪评分").assertExists()
+        assertEquals(card, compose.onNodeWithTag("composition-scores").fetchSemanticsNode().boundsInRoot)
+        compose.runOnIdle { state.value = state.value.copy(cropScore = 1.11f, scoring = false) }
+        compose.onNodeWithText("1.11").assertExists()
+        assertEquals(card, compose.onNodeWithTag("composition-scores").fetchSemanticsNode().boundsInRoot)
+        assertEquals(crop, compose.onNodeWithText("裁剪").fetchSemanticsNode().boundsInRoot)
+    }
+
+    @Test
     fun recommendationProgressKeepsScoresAndShutterStableAndCanBeCancelled() {
         val result = recommendation()
         val state = mutableStateOf(
