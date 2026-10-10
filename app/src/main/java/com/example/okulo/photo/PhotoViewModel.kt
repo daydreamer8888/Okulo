@@ -5,7 +5,6 @@ import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
-import android.util.Size
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.okulo.composition.AnalysisMode
@@ -28,15 +27,9 @@ import kotlin.math.abs
 class PhotoViewModel internal constructor(
     application: Application,
     private val engine: CompositionAnalyzer,
-    private val sizeReader: (ContentResolver, Uri) -> Size? = { _, _ -> null },
     private val photoReader: (ContentResolver, Uri) -> Bitmap
 ) : AndroidViewModel(application) {
-    constructor(application: Application) : this(
-        application,
-        createCompositionAnalyzer(application),
-        ::readPhotoSize,
-        ::readPhoto
-    )
+    constructor(application: Application) : this(application, createCompositionAnalyzer(application), ::readPhoto)
 
     private val mutableState = MutableStateFlow(PhotoState())
     internal val state = mutableState.asStateFlow()
@@ -77,10 +70,8 @@ class PhotoViewModel internal constructor(
         val request = tasks.invalidate()
         mutableState.value = PhotoState(mode = state.value.mode, busy = true, status = "正在读取照片…")
         tasks.submit(request, { "照片读取失败，请重新选择" }) {
-            val resolver = getApplication<Application>().contentResolver
-            val size = sizeReader(resolver, uri)
-            val bitmap = photoReader(resolver, uri)
-            tasks.publish(request) { it.copy(photo = bitmap, sourceSize = size, busy = false, status = "照片已就绪") }
+            val bitmap = photoReader(getApplication<Application>().contentResolver, uri)
+            tasks.publish(request) { it.copy(photo = bitmap, busy = false, status = "照片已就绪") }
         }
     }
 
@@ -90,8 +81,7 @@ class PhotoViewModel internal constructor(
         val current = state.value
         mutableState.value = PhotoState(
             photo = current.photo, mode = mode, status = "照片已就绪", transform = current.transform,
-            aspect = current.aspect, manualCrop = current.displayedCrop, freeRatio = current.freeRatio,
-            sourceSize = current.sourceSize
+            aspect = current.aspect, manualCrop = current.displayedCrop, freeRatio = current.freeRatio
         )
         if (current.photo == null) selectedUri?.let(::selectPhoto)
     }
@@ -142,7 +132,6 @@ class PhotoViewModel internal constructor(
                     freeRatio = current.freeRatio?.let {
                         if (operation == PhotoOperation.RotateClockwise) 1f / it else it
                     },
-                    sourceSize = current.sourceSize,
                     transform = current.transform.followedBy(operation)
                 )
             }

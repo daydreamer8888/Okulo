@@ -1,7 +1,6 @@
 package com.example.okulo.photo
 
 import android.graphics.Bitmap
-import android.util.Size
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropAspect
@@ -22,8 +21,7 @@ internal data class PhotoState(
     val aspect: CropAspect = CropAspect.Free,
     val freeRatio: Float? = null,
     val recommendationFreeRatio: Float? = null,
-    val transform: PhotoTransform = PhotoTransform(),
-    val sourceSize: Size? = null
+    val transform: PhotoTransform = PhotoTransform()
 ) {
     val originalScore: Float? get() = result?.originalScore ?: manualOriginalScore
     val displayedCrop: CropBox? get() = manualCrop ?: result?.crop
