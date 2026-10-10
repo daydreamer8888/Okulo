@@ -45,7 +45,6 @@ internal fun SettingsScreen(
     keepOriginal: Boolean = true,
     onKeepOriginal: (Boolean) -> Unit = {}
 ) {
-    var choosingMode by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         TopAppBar(
             title = { Text("设置") },
@@ -54,27 +53,43 @@ internal fun SettingsScreen(
         )
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             appearance()
-            Text("拍摄", Modifier.padding(16.dp), style = MaterialTheme.typography.labelLarge)
-            ListItem(
-                headlineContent = { Text("保留原图") },
-                supportingContent = { Text("裁剪拍摄时同时保存原图") },
-                trailingContent = { Switch(checked = keepOriginal, onCheckedChange = null) },
-                modifier = Modifier.toggleable(keepOriginal, role = Role.Switch, onValueChange = onKeepOriginal)
-            )
-            Text("分析", Modifier.padding(16.dp), style = MaterialTheme.typography.labelLarge)
-            ListItem(
-                headlineContent = { Text("分析模式") },
-                supportingContent = { Text(analysisMode.title) },
-                trailingContent = { Icon(painterResource(R.drawable.ic_chevron_right), null) },
-                modifier = Modifier.clickable { choosingMode = true }
-            )
-            ListItem(
-                headlineContent = { Text("显示评分") },
-                supportingContent = { Text("仅用于比较同一张照片的不同裁剪") },
-                trailingContent = { Switch(checked = showScores, onCheckedChange = null) },
-                modifier = Modifier.toggleable(showScores, role = Role.Switch, onValueChange = onScores)
-            )
+            SettingsGroup("拍摄") {
+                ListItem(
+                    colors = settingsItemColors(),
+                    headlineContent = { Text("保留原图") },
+                    supportingContent = { Text("裁剪拍摄时同时保存原图") },
+                    trailingContent = { Switch(checked = keepOriginal, onCheckedChange = null) },
+                    modifier = Modifier.toggleable(keepOriginal, role = Role.Switch, onValueChange = onKeepOriginal)
+                )
+            }
+            AnalysisSettings(showScores, onScores, analysisMode, onMode)
         }
+    }
+}
+
+@Composable
+private fun AnalysisSettings(
+    showScores: Boolean,
+    onScores: (Boolean) -> Unit,
+    analysisMode: AnalysisMode,
+    onMode: (AnalysisMode) -> Unit
+) {
+    var choosingMode by remember { mutableStateOf(false) }
+    SettingsGroup("分析") {
+        ListItem(
+            colors = settingsItemColors(),
+            headlineContent = { Text("分析模式") },
+            supportingContent = { Text(analysisMode.title) },
+            trailingContent = { Icon(painterResource(R.drawable.ic_chevron_right), null) },
+            modifier = Modifier.clickable { choosingMode = true }
+        )
+        ListItem(
+            colors = settingsItemColors(),
+            headlineContent = { Text("显示评分") },
+            supportingContent = { Text("仅用于比较同一张照片的不同裁剪") },
+            trailingContent = { Switch(checked = showScores, onCheckedChange = null) },
+            modifier = Modifier.toggleable(showScores, role = Role.Switch, onValueChange = onScores)
+        )
     }
     if (choosingMode) {
         AnalysisModeSheet(analysisMode, { choosingMode = false }) {
