@@ -51,6 +51,41 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         }
     }
 
+    fun updateCrop(crop: CropBox) {
+        val current = state.value
+        if (current.crop == null || current.crop == crop) return
+        tasks.invalidate()
+        mutableState.value = current.copy(crop = crop, cropScore = null, busy = false, scoring = true, error = null)
+    }
+
+    fun evaluateCrop(snapshot: Bitmap, mode: AnalysisMode) {
+        val current = state.value
+        val crop = current.crop
+        if (crop == null) {
+            snapshot.recycle()
+            return
+        }
+        val request = tasks.invalidate()
+        releaseFrame()
+        frame = snapshot
+        mutableState.value = current.copy(busy = false, scoring = true, error = null)
+        tasks.submit(request, { value, _ -> value.copy(scoring = false, error = "评分失败，请重试") }) {
+            val result = analyzer.evaluate(snapshot, mode, crop) { tasks.isCurrent(request) }
+            tasks.publish(request) {
+                it.copy(originalScore = result.originalScore, cropScore = result.cropScore, scoring = false)
+            }
+        }
+    }
+
+    fun restore() {
+        val result = state.value.recommendation ?: return
+        tasks.invalidate()
+        mutableState.value = state.value.copy(
+            crop = result.crop, originalScore = result.originalScore, cropScore = result.cropScore,
+            busy = false, scoring = false, error = null
+        )
+    }
+
     fun dismiss() {
         val current = state.value
         tasks.invalidate()

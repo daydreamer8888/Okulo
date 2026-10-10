@@ -83,6 +83,45 @@ class CameraCompositionTest {
         }
     }
 
+    @Test
+    fun resizingThenRestoringRejectsPendingScoresAndKeepsTheOriginalScoreVisible() {
+        val source = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
+        val scoringFrame = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
+        val analyzer = TestAnalyzer()
+        val gate = WorkGate()
+        analyzer.evaluate = { crop ->
+            gate.block()
+            recommendation().copy(crop = crop, originalScore = 8f, cropScore = 9f)
+        }
+        val composition = CameraComposition(analyzer)
+        try {
+            composition.recommend(source, AnalysisMode.Fast)
+            await { !composition.state.value.busy }
+            val resized = recommendation().crop.copy(right = 0.7f)
+            composition.updateCrop(resized)
+            assertTrue(composition.state.value.canRestore)
+            composition.evaluateCrop(scoringFrame, AnalysisMode.Fast)
+            gate.awaitEntry()
+            assertTrue(composition.state.value.scoring)
+            assertFalse(composition.state.value.busy)
+            assertEquals(2f, composition.state.value.originalScore)
+            assertEquals(null, composition.state.value.cropScore)
+            composition.restore()
+            assertEquals(recommendation().crop, composition.state.value.crop)
+            assertEquals(3f, composition.state.value.cropScore)
+            assertFalse(composition.state.value.scoring)
+            assertFalse(composition.state.value.canRestore)
+            assertFalse(analyzer.isCurrent())
+            gate.release()
+        } finally {
+            gate.release()
+            composition.close()
+            assertTrue(analyzer.closed.await(10, TimeUnit.SECONDS))
+            shadowOf(Looper.getMainLooper()).idle()
+            assertEquals(3f, composition.state.value.cropScore)
+        }
+    }
+
     private fun await(condition: () -> Boolean) {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
         while (true) {
