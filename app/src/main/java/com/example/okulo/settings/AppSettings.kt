@@ -8,6 +8,14 @@ import com.example.okulo.composition.AnalysisMode
 
 internal class AppSettings(context: Context) {
     private val preferences = context.getSharedPreferences("okulo_settings", Context.MODE_PRIVATE)
+    var keepCaptureOriginal by mutableStateOf(preferences.getBoolean("capture_original", true))
+        private set
+
+    fun setCaptureOriginal(enabled: Boolean) {
+        preferences.edit().putBoolean("capture_original", enabled).apply()
+        keepCaptureOriginal = enabled
+    }
+
     var showModelScores by mutableStateOf(preferences.getBoolean("model_scores", false))
         private set
 

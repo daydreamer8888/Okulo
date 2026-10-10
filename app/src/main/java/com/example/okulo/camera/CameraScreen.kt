@@ -40,7 +40,8 @@ internal fun CameraScreen(
     modifier: Modifier = Modifier,
     onSettings: () -> Unit = {},
     analysisMode: AnalysisMode = AnalysisMode.Fast,
-    showScores: Boolean = false
+    showScores: Boolean = false,
+    keepOriginal: Boolean = true
 ) {
     val context = LocalContext.current
     val framing by composition.state.collectAsState()
@@ -48,7 +49,7 @@ internal fun CameraScreen(
     val frameActions = CameraFrameActions(composition, { frameSource?.invoke() }, { analysisMode })
     val permission = rememberCameraPermission()
     val storage = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        if (it) capture.takePhoto(framing.crop) else capture.permissionDenied()
+        if (it) capture.takePhoto(framing.crop, keepOriginal) else capture.permissionDenied()
     }
     CameraLayout(
         onImportPhoto = onImportPhoto,
@@ -71,7 +72,7 @@ internal fun CameraScreen(
             ) {
                 storage.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             } else {
-                capture.takePhoto(framing.crop)
+                capture.takePhoto(framing.crop, keepOriginal)
             }
         },
         onViewPhoto = { openCapturedPhoto(context, capture.state.savedPhoto) }
