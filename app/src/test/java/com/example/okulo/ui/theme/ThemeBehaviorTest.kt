@@ -23,7 +23,13 @@ class ThemeBehaviorTest {
     fun defaultThemesKeepAllNeutralRolesAchromaticAndTextReadable() {
         val dark = mutableStateOf(false)
         lateinit var colors: ColorScheme
-        compose.setContent { OkuloTheme(darkTheme = dark.value) { colors = MaterialTheme.colorScheme } }
+        var warning = Color.Unspecified
+        compose.setContent {
+            OkuloTheme(darkTheme = dark.value) {
+                colors = MaterialTheme.colorScheme
+                warning = LocalWarningColor.current
+            }
+        }
         for (isDark in listOf(false, true)) {
             compose.runOnIdle { dark.value = isDark }
             compose.runOnIdle {
@@ -31,7 +37,7 @@ class ThemeBehaviorTest {
                     assertEquals(role, color.red, color.green, 0f)
                     assertEquals(role, color.green, color.blue, 0f)
                 }
-                textPairs(colors).forEach { (background, foreground) ->
+                (textPairs(colors) + (colors.surface to warning)).forEach { (background, foreground) ->
                     val luminances = listOf(background.luminance(), foreground.luminance())
                     val contrast = (luminances.max() + 0.05f) / (luminances.min() + 0.05f)
                     assertTrue("Text contrast $contrast in dark=$isDark", contrast >= 4.5f)

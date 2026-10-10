@@ -6,6 +6,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
@@ -25,9 +27,9 @@ fun OkuloTheme(
         else -> MonochromeLight
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalWarningColor provides if (darkTheme) WarningDark else WarningLight) {
+        MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
+    }
 }
+
+internal val LocalWarningColor = staticCompositionLocalOf { WarningLight }

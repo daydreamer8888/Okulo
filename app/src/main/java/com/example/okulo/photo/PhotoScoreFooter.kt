@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -16,21 +17,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.example.okulo.R
+import com.example.okulo.ui.theme.LocalWarningColor
 import java.util.Locale
 
 @Composable
 internal fun SmallCropWarning(state: PhotoState) {
     val smallCrop = state.displayedCrop?.area?.let { it < 0.5f } == true
-    Text(
-        "裁剪范围较小",
+    Row(
         modifier = Modifier.auxiliaryVisibility(smallCrop),
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.error
-    )
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(painterResource(R.drawable.ic_warning), null, Modifier.size(16.dp), tint = LocalWarningColor.current)
+        Text("范围较小", style = MaterialTheme.typography.labelMedium, color = LocalWarningColor.current)
+    }
 }
 
 @Composable

@@ -109,6 +109,48 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
+    fun smallCropWarningUsesAmberInsteadOfErrorAndKeepsSavingAvailable() {
+        val dark = mutableStateOf(false)
+        val state = mutableStateOf(
+            PhotoState(
+                photo = image(),
+                result = recommendation(),
+                manualCrop = CropBox(0.2f, 0.2f, 0.4f, 0.4f)
+            )
+        )
+        lateinit var view: View
+        compose.setContent {
+            view = LocalView.current
+            OkuloTheme(darkTheme = dark.value) { PhotoScreen(state.value, {}, {}, {}) }
+        }
+        for (isDark in listOf(false, true)) {
+            compose.runOnIdle { dark.value = isDark }
+            compose.onNodeWithText("范围较小").assertIsDisplayed()
+            val bounds = compose.onNodeWithText("范围较小").fetchSemanticsNode().boundsInRoot
+            lateinit var bitmap: Bitmap
+            compose.runOnIdle {
+                bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+            }
+            assertTrue(
+                (bounds.left.toInt() until bounds.right.toInt()).any { x ->
+                    (bounds.top.toInt() until bounds.bottom.toInt()).any { y ->
+                        val pixel = bitmap.getPixel(x, y)
+                        val green = android.graphics.Color.green(pixel)
+                        val red = android.graphics.Color.red(pixel)
+                        val blue = android.graphics.Color.blue(pixel)
+                        // Antialiased glyphs blend with the surface but retain the amber hue.
+                        green - blue > 40 && red - green in 1..40
+                    }
+                }
+            )
+            compose.onNodeWithContentDescription("保存").assertIsEnabled()
+        }
+        compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox.FullFrame) }
+        compose.onNodeWithText("范围较小").assertDoesNotExist()
+    }
+
+    @Test
     fun aspectChoicesOpenInABottomSheetAndRestoreKeepsItsPosition() {
         val state = mutableStateOf(PhotoState(photo = image(), result = recommendation()))
         var restored = 0
@@ -457,13 +499,13 @@ class PhotoScreenBehaviorTest {
         val state = mutableStateOf(PhotoState(photo = image(), manualCrop = CropBox(0f, 0f, 1f, 0.5f)))
         compose.setContent { OkuloTheme { PhotoScreen(state.value, {}, {}, {}) } }
         val bounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
-        compose.onNodeWithText("裁剪范围较小").assertDoesNotExist()
+        compose.onNodeWithText("范围较小").assertDoesNotExist()
         compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox(0f, 0f, 0.7f, 0.7f)) }
-        compose.onNodeWithText("裁剪范围较小").assertExists()
+        compose.onNodeWithText("范围较小").assertExists()
         assertEquals(bounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
         compose.onNodeWithContentDescription("保存").assertIsEnabled()
         compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox.FullFrame) }
-        compose.onNodeWithText("裁剪范围较小").assertDoesNotExist()
+        compose.onNodeWithText("范围较小").assertDoesNotExist()
     }
 
     @Test
@@ -485,7 +527,7 @@ class PhotoScreenBehaviorTest {
         compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
         compose.onNodeWithText("拖动框内移动，拖动四角或双指缩放").assertDoesNotExist()
         compose.onNodeWithText("保留原图 16%").assertDoesNotExist()
-        compose.onNodeWithText("裁剪范围较小").assertExists()
+        compose.onNodeWithText("范围较小").assertExists()
         compose.runOnIdle { showScores.value = true }
         compose.onNodeWithText("4.00").assertExists()
         compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
