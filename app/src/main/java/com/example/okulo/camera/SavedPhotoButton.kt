@@ -8,6 +8,10 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.util.Size
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -40,6 +44,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
 
+private const val THUMBNAIL_FADE_MS = 150
 private const val THUMBNAIL_SIZE = 128
 private const val LEGACY_SAMPLE_SIZE = 16
 
@@ -70,16 +75,21 @@ internal fun SavedPhotoButton(uri: Uri?, onClick: () -> Unit) {
         modifier = Modifier.size(56.dp).semantics { contentDescription = "查看最新照片" }
     ) {
         val shape = CircleShape
-        if (bitmap != null) {
-            Image(
-                bitmap.asImageBitmap(),
-                null,
-                Modifier.size(48.dp).clip(shape).testTag("saved-photo-thumbnail"),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Box(Modifier.size(48.dp).background(Color.DarkGray, shape))
+        AnimatedVisibility(
+            visible = bitmap != null,
+            enter = fadeIn(tween(THUMBNAIL_FADE_MS)),
+            exit = fadeOut(tween(THUMBNAIL_FADE_MS))
+        ) {
+            if (bitmap != null) {
+                Image(
+                    bitmap.asImageBitmap(),
+                    null,
+                    Modifier.size(48.dp).clip(shape).testTag("saved-photo-thumbnail"),
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
+        if (bitmap == null) Box(Modifier.size(48.dp).background(Color.DarkGray, shape))
     }
 }
 
