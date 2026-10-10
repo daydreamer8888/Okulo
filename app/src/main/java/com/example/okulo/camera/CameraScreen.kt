@@ -18,12 +18,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,9 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.photo.CropActions
 
@@ -48,32 +43,10 @@ internal fun CameraScreen(
     showScores: Boolean = false
 ) {
     val context = LocalContext.current
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val framing by composition.state.collectAsState()
     var frameSource by remember { mutableStateOf<(() -> Bitmap?)?>(null) }
-    fun recommend() {
-        val frame = frameSource?.invoke()
-        if (frame != null) composition.recommend(frame, analysisMode) else composition.previewUnavailable()
-    }
-    fun evaluate() {
-        val frame = frameSource?.invoke()
-        if (frame != null) composition.evaluateCrop(frame, analysisMode) else composition.previewUnavailable()
-    }
-    fun hasPermission() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
-        PackageManager.PERMISSION_GRANTED
-    var granted by remember { mutableStateOf(hasPermission()) }
-    var denied by rememberSaveable { mutableStateOf(false) }
-    val request = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        granted = it
-        denied = !it
-    }
-    DisposableEffect(lifecycle, context) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) granted = hasPermission()
-        }
-        lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer) }
-    }
+    val frameActions = CameraFrameActions(composition, { frameSource?.invoke() }, { analysisMode })
+    val permission = rememberCameraPermission()
     val storage = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         if (it) capture.takePhoto(framing.crop) else capture.permissionDenied()
     }
@@ -84,7 +57,7 @@ internal fun CameraScreen(
         capture = capture.state,
         composition = framing,
         compositionActions = CameraCompositionActions(
-            ::recommend,
+            frameActions::recommend,
             composition::restore,
             composition::dismiss,
             composition::dismissError
@@ -103,14 +76,18 @@ internal fun CameraScreen(
         },
         onViewPhoto = { openCapturedPhoto(context, capture.state.savedPhoto) }
     ) {
-        if (granted) {
+        if (permission.granted) {
             Box(Modifier.fillMaxSize().semantics { contentDescription = "取景区域" }) {
-                CameraViewfinder(framing.crop, CropActions(composition::updateCrop, ::evaluate)) {
-                    CameraPreview(capture) { frameSource = it }
+                CameraViewfinder(framing.crop, CropActions(composition::updateCrop, frameActions::score)) {
+                    CameraPreview(
+                        capture,
+                        onFrameSource = { frameSource = it },
+                        onScene = composition::observeScene
+                    )
                 }
             }
         } else {
-            CameraPermissionNotice(denied) { request.launch(Manifest.permission.CAMERA) }
+            CameraPermissionNotice(permission.denied, permission.request)
         }
     }
 }

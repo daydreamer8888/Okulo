@@ -13,6 +13,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +27,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.ExecutionException
 
 @Composable
-internal fun CameraPreview(capture: CameraCapture, onFrameSource: ((() -> Bitmap?)?) -> Unit = {}) {
+internal fun CameraPreview(
+    capture: CameraCapture,
+    onFrameSource: ((() -> Bitmap?)?) -> Unit = {},
+    onScene: (IntArray) -> Unit = {}
+) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val controller = capture.controller
@@ -40,8 +45,11 @@ internal fun CameraPreview(capture: CameraCapture, onFrameSource: ((() -> Bitmap
     }
     var stream by remember { mutableStateOf(PreviewView.StreamState.IDLE) }
     var error by remember { mutableStateOf<String?>(null) }
+    val sceneObserver by rememberUpdatedState(onScene)
     DisposableEffect(controller, owner) {
         var active = true
+        val scenes = CameraSceneStream(controller) { sceneObserver(it) }
+        scenes.start()
         onFrameSource { if (stream == PreviewView.StreamState.STREAMING) preview.bitmap else null }
         val observer = Observer<PreviewView.StreamState> {
             stream = it
@@ -76,17 +84,23 @@ internal fun CameraPreview(capture: CameraCapture, onFrameSource: ((() -> Bitmap
             capture.previewReady(false)
             preview.previewStreamState.removeObserver(observer)
             controller.unbind()
+            scenes.close()
             preview.controller = null
         }
     }
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
-        if (error != null || stream != PreviewView.StreamState.STREAMING) {
-            Text(
-                error ?: "正在启动相机…",
-                Modifier.align(Alignment.Center).background(Color.Black.copy(alpha = 0.8f)).padding(12.dp),
-                color = Color.White
-            )
-        }
+        CameraPreviewNotice(error, stream)
+    }
+}
+
+@Composable
+private fun CameraPreviewNotice(error: String?, stream: PreviewView.StreamState) {
+    if (error != null || stream != PreviewView.StreamState.STREAMING) {
+        Text(
+            error ?: "正在启动相机…",
+            Modifier.background(Color.Black.copy(alpha = 0.8f)).padding(12.dp),
+            color = Color.White
+        )
     }
 }
