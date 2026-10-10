@@ -29,17 +29,19 @@ internal class CameraZoom(
     private var request = 0
 
     fun update(value: ZoomState?) {
+        if (value == null) {
+            state = null
+            request++
+            changing = false
+            return
+        }
         val previous = state
-        val rangeChanged = previous?.minZoomRatio != value?.minZoomRatio ||
-            previous?.maxZoomRatio != value?.maxZoomRatio
-        if (previous != null && (previous.zoomRatio != value?.zoomRatio || rangeChanged)) {
+        val rangeChanged = previous?.minZoomRatio != value.minZoomRatio ||
+            previous?.maxZoomRatio != value.maxZoomRatio
+        if (previous != null && (previous.zoomRatio != value.zoomRatio || rangeChanged)) {
             onChanged()
         }
         state = value
-        if (value == null) {
-            request++
-            changing = false
-        }
     }
 
     fun requestRatio(ratio: Float) {
