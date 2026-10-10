@@ -2,6 +2,9 @@ package com.example.okulo.composition
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.okulo.composition.s2c.ImageTensors
 import com.example.okulo.composition.s2c.S2cCropScorer
@@ -13,6 +16,37 @@ import org.junit.Test
 import kotlin.math.abs
 
 class CompositionEngineTest {
+    @Test
+    fun sparseScenesSupportRecommendationAndManualScoringInBothModes() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val plain = Bitmap.createBitmap(160, 224, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(Color.LTGRAY)
+        }
+        val singleSubject = plain.copy(Bitmap.Config.ARGB_8888, true).apply {
+            Canvas(this).drawRect(40f, 56f, 120f, 168f, Paint().apply { color = Color.BLUE })
+        }
+        try {
+            createCompositionAnalyzer(context).use { engine ->
+                for (bitmap in listOf(plain, singleSubject)) {
+                    for (mode in AnalysisMode.entries) {
+                        val result = engine.analyze(bitmap, mode, null, { true }, {})
+                        assertTrue(result.originalScore.isFinite())
+                        assertTrue(result.cropScore.isFinite())
+                        assertTrue(result.crop.left >= 0f && result.crop.top >= 0f)
+                        assertTrue(result.crop.right <= 1f && result.crop.bottom <= 1f)
+                        assertTrue(result.crop.area > 0f)
+                        val manual = engine.evaluate(bitmap, mode, result.crop) { true }
+                        assertEquals(result.originalScore, manual.originalScore, 2e-5f)
+                        assertEquals(result.cropScore, manual.cropScore, 2e-5f)
+                    }
+                }
+            }
+        } finally {
+            plain.recycle()
+            singleSubject.recycle()
+        }
+    }
+
     @Test
     fun bothModesMatchDesktopScoresAndBestCropOnIdenticalInputs() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
