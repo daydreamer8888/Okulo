@@ -11,6 +11,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.ViewModelProvider
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.photo.PhotoViewModel
@@ -64,6 +65,31 @@ class MainActivityTest {
         compose.onNodeWithText("分析模式").performClick()
         compose.onNode(hasText("标准分析") and hasAnyAncestor(isDialog())).assertIsSelected()
     }
+
+    @Test
+    fun appearanceIsFirstAndThemeChoiceAppliesImmediatelyAndSurvivesRecreation() {
+        compose.onNodeWithContentDescription("设置").performClick()
+        val appearance = compose.onNodeWithText("外观").fetchSemanticsNode().boundsInRoot
+        val analysis = compose.onNodeWithText("分析").fetchSemanticsNode().boundsInRoot
+        assertTrue(appearance.bottom < analysis.top)
+        compose.onNodeWithText("跟随系统").assertExists()
+        compose.onNodeWithText("主题").performClick()
+        compose.onNode(hasText("跟随系统") and hasAnyAncestor(isDialog())).assertIsSelected()
+        compose.onNodeWithText("深色").performClick()
+        compose.onNodeWithText("深色").assertExists()
+        compose.runOnIdle { assertTrue(!usesLightStatusBars()) }
+        compose.onNodeWithText("主题").performClick()
+        compose.onNodeWithText("浅色").performClick()
+        compose.runOnIdle { assertTrue(usesLightStatusBars()) }
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("浅色").assertExists()
+        compose.onNodeWithText("主题").performClick()
+        compose.onNode(hasText("浅色") and hasAnyAncestor(isDialog())).assertIsSelected()
+    }
+
+    private fun usesLightStatusBars(): Boolean =
+        WindowInsetsControllerCompat(compose.activity.window, compose.activity.window.decorView)
+            .isAppearanceLightStatusBars
 
     @Test
     fun modelScoresAreOptInAndTheChoiceSurvivesRecreation() {

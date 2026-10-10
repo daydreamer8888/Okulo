@@ -40,7 +40,8 @@ internal fun SettingsScreen(
     onScores: (Boolean) -> Unit,
     onBack: () -> Unit,
     analysisMode: AnalysisMode,
-    onMode: (AnalysisMode) -> Unit
+    onMode: (AnalysisMode) -> Unit,
+    appearance: @Composable () -> Unit = {}
 ) {
     var choosingMode by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
@@ -50,6 +51,7 @@ internal fun SettingsScreen(
             windowInsets = WindowInsets(0, 0, 0, 0)
         )
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            appearance()
             Text("分析", Modifier.padding(16.dp), style = MaterialTheme.typography.labelLarge)
             ListItem(
                 headlineContent = { Text("分析模式") },
