@@ -40,6 +40,7 @@ internal fun CameraLayout(
     composition: CameraCompositionState = CameraCompositionState(),
     compositionActions: CameraCompositionActions = CameraCompositionActions(),
     showScores: Boolean = false,
+    recommendationEnabled: Boolean = capture.ready,
     viewfinder: @Composable () -> Unit
 ) {
     BoxWithConstraints(modifier.fillMaxSize().background(Color.Black)) {
@@ -86,7 +87,7 @@ internal fun CameraLayout(
                             )
                         )
                     }
-                    CameraRecommendButton(composition, capture.ready, compositionActions.recommend)
+                    CameraRecommendButton(composition, recommendationEnabled, compositionActions.recommend)
                 }
             }
         }

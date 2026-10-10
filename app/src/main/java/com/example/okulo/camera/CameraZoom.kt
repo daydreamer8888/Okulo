@@ -2,9 +2,14 @@ package com.example.okulo.camera
 
 import androidx.camera.core.CameraControl
 import androidx.camera.core.ZoomState
+import androidx.camera.view.CameraController
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Observer
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.common.util.concurrent.ListenableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executor
@@ -78,6 +83,20 @@ internal class CameraZoom(
         } catch (_: IllegalArgumentException) {
             changing = false
             onFailure()
+        }
+    }
+}
+
+@Composable
+internal fun ObserveCameraZoom(controller: CameraController, zoom: CameraZoom?) {
+    if (zoom == null) return
+    val owner = LocalLifecycleOwner.current
+    DisposableEffect(controller, zoom, owner) {
+        val observer = Observer<ZoomState> { zoom.update(it) }
+        controller.zoomState.observe(owner, observer)
+        onDispose {
+            controller.zoomState.removeObserver(observer)
+            zoom.update(null)
         }
     }
 }
