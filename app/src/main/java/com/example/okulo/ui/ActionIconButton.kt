@@ -5,10 +5,12 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipBox
@@ -28,7 +30,8 @@ internal fun ActionIconButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     iconModifier: Modifier = Modifier,
-    tonal: Boolean = false
+    tonal: Boolean = false,
+    style: ActionIconStyle = if (tonal) ActionIconStyle.Tonal else ActionIconStyle.Plain
 ) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
@@ -39,12 +42,15 @@ internal fun ActionIconButton(
             val tint by animateColorAsState(LocalContentColor.current, tween(ICON_STATE_MILLIS), label = "icon-color")
             Icon(painterResource(icon), contentDescription = label, modifier = iconModifier.size(24.dp), tint = tint)
         }
-        if (tonal) {
-            FilledTonalIconButton(onClick = onClick, enabled = enabled, content = content)
-        } else {
-            IconButton(onClick = onClick, enabled = enabled, content = content)
+        when (style) {
+            ActionIconStyle.Plain -> IconButton(onClick = onClick, enabled = enabled, content = content)
+            ActionIconStyle.Filled -> FilledIconButton(onClick = onClick, enabled = enabled, content = content)
+            ActionIconStyle.Tonal -> FilledTonalIconButton(onClick = onClick, enabled = enabled, content = content)
+            ActionIconStyle.Outlined -> OutlinedIconButton(onClick = onClick, enabled = enabled, content = content)
         }
     }
 }
 
 private const val ICON_STATE_MILLIS = 120
+
+internal enum class ActionIconStyle { Plain, Filled, Tonal, Outlined }
