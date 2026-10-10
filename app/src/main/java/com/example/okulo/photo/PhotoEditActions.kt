@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.ui.ActionIconButton
+import com.example.okulo.ui.ActionIconStyle
 
 internal data class PhotoEditActions(
     val analyze: () -> Unit,
@@ -30,36 +31,42 @@ internal data class PhotoEditActions(
 
 @Composable
 internal fun PhotoActionRow(state: PhotoState, actions: PhotoEditActions, saving: Boolean) {
+    val hasCrop = state.displayedCrop != null
     Row(Modifier.fillMaxWidth().height(56.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (state.busy) {
-            ActionIconButton(R.drawable.ic_close, "取消", actions.cancel, tonal = true)
-        } else {
-            val canAnalyze = state.photo != null &&
-                (state.result == null || (state.aspect == CropAspect.Free && state.manualCrop != null))
-            ActionIconButton(
-                R.drawable.ic_analyze,
-                "分析构图",
-                actions.analyze,
-                enabled = canAnalyze && !saving,
-                tonal = true
-            )
-        }
+        PhotoAnalysisAction(state, actions, saving)
         ActionIconButton(
             R.drawable.ic_save,
             "保存",
             actions.save,
-            enabled = state.displayedCrop != null && !state.busy && !saving,
-            tonal = true
+            enabled = hasCrop && !state.busy && !saving,
+            style = if (hasCrop) ActionIconStyle.Filled else ActionIconStyle.Tonal
         )
         ActionIconButton(
             R.drawable.ic_restore,
             "恢复",
             actions.restore,
             enabled = state.result != null && state.manualCrop != null && !state.busy && !saving,
-            tonal = true
+            style = ActionIconStyle.Outlined
         )
         Spacer(Modifier.weight(1f))
         PhotoTransformMenu(state.photo != null && !state.busy && !saving, actions.transform)
+    }
+}
+
+@Composable
+private fun PhotoAnalysisAction(state: PhotoState, actions: PhotoEditActions, saving: Boolean) {
+    if (state.busy) {
+        ActionIconButton(R.drawable.ic_close, "取消", actions.cancel, tonal = true)
+    } else {
+        val canAnalyze = state.photo != null &&
+            (state.result == null || (state.aspect == CropAspect.Free && state.manualCrop != null))
+        ActionIconButton(
+            R.drawable.ic_analyze,
+            "分析构图",
+            actions.analyze,
+            enabled = canAnalyze && !saving,
+            style = if (state.displayedCrop != null) ActionIconStyle.Tonal else ActionIconStyle.Filled
+        )
     }
 }
 

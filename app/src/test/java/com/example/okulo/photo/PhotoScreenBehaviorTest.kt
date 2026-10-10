@@ -1,11 +1,14 @@
 package com.example.okulo.photo
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -45,6 +48,40 @@ class PhotoScreenBehaviorTest {
 
     @After
     fun restoreLocale() = Locale.setDefault(originalLocale)
+
+    @Test
+    fun analysisAndSaveExchangePrimaryEmphasisWithoutMovingTools() {
+        val state = mutableStateOf(PhotoState(photo = image()))
+        lateinit var view: View
+        compose.setContent {
+            view = LocalView.current
+            OkuloTheme(darkTheme = false) {
+                PhotoScreen(state.value, {}, { state.value = state.value.copy(result = recommendation()) }, {})
+            }
+        }
+        val analyze = compose.onNodeWithContentDescription("分析构图")
+        val save = compose.onNodeWithContentDescription("保存")
+        val bounds = analyze.fetchSemanticsNode().boundsInRoot
+        val saveBounds = save.fetchSemanticsNode().boundsInRoot
+        assertEquals(android.graphics.Color.BLACK, actionBackground(view, "分析构图"))
+        save.assertIsNotEnabled()
+        analyze.performClick()
+        save.assertIsEnabled()
+        assertEquals(android.graphics.Color.BLACK, actionBackground(view, "保存"))
+        assertTrue(actionBackground(view, "分析构图") != android.graphics.Color.BLACK)
+        assertEquals(bounds, analyze.fetchSemanticsNode().boundsInRoot)
+        assertEquals(saveBounds, save.fetchSemanticsNode().boundsInRoot)
+    }
+
+    private fun actionBackground(view: View, label: String): Int {
+        val bounds = compose.onNodeWithContentDescription(label).fetchSemanticsNode().boundsInRoot
+        lateinit var bitmap: Bitmap
+        compose.runOnIdle {
+            bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+        }
+        return bitmap.getPixel(bounds.center.x.toInt(), (bounds.top + bounds.height * 0.15f).toInt())
+    }
 
     @Test
     fun aspectChoicesOpenInABottomSheetAndRestoreKeepsItsPosition() {
