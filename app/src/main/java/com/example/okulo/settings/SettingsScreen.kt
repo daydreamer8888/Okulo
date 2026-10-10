@@ -61,7 +61,7 @@ internal fun SettingsScreen(
             )
             ListItem(
                 headlineContent = { Text("显示评分") },
-                supportingContent = { Text("仅用于比较同一照片的裁剪方案") },
+                supportingContent = { Text("仅用于比较同一张照片的不同裁剪") },
                 trailingContent = { Switch(checked = showScores, onCheckedChange = null) },
                 modifier = Modifier.toggleable(showScores, role = Role.Switch, onValueChange = onScores)
             )

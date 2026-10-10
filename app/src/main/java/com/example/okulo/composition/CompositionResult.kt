@@ -1,8 +1,8 @@
 package com.example.okulo.composition
 
 enum class AnalysisMode(val title: String) {
-    Fast("快速分析"),
-    Standard("标准分析")
+    Fast("快速"),
+    Standard("标准")
 }
 
 data class CompositionResult(
