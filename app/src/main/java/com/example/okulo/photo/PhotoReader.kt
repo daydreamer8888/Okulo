@@ -8,7 +8,6 @@ import android.graphics.ImageDecoder
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
-import android.util.Size
 import androidx.exifinterface.media.ExifInterface
 import kotlin.math.roundToInt
 
@@ -17,17 +16,6 @@ private const val MAX_PHOTO_SIDE = 2048
 fun readPhoto(resolver: ContentResolver, uri: Uri): Bitmap = readPhotoScaled(resolver, uri, MAX_PHOTO_SIDE)
 
 internal fun readFullPhoto(resolver: ContentResolver, uri: Uri): Bitmap = readPhotoScaled(resolver, uri, Int.MAX_VALUE)
-
-internal fun readPhotoSize(resolver: ContentResolver, uri: Uri): Size {
-    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, options) }
-    check(options.outWidth > 0 && options.outHeight > 0) { "无法读取这张照片" }
-    val swapped = resolver.openInputStream(uri).use { stream ->
-        checkNotNull(stream) { "照片已不可访问，请重新选择" }
-        ExifInterface(stream).rotationDegrees % HALF_TURN != 0f
-    }
-    return if (swapped) Size(options.outHeight, options.outWidth) else Size(options.outWidth, options.outHeight)
-}
 
 private fun readPhotoScaled(resolver: ContentResolver, uri: Uri, maximumSide: Int): Bitmap =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
