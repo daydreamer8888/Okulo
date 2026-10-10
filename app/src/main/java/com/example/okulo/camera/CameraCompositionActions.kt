@@ -24,7 +24,8 @@ import com.example.okulo.ui.CompositionScoreCard
 internal data class CameraCompositionActions(
     val recommend: () -> Unit = {},
     val restore: () -> Unit = {},
-    val dismiss: () -> Unit = {}
+    val dismiss: () -> Unit = {},
+    val dismissError: () -> Unit = {}
 )
 
 @Composable
@@ -42,7 +43,8 @@ internal fun CameraCompositionTools(
             CompositionScoreCard(
                 state.originalScore,
                 if (state.busy) state.cropScore ?: state.recommendation?.cropScore else state.cropScore,
-                showScores && state.crop != null
+                showScores && state.crop != null,
+                loading = !state.busy && state.scoring
             )
         }
         Row(if (state.active) Modifier else Modifier.alpha(0f).clearAndSetSemantics {}) {

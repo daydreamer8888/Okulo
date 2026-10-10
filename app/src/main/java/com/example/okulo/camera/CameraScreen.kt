@@ -52,10 +52,12 @@ internal fun CameraScreen(
     val framing by composition.state.collectAsState()
     var frameSource by remember { mutableStateOf<(() -> Bitmap?)?>(null) }
     fun recommend() {
-        frameSource?.invoke()?.let { composition.recommend(it, analysisMode) }
+        val frame = frameSource?.invoke()
+        if (frame != null) composition.recommend(frame, analysisMode) else composition.previewUnavailable()
     }
     fun evaluate() {
-        frameSource?.invoke()?.let { composition.evaluateCrop(it, analysisMode) }
+        val frame = frameSource?.invoke()
+        if (frame != null) composition.evaluateCrop(frame, analysisMode) else composition.previewUnavailable()
     }
     fun hasPermission() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
         PackageManager.PERMISSION_GRANTED
@@ -81,7 +83,12 @@ internal fun CameraScreen(
         modifier = modifier,
         capture = capture.state,
         composition = framing,
-        compositionActions = CameraCompositionActions(::recommend, composition::restore, composition::dismiss),
+        compositionActions = CameraCompositionActions(
+            ::recommend,
+            composition::restore,
+            composition::dismiss,
+            composition::dismissError
+        ),
         showScores = showScores,
         onMessageDismissed = capture::dismissMessage,
         onCapture = {

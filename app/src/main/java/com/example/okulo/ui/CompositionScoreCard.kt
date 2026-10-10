@@ -27,7 +27,8 @@ internal fun CompositionScoreCard(
     originalScore: Float?,
     cropScore: Float?,
     showScores: Boolean,
-    modifier: Modifier = Modifier.testTag("composition-scores")
+    modifier: Modifier = Modifier.testTag("composition-scores"),
+    loading: Boolean = cropScore == null
 ) {
     val visible = showScores && originalScore != null
     Surface(
@@ -42,25 +43,28 @@ internal fun CompositionScoreCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             ScoreValue("原图", originalScore ?: 0f)
-            ScoreValue("裁剪", if (visible) cropScore else 0f)
+            ScoreValue("裁剪", if (visible) cropScore else 0f, loading)
         }
     }
 }
 
 @Composable
-private fun ScoreValue(label: String, score: Float?) {
+private fun ScoreValue(label: String, score: Float?, loading: Boolean = false) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, style = MaterialTheme.typography.bodySmall)
         Box(contentAlignment = Alignment.Center) {
             Text("0.00", Modifier.alpha(0f).clearAndSetSemantics {}, style = MaterialTheme.typography.bodySmall)
-            if (score == null) {
+            if (score == null && loading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(12.dp).semantics { contentDescription = "正在更新裁剪评分" },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     strokeWidth = 1.5.dp
                 )
             } else {
-                Text(String.format(Locale.getDefault(), "%.2f", score), style = MaterialTheme.typography.bodySmall)
+                Text(
+                    score?.let { String.format(Locale.getDefault(), "%.2f", it) } ?: "—",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }

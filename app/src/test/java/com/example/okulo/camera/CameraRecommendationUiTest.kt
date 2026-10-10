@@ -142,6 +142,34 @@ class CameraRecommendationUiTest {
         }
     }
 
+    @Test
+    fun failedScoringKeepsTheCropStopsProgressAndReportsTheFailureNearTheToolbar() {
+        val result = recommendation()
+        compose.setContent {
+            OkuloTheme(darkTheme = true) {
+                CameraLayout(
+                    onImportPhoto = {},
+                    capture = CaptureUiState(ready = true),
+                    composition = CameraCompositionState(
+                        recommendation = result,
+                        crop = result.crop.copy(right = 0.7f),
+                        originalScore = result.originalScore,
+                        error = "评分失败，请重试"
+                    ),
+                    showScores = true
+                ) {}
+            }
+        }
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithText("2.00").assertExists()
+        compose.onNodeWithContentDescription("正在更新裁剪评分").assertDoesNotExist()
+        val failure = compose.onNodeWithText("评分失败，请重试").fetchSemanticsNode().boundsInRoot
+        val shutter = compose.onNodeWithContentDescription("拍照").fetchSemanticsNode().boundsInRoot
+        assertTrue(failure.bottom < shutter.top)
+        compose.onNodeWithContentDescription("恢复推荐").assertIsEnabled()
+        compose.onNodeWithContentDescription("推荐构图").assertIsEnabled()
+    }
+
     private fun await(condition: () -> Boolean) {
         compose.waitUntil(10_000) {
             shadowOf(Looper.getMainLooper()).idle()
