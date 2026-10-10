@@ -21,8 +21,8 @@ import com.example.okulo.ui.CompositionScoreCard
 import com.example.okulo.ui.theme.LocalWarningColor
 
 @Composable
-internal fun SmallCropWarning(state: PhotoState) {
-    val smallCrop = state.displayedCrop?.area?.let { it < 0.5f } == true
+internal fun SmallCropWarning(state: PhotoState, thresholdPercent: Int) {
+    val smallCrop = state.displayedCrop?.area?.let { it < thresholdPercent / PERCENT_SCALE } == true
     Row(
         modifier = Modifier.auxiliaryVisibility(smallCrop),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -40,3 +40,5 @@ internal fun PhotoScoreCard(state: PhotoState, showScores: Boolean) {
 
 private fun Modifier.auxiliaryVisibility(visible: Boolean): Modifier =
     if (visible) this else alpha(0f).clearAndSetSemantics {}
+
+private const val PERCENT_SCALE = 100f

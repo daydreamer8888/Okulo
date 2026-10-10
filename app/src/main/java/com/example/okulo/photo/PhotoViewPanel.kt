@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.testTag
+import com.example.okulo.settings.DEFAULT_CROP_WARNING_PERCENT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,7 +29,8 @@ internal fun PhotoViewPanel(
     photo: Bitmap,
     actions: CropActions,
     modifier: Modifier = Modifier,
-    showModelScores: Boolean = false
+    showModelScores: Boolean = false,
+    cropWarningPercent: Int = DEFAULT_CROP_WARNING_PERCENT
 ) {
     var showPreview by rememberSaveable(photo) { mutableStateOf(false) }
     val crop = state.displayedCrop
@@ -42,7 +44,8 @@ internal fun PhotoViewPanel(
             state,
             photo.width.toFloat() / photo.height,
             showModelScores,
-            Modifier.weight(1f).fillMaxWidth().testTag("photo-image-area")
+            Modifier.weight(1f).fillMaxWidth().testTag("photo-image-area"),
+            cropWarningPercent
         ) {
             Crossfade(preview, animationSpec = tween(VIEW_FADE_MILLIS), label = "photo-view") { showingPreview ->
                 if (showingPreview && crop != null) {
