@@ -145,6 +145,8 @@ private fun AppPageContent(
             settings::selectAnalysisMode,
             keepOriginal = settings.keepCaptureOriginal,
             onKeepOriginal = settings::setCaptureOriginal,
+            cropWarningPercent = settings.cropWarningPercent,
+            onCropWarning = settings::updateCropWarningPercent,
             appearance = {
                 AppearanceSettings(
                     settings.theme,
@@ -154,7 +156,13 @@ private fun AppPageContent(
                 )
             }
         )
-        AppPage.Photo -> AnalysisPage(viewModel, navigation.back, navigation.settings, settings.showModelScores)
+        AppPage.Photo -> AnalysisPage(
+            viewModel,
+            navigation.back,
+            navigation.settings,
+            settings.showModelScores,
+            settings.cropWarningPercent
+        )
     }
 }
 
@@ -170,7 +178,8 @@ private fun AnalysisPage(
     viewModel: PhotoViewModel,
     onBack: () -> Unit,
     onSettings: () -> Unit,
-    showScores: Boolean
+    showScores: Boolean,
+    cropWarningPercent: Int
 ) {
     val state by viewModel.state.collectAsState()
     val saving by viewModel.saving.collectAsState()
@@ -188,7 +197,8 @@ private fun AnalysisPage(
         onBack = onBack,
         onSettings = onSettings,
         showModelScores = showScores,
-        saveEvents = viewModel.saveEvents
+        saveEvents = viewModel.saveEvents,
+        cropWarningPercent = cropWarningPercent
     )
 }
 

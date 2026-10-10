@@ -14,12 +14,13 @@ internal fun PhotoImageArea(
     ratio: Float,
     showScores: Boolean,
     modifier: Modifier = Modifier,
+    cropWarningPercent: Int,
     image: @Composable () -> Unit
 ) {
     Layout(
         content = {
             Box { image() }
-            SmallCropWarning(state)
+            SmallCropWarning(state, cropWarningPercent)
             PhotoScoreCard(state, showScores)
         },
         modifier = modifier

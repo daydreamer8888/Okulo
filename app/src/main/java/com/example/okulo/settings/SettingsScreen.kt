@@ -43,7 +43,9 @@ internal fun SettingsScreen(
     onMode: (AnalysisMode) -> Unit,
     appearance: @Composable () -> Unit = {},
     keepOriginal: Boolean = true,
-    onKeepOriginal: (Boolean) -> Unit = {}
+    onKeepOriginal: (Boolean) -> Unit = {},
+    cropWarningPercent: Int = DEFAULT_CROP_WARNING_PERCENT,
+    onCropWarning: (Int) -> Unit = {}
 ) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         TopAppBar(
@@ -62,7 +64,9 @@ internal fun SettingsScreen(
                     modifier = Modifier.toggleable(keepOriginal, role = Role.Switch, onValueChange = onKeepOriginal)
                 )
             }
-            AnalysisSettings(showScores, onScores, analysisMode, onMode)
+            AnalysisSettings(showScores, onScores, analysisMode, onMode) {
+                CropWarningSetting(cropWarningPercent, onCropWarning)
+            }
         }
     }
 }
@@ -72,7 +76,8 @@ private fun AnalysisSettings(
     showScores: Boolean,
     onScores: (Boolean) -> Unit,
     analysisMode: AnalysisMode,
-    onMode: (AnalysisMode) -> Unit
+    onMode: (AnalysisMode) -> Unit,
+    cropWarning: @Composable () -> Unit
 ) {
     var choosingMode by remember { mutableStateOf(false) }
     SettingsGroup("分析") {
@@ -90,6 +95,7 @@ private fun AnalysisSettings(
             trailingContent = { Switch(checked = showScores, onCheckedChange = null) },
             modifier = Modifier.toggleable(showScores, role = Role.Switch, onValueChange = onScores)
         )
+        cropWarning()
     }
     if (choosingMode) {
         AnalysisModeSheet(analysisMode, { choosingMode = false }) {
