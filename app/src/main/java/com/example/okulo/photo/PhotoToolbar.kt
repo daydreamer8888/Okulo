@@ -7,13 +7,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import com.example.okulo.R
 import com.example.okulo.ui.ActionIconButton
-import com.example.okulo.ui.FeedbackPill
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun PhotoToolbar(onBack: () -> Unit, onSettings: () -> Unit, feedback: String? = null) {
+internal fun PhotoToolbar(onBack: () -> Unit, onSettings: () -> Unit) {
     TopAppBar(
-        title = { if (feedback == null) Text("裁剪") else FeedbackPill(feedback) },
+        title = { Text("裁剪") },
         navigationIcon = { ActionIconButton(R.drawable.ic_arrow_back, "返回拍摄", onBack) },
         actions = { ActionIconButton(R.drawable.ic_settings, "设置", onSettings) },
         windowInsets = WindowInsets(0, 0, 0, 0)

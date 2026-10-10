@@ -24,7 +24,7 @@ class PhotoSaveFeedbackTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
-    fun eachSaveRestartsToolbarFeedbackWithoutCoveringOrMovingActions() {
+    fun eachSaveShowsFeedbackBelowTheToolbarWithoutReplacingTheTitleOrMovingActions() {
         val events = MutableSharedFlow<String>(extraBufferCapacity = 1)
         val photo = Bitmap.createBitmap(48, 32, Bitmap.Config.ARGB_8888)
         compose.setContent {
@@ -43,10 +43,15 @@ class PhotoSaveFeedbackTest {
         val saveBounds = save.fetchSemanticsNode().boundsInRoot
         val back = compose.onNodeWithContentDescription("返回拍摄").fetchSemanticsNode().boundsInRoot
         val settings = compose.onNodeWithContentDescription("设置").fetchSemanticsNode().boundsInRoot
+        val imageBounds = compose.onNodeWithContentDescription("可调整裁剪框的原图").fetchSemanticsNode().boundsInRoot
         save.performClick()
+        compose.onNodeWithText("裁剪").assertExists()
         val notice = compose.onNodeWithText("已保存到相册").fetchSemanticsNode().boundsInRoot
-        assertTrue(notice.left >= back.right)
-        assertTrue(notice.right <= settings.left)
+        assertTrue(notice.top > maxOf(back.bottom, settings.bottom))
+        assertEquals(
+            imageBounds,
+            compose.onNodeWithContentDescription("可调整裁剪框的原图").fetchSemanticsNode().boundsInRoot
+        )
         assertTrue(notice.bottom < saveBounds.top)
         assertEquals(saveBounds, save.fetchSemanticsNode().boundsInRoot)
         compose.mainClock.autoAdvance = false
