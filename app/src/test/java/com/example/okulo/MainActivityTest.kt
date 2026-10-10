@@ -46,26 +46,26 @@ class MainActivityTest {
     @Test
     fun analysisModeIsConfiguredInSettingsAndSurvivesRecreation() {
         compose.onNodeWithContentDescription("设置").performClick()
-        compose.onNodeWithText("快速分析").assertExists()
-        compose.onNodeWithText("标准分析").assertDoesNotExist()
+        compose.onNodeWithText("快速").assertExists()
+        compose.onNodeWithText("标准").assertDoesNotExist()
         compose.onNodeWithText("分析模式").performClick()
-        compose.onNode(hasText("快速分析") and hasAnyAncestor(isDialog())).assertIsSelected()
-        compose.onNodeWithText("标准分析").performClick()
-        compose.onNodeWithText("标准分析").assertExists()
+        compose.onNode(hasText("快速") and hasAnyAncestor(isDialog())).assertIsSelected()
+        compose.onNodeWithText("标准").performClick()
+        compose.onNodeWithText("标准").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithContentDescription("导入照片").performClick()
-        compose.onNodeWithText("快速分析").assertDoesNotExist()
-        compose.onNodeWithText("标准分析").assertDoesNotExist()
+        compose.onNodeWithText("快速").assertDoesNotExist()
+        compose.onNodeWithText("标准").assertDoesNotExist()
         compose.runOnIdle {
             val model = ViewModelProvider(compose.activity)[PhotoViewModel::class.java]
             assertEquals(AnalysisMode.Standard, model.state.value.mode)
         }
         compose.onNodeWithContentDescription("设置").performClick()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("标准分析").assertExists()
-        compose.onNodeWithText("快速分析").assertDoesNotExist()
+        compose.onNodeWithText("标准").assertExists()
+        compose.onNodeWithText("快速").assertDoesNotExist()
         compose.onNodeWithText("分析模式").performClick()
-        compose.onNode(hasText("标准分析") and hasAnyAncestor(isDialog())).assertIsSelected()
+        compose.onNode(hasText("标准") and hasAnyAncestor(isDialog())).assertIsSelected()
     }
 
     @Test
@@ -122,7 +122,7 @@ class MainActivityTest {
     @Test
     fun modelScoresAreOptInAndTheChoiceSurvivesRecreation() {
         compose.onNodeWithContentDescription("设置").performClick()
-        compose.onNodeWithText("仅用于比较同一照片的裁剪方案").assertExists()
+        compose.onNodeWithText("仅用于比较同一张照片的不同裁剪").assertExists()
         compose.onNodeWithText("显示评分").assertIsOff().performClick().assertIsOn()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithContentDescription("导入照片").performClick()
