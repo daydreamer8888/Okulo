@@ -3,6 +3,7 @@ package com.example.okulo.photo
 import android.graphics.Bitmap
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -15,6 +16,34 @@ import org.junit.Test
 
 abstract class CropEditorBehavior {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun accessibilityActionsMoveAndResizeTheCropAndFinishEachEdit() {
+        val crop = mutableStateOf(CropBox(0.2f, 0.2f, 0.8f, 0.8f))
+        val bitmap = Bitmap.createBitmap(500, 400, Bitmap.Config.ARGB_8888)
+        var finishes = 0
+        compose.setContent {
+            CropEditor(bitmap, crop.value, CropActions({ crop.value = it }, { finishes++ }), lockedRatio = null)
+        }
+        fun activate(label: String): Boolean {
+            val actions = compose.onNodeWithTag("crop-editor").fetchSemanticsNode()
+                .config[SemanticsActions.CustomActions]
+            var changed = false
+            compose.runOnIdle { changed = actions.single { it.label == label }.action() }
+            return changed
+        }
+        assertTrue(activate("向右移动"))
+        assertEquals(0.25f, crop.value.left, 1e-5f)
+        assertEquals(0.85f, crop.value.right, 1e-5f)
+        assertTrue(activate("放大"))
+        assertEquals(0.66f, crop.value.width, 1e-5f)
+        assertEquals(0.66f, crop.value.height, 1e-5f)
+        assertEquals(2, finishes)
+        compose.runOnIdle { crop.value = CropBox.FullFrame }
+        assertTrue(!activate("向右移动"))
+        assertEquals(CropBox.FullFrame, crop.value)
+        assertEquals(2, finishes)
+    }
 
     @Test
     fun draggingEachEdgeResizesRatherThanMovesTheCrop() {
