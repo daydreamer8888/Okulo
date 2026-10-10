@@ -1,6 +1,15 @@
 package com.example.okulo.camera
 
+import android.graphics.Bitmap
+import android.os.Looper
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -8,15 +17,24 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
+import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.photo.CropActions
+import com.example.okulo.photo.TestAnalyzer
+import com.example.okulo.photo.WorkGate
 import com.example.okulo.photo.recommendation
 import com.example.okulo.ui.theme.OkuloTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
@@ -61,5 +79,73 @@ class CameraRecommendationUiTest {
         compose.onNodeWithContentDescription("拍照").assertIsEnabled().performClick()
         assertEquals(1, cancellations)
         assertEquals(1, captures)
+    }
+
+    @Test
+    fun recommendationOverlaysTheContinuingPreviewAndScoresAfterDragging() {
+        val analyzer = TestAnalyzer()
+        val gate = WorkGate()
+        analyzer.analyze = { _, _ ->
+            gate.block()
+            recommendation()
+        }
+        val session = CameraComposition(analyzer)
+        val preview = mutableStateOf("实时画面一")
+        fun frame() = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
+        try {
+            compose.setContent {
+                val state = session.state.collectAsState().value
+                OkuloTheme(darkTheme = true) {
+                    CameraLayout(
+                        onImportPhoto = {},
+                        capture = CaptureUiState(ready = true),
+                        composition = state,
+                        compositionActions = CameraCompositionActions(
+                            { session.recommend(frame(), AnalysisMode.Fast) },
+                            session::restore,
+                            session::dismiss
+                        ),
+                        showScores = true
+                    ) {
+                        CameraViewfinder(
+                            state.crop,
+                            CropActions(session::updateCrop, { session.evaluateCrop(frame(), AnalysisMode.Fast) })
+                        ) {
+                            Box(Modifier.fillMaxSize().testTag("live-preview")) { Text(preview.value) }
+                        }
+                    }
+                }
+            }
+            compose.onNodeWithContentDescription("推荐构图").performClick()
+            gate.awaitEntry()
+            compose.runOnIdle { preview.value = "实时画面二" }
+            compose.onNodeWithText("实时画面二").assertExists()
+            compose.onNodeWithTag("camera-crop").assertDoesNotExist()
+            gate.release()
+            await { !session.state.value.busy }
+            compose.onNodeWithTag("camera-crop").assertExists().performTouchInput {
+                swipe(center, center + Offset(width * 0.05f, 0f))
+            }
+            await { !session.state.value.scoring }
+            assertEquals(1, analyzer.evaluationCalls.get())
+            compose.onNodeWithText("4.00").assertExists()
+            compose.onNodeWithContentDescription("恢复推荐").assertIsEnabled().performClick()
+            assertEquals(recommendation().crop, session.state.value.crop)
+            compose.onNodeWithText("3.00").assertExists()
+            compose.onNodeWithContentDescription("关闭推荐").performClick()
+            compose.onNodeWithTag("camera-crop").assertDoesNotExist()
+            compose.onNodeWithTag("live-preview").assertExists()
+        } finally {
+            gate.release()
+            session.close()
+            assertTrue(analyzer.closed.await(10, TimeUnit.SECONDS))
+        }
+    }
+
+    private fun await(condition: () -> Boolean) {
+        compose.waitUntil(10_000) {
+            shadowOf(Looper.getMainLooper()).idle()
+            condition()
+        }
     }
 }

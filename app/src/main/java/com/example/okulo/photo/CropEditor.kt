@@ -42,36 +42,42 @@ import kotlin.math.abs
 
 @Composable
 internal fun CropEditor(bitmap: Bitmap, crop: CropBox, actions: CropActions, lockedRatio: Float? = 1f) {
+    Box(Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height)) {
+        Image(bitmap.asImageBitmap(), contentDescription = "可调整裁剪框的原图", modifier = Modifier.fillMaxSize())
+        CropFrame(crop, actions, Modifier.fillMaxSize().testTag("crop-editor"), lockedRatio)
+    }
+}
+
+@Composable
+internal fun CropFrame(crop: CropBox, actions: CropActions, modifier: Modifier = Modifier, lockedRatio: Float? = null) {
     val current by rememberUpdatedState(crop)
     val callbacks by rememberUpdatedState(actions)
     val locked by rememberUpdatedState(lockedRatio)
     Box(
-        Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height)
-            .testTag("crop-editor").semantics(mergeDescendants = true) {
-                customActions = cropAccessibilityActions(current, callbacks)
-            }.pointerInput(bitmap) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    var box = current
-                    val drag = CropDrag(box, down.position, size, 24.dp.toPx())
-                    if (!drag.accepted) return@awaitEachGesture
-                    down.consume()
-                    callbacks.change(box)
-                    do {
-                        val event = awaitPointerEvent()
-                        if (event.changes.none { it.pressed }) {
-                            event.changes.forEach { it.consume() }
-                            break
-                        }
-                        box = drag.update(box, event, locked)
-                        callbacks.change(box)
+        modifier.semantics(mergeDescendants = true) {
+            customActions = cropAccessibilityActions(current, callbacks)
+        }.pointerInput(Unit) {
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                var box = current
+                val drag = CropDrag(box, down.position, size, 24.dp.toPx())
+                if (!drag.accepted) return@awaitEachGesture
+                down.consume()
+                callbacks.change(box)
+                do {
+                    val event = awaitPointerEvent()
+                    if (event.changes.none { it.pressed }) {
                         event.changes.forEach { it.consume() }
-                    } while (true)
-                    callbacks.finish()
-                }
+                        break
+                    }
+                    box = drag.update(box, event, locked)
+                    callbacks.change(box)
+                    event.changes.forEach { it.consume() }
+                } while (true)
+                callbacks.finish()
             }
+        }
     ) {
-        Image(bitmap.asImageBitmap(), contentDescription = "可调整裁剪框的原图", modifier = Modifier.fillMaxSize())
         CropOverlay(crop)
     }
 }

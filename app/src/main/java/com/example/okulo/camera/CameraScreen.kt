@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -18,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,16 +34,29 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.photo.CropActions
 
 @Composable
 internal fun CameraScreen(
     capture: CameraCapture,
+    composition: CameraComposition,
     onImportPhoto: () -> Unit,
     modifier: Modifier = Modifier,
-    onSettings: () -> Unit = {}
+    onSettings: () -> Unit = {},
+    analysisMode: AnalysisMode = AnalysisMode.Fast,
+    showScores: Boolean = false
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val framing by composition.state.collectAsState()
+    var frameSource by remember { mutableStateOf<(() -> Bitmap?)?>(null) }
+    fun recommend() {
+        frameSource?.invoke()?.let { composition.recommend(it, analysisMode) }
+    }
+    fun evaluate() {
+        frameSource?.invoke()?.let { composition.evaluateCrop(it, analysisMode) }
+    }
     fun hasPermission() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
         PackageManager.PERMISSION_GRANTED
     var granted by remember { mutableStateOf(hasPermission()) }
@@ -65,6 +80,9 @@ internal fun CameraScreen(
         onSettings = onSettings,
         modifier = modifier,
         capture = capture.state,
+        composition = framing,
+        compositionActions = CameraCompositionActions(::recommend, composition::restore, composition::dismiss),
+        showScores = showScores,
         onMessageDismissed = capture::dismissMessage,
         onCapture = {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
@@ -76,22 +94,13 @@ internal fun CameraScreen(
                 capture.takePhoto()
             }
         },
-        onViewPhoto = {
-            capture.state.savedPhoto?.let { uri ->
-                try {
-                    context.startActivity(
-                        Intent(Intent.ACTION_VIEW).setDataAndType(uri, "image/jpeg")
-                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    )
-                } catch (_: ActivityNotFoundException) {
-                    Toast.makeText(context, "未找到可查看照片的应用。", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
+        onViewPhoto = { openCapturedPhoto(context, capture.state.savedPhoto) }
     ) {
         if (granted) {
             Box(Modifier.fillMaxSize().semantics { contentDescription = "取景区域" }) {
-                CameraPreview(capture)
+                CameraViewfinder(framing.crop, CropActions(composition::updateCrop, ::evaluate)) {
+                    CameraPreview(capture) { frameSource = it }
+                }
             }
         } else {
             CameraPermissionNotice(denied) { request.launch(Manifest.permission.CAMERA) }
@@ -123,5 +132,17 @@ private fun CameraPermissionNotice(denied: Boolean, onRequest: () -> Unit) {
         }) {
             Text(if (denied) "打开权限设置" else "开启相机")
         }
+    }
+}
+
+private fun openCapturedPhoto(context: android.content.Context, uri: Uri?) {
+    if (uri == null) return
+    try {
+        context.startActivity(
+            Intent(Intent.ACTION_VIEW).setDataAndType(uri, "image/jpeg")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        )
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "未找到可查看照片的应用。", Toast.LENGTH_SHORT).show()
     }
 }
