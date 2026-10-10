@@ -65,32 +65,31 @@ internal fun PhotoScreen(
             Box(Modifier.fillMaxWidth().height(4.dp)) {
                 if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             }
-            Column(
-                Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (state.photo == null) {
-                    Column(
-                        Modifier.fillMaxWidth().padding(vertical = 48.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.ic_photo),
-                            null,
-                            Modifier.size(56.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            Box(Modifier.weight(1f)) {
+                Column(
+                    Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    if (state.photo == null) {
+                        EmptyPhoto { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }
+                    }
+                    AnalysisFeedback(state, onRetry)
+                    state.photo?.let { photo ->
+                        PhotoViewPanel(
+                            state,
+                            photo,
+                            cropActions,
+                            Modifier.weight(1f),
+                            showModelScores,
+                            cropWarningPercent
                         )
-                        FilledTonalButton(
-                            onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }
-                        ) {
-                            Text("选择照片")
-                        }
                     }
                 }
-                AnalysisFeedback(state, onRetry)
-                state.photo?.let { photo ->
-                    PhotoViewPanel(state, photo, cropActions, Modifier.weight(1f), showModelScores, cropWarningPercent)
+                feedback?.let {
+                    FeedbackSnackbar(
+                        it,
+                        Modifier.align(Alignment.BottomCenter).padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                    )
                 }
             }
             if (state.photo != null || state.busy) {
@@ -109,9 +108,23 @@ internal fun PhotoScreen(
                 )
             }
         }
-        feedback?.let {
-            FeedbackSnackbar(it, Modifier.align(Alignment.TopCenter).padding(top = 128.dp, start = 16.dp, end = 16.dp))
-        }
+    }
+}
+
+@Composable
+private fun EmptyPhoto(onChoose: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_photo),
+            null,
+            Modifier.size(56.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        FilledTonalButton(onClick = onChoose) { Text("选择照片") }
     }
 }
 
