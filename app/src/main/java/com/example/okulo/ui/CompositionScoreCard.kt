@@ -50,10 +50,15 @@ internal fun CompositionScoreCard(
 
 @Composable
 private fun ScoreValue(label: String, score: Float?, loading: Boolean = false) {
+    val numberStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, style = MaterialTheme.typography.bodySmall)
         Box(contentAlignment = Alignment.Center) {
-            Text("0.00", Modifier.alpha(0f).clearAndSetSemantics {}, style = MaterialTheme.typography.bodySmall)
+            Text(
+                "-00.00",
+                Modifier.alpha(0f).clearAndSetSemantics {},
+                style = numberStyle
+            )
             if (score == null && loading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(12.dp).semantics { contentDescription = "正在更新裁剪评分" },
@@ -63,7 +68,7 @@ private fun ScoreValue(label: String, score: Float?, loading: Boolean = false) {
             } else {
                 Text(
                     score?.let { String.format(Locale.getDefault(), "%.2f", it) } ?: "—",
-                    style = MaterialTheme.typography.bodySmall
+                    style = numberStyle
                 )
             }
         }
