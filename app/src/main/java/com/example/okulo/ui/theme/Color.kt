@@ -85,3 +85,6 @@ internal val MonochromeDark = darkColorScheme(
     surfaceContainerHigh = Color(0xFF2A2A2A),
     surfaceContainerHighest = Color(0xFF353535)
 )
+
+internal val WarningLight = Color(0xFF715500)
+internal val WarningDark = Color(0xFFEDCE76)
