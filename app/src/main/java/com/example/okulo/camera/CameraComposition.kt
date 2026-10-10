@@ -51,6 +51,17 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         }
     }
 
+    fun dismiss() {
+        val current = state.value
+        tasks.invalidate()
+        releaseFrame()
+        mutableState.value = if (current.busy) {
+            current.copy(busy = false, scoring = false, error = null)
+        } else {
+            CameraCompositionState()
+        }
+    }
+
     private fun releaseFrame() {
         frame?.let { previous -> tasks.releaseAfterWork { previous.recycle() } }
         frame = null

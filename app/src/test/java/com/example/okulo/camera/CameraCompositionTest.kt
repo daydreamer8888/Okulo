@@ -50,6 +50,39 @@ class CameraCompositionTest {
         }
     }
 
+    @Test
+    fun cancellingAnActiveRequestRejectsItsLateResultAndAllowsAnotherRecommendation() {
+        val first = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
+        val second = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
+        val analyzer = TestAnalyzer()
+        val gate = WorkGate()
+        analyzer.analyze = { bitmap, _ ->
+            if (bitmap == first) gate.block()
+            recommendation().copy(cropScore = if (bitmap == first) 99f else 4f)
+        }
+        val composition = CameraComposition(analyzer)
+        try {
+            composition.recommend(first, AnalysisMode.Fast)
+            gate.awaitEntry()
+            composition.dismiss()
+            assertFalse(composition.state.value.active)
+            assertFalse(analyzer.isCurrent())
+            assertFalse(first.isRecycled)
+            composition.recommend(second, AnalysisMode.Fast)
+            gate.release()
+            await { composition.state.value.cropScore == 4f }
+            assertEquals(2, analyzer.analysisCalls.get())
+            assertTrue(first.isRecycled)
+            composition.dismiss()
+            assertEquals(null, composition.state.value.crop)
+        } finally {
+            gate.release()
+            composition.close()
+            assertTrue(analyzer.closed.await(10, TimeUnit.SECONDS))
+            assertTrue(second.isRecycled)
+        }
+    }
+
     private fun await(condition: () -> Boolean) {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
         while (true) {
