@@ -5,12 +5,8 @@ package com.example.okulo.photo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,36 +23,34 @@ import androidx.compose.ui.unit.dp
 import java.util.Locale
 
 @Composable
-internal fun PhotoScoreFooter(state: PhotoState, showScores: Boolean) {
+internal fun SmallCropWarning(state: PhotoState) {
     val smallCrop = state.displayedCrop?.area?.let { it < 0.5f } == true
+    Text(
+        "裁剪范围较小",
+        modifier = Modifier.auxiliaryVisibility(smallCrop),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.error
+    )
+}
+
+@Composable
+internal fun PhotoScoreCard(state: PhotoState, showScores: Boolean) {
     val visible = showScores && state.originalScore != null
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 24.dp).padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        modifier = Modifier.auxiliaryVisibility(visible).then(
+            if (visible) Modifier.testTag("photo-scores") else Modifier
+        ),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
     ) {
-        Text(
-            "裁剪范围较小",
-            modifier = Modifier.weight(1f).auxiliaryVisibility(smallCrop),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.error
-        )
-        Spacer(Modifier.width(8.dp))
-        Surface(
-            modifier = Modifier.auxiliaryVisibility(visible).then(
-                if (visible) Modifier.testTag("photo-scores") else Modifier
-            ),
-            shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        Row(
+            Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                ScoreValue("原图", state.originalScore ?: 0f)
-                ScoreValue("裁剪", if (visible) state.displayedScore else 0f)
-            }
+            ScoreValue("原图", state.originalScore ?: 0f)
+            ScoreValue("裁剪", if (visible) state.displayedScore else 0f)
         }
     }
 }

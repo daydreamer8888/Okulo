@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -81,6 +82,30 @@ class PhotoScreenBehaviorTest {
             view.draw(Canvas(bitmap))
         }
         return bitmap.getPixel(bounds.center.x.toInt(), (bounds.top + bounds.height * 0.15f).toInt())
+    }
+
+    @Test
+    fun scoresStayTwelveDpBelowTheActualImageWithoutResizingIt() {
+        val state = mutableStateOf(PhotoState(photo = image(), result = recommendation()))
+        val scores = mutableStateOf(false)
+        var gapPixels = 0f
+        compose.setContent {
+            gapPixels = with(LocalDensity.current) { 12.dp.toPx() }
+            OkuloTheme {
+                Box(Modifier.size(360.dp, 600.dp)) {
+                    PhotoScreen(state.value, {}, {}, {}, showModelScores = scores.value)
+                }
+            }
+        }
+        val imageBounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { scores.value = true }
+        val card = compose.onNodeWithTag("photo-scores").fetchSemanticsNode().boundsInRoot
+        assertEquals(gapPixels, card.top - imageBounds.bottom, 1f)
+        assertEquals(imageBounds.right, card.right, 1f)
+        assertEquals(imageBounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox(0.1f, 0.1f, 0.9f, 0.9f)) }
+        assertEquals(card, compose.onNodeWithTag("photo-scores").fetchSemanticsNode().boundsInRoot)
+        assertEquals(imageBounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
     }
 
     @Test
