@@ -86,6 +86,31 @@ class CameraZoomUiTest {
     }
 
     @Test
+    fun choosingTwoTimesKeepsBothShortcutPositionsAndAllowsReturningToOneTimes() {
+        val state = mutableStateOf<ZoomState>(DeviceZoom(1f, 10f, 1f, 0f))
+        compose.setContent {
+            OkuloTheme(darkTheme = true) {
+                CameraZoomControls(
+                    state.value,
+                    { state.value = DeviceZoom(1f, 10f, it, 0f) },
+                    {}
+                )
+            }
+        }
+        val one = compose.onNodeWithText("1×").fetchSemanticsNode().boundsInRoot
+        val two = compose.onNodeWithText("2×").fetchSemanticsNode().boundsInRoot
+        assertTrue(one.center.x < two.center.x)
+        compose.onNodeWithText("2×").performClick()
+        compose.onNodeWithContentDescription("变焦，当前 2×").assertExists()
+        assertEquals(one, compose.onNodeWithText("1×").fetchSemanticsNode().boundsInRoot)
+        assertEquals(two, compose.onNodeWithText("2×").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithText("1×").performClick()
+        compose.onNodeWithContentDescription("变焦，当前 1×").assertExists()
+        assertEquals(one, compose.onNodeWithText("1×").fetchSemanticsNode().boundsInRoot)
+        assertEquals(two, compose.onNodeWithText("2×").fetchSemanticsNode().boundsInRoot)
+    }
+
+    @Test
     fun pinchingChangesCameraZoomAndRejectsAnOldRecommendation() {
         val analyzer = TestAnalyzer()
         val session = CameraComposition(analyzer)
