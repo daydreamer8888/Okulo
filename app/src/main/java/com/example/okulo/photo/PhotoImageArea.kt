@@ -33,9 +33,7 @@ internal fun PhotoImageArea(
         val warning = children[1].measure(auxiliary)
         val scores = children[2].measure(auxiliary)
         val footerHeight = maxOf(24.dp.roundToPx(), warning.height, scores.height)
-        val initialHeight = (height - padding * 2 - footerHeight).coerceAtLeast(0)
-        val initialWidth = minOf(availableWidth, (initialHeight * ratio).roundToInt())
-        val stacked = warning.width + scores.width + 8.dp.roundToPx() > initialWidth
+        val stacked = warning.width + scores.width + 8.dp.roundToPx() > availableWidth
         val reserved = if (stacked) scores.height + warning.height + 8.dp.roundToPx() else footerHeight
         val availableHeight = (height - padding * 2 - reserved).coerceAtLeast(0)
         val imageWidth = minOf(availableWidth, (availableHeight * ratio).roundToInt())
@@ -44,12 +42,19 @@ internal fun PhotoImageArea(
         val x = (width - imageWidth) / 2
         val y = padding + (availableHeight - imageHeight) / 2
         val infoY = y + imageHeight + gap
+        val scoreRight = maxOf(
+            x + imageWidth,
+            padding + warning.width + scores.width + 8.dp.roundToPx()
+        ).coerceAtMost(width - padding)
         layout(width, height) {
             photo.placeRelative(x, y)
-            scores.placeRelative((x + imageWidth - scores.width).coerceAtLeast(padding), infoY)
+            scores.placeRelative(
+                scoreRight - scores.width,
+                infoY + if (stacked) 0 else (footerHeight - scores.height) / 2
+            )
             warning.placeRelative(
                 padding,
-                if (stacked) infoY + scores.height + 8.dp.roundToPx() else infoY
+                if (stacked) infoY + scores.height + 8.dp.roundToPx() else infoY + (footerHeight - warning.height) / 2
             )
         }
     }
