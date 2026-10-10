@@ -2,6 +2,7 @@ package com.example.okulo.composition.s2c
 
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
+import ai.onnxruntime.OrtException
 import ai.onnxruntime.OrtSession
 import android.content.Context
 import android.graphics.Bitmap
@@ -110,25 +111,40 @@ private data class CachedPhoto(val bitmap: Bitmap, val mode: AnalysisMode, val i
 private fun detectionInputs(environment: OrtEnvironment, detector: OrtSession, inputs: ImageTensors): ScoringImage {
     val sx = inputs.normalizedShape[WIDTH_DIM].toDouble() / inputs.rawShape[WIDTH_DIM]
     val sy = inputs.normalizedShape[HEIGHT_DIM].toDouble() / inputs.rawShape[HEIGHT_DIM]
+    val image = CropBox(0f, 0f, inputs.rawShape[WIDTH_DIM].toFloat(), inputs.rawShape[HEIGHT_DIM].toFloat())
     val objects = tensor(environment, inputs.raw, inputs.rawShape).use { raw ->
-        detector.run(mapOf("image" to raw)).use { output ->
-            @Suppress("UNCHECKED_CAST")
-            val coordinates = output[0].value as Array<FloatArray>
-            val boxes = coordinates.map { CropBox(it[0], it[1], it[2], it[BOX_BOTTOM]) }
-            val confidence = output[1].value as FloatArray
-            objectIndices(boxes, confidence).flatMap { index ->
-                val box = boxes[index]
-                listOf(
-                    0f,
-                    floor(box.left * sx).toFloat(),
-                    floor(box.top * sy).toFloat(),
-                    ceil(box.right * sx).toFloat(),
-                    ceil(box.bottom * sy).toFloat()
-                )
-            }.toFloatArray()
-        }
+        detectionRegions(detector, raw, image).flatMap { box ->
+            listOf(
+                0f,
+                floor(box.left * sx).toFloat(),
+                floor(box.top * sy).toFloat(),
+                ceil(box.right * sx).toFloat(),
+                ceil(box.bottom * sy).toFloat()
+            )
+        }.toFloatArray()
     }
     return ScoringImage(inputs.normalized, inputs.normalizedShape, objects)
+}
+
+private fun detectionRegions(detector: OrtSession, raw: OnnxTensor, image: CropBox): List<CropBox> {
+    val output = try {
+        detector.run(mapOf("image" to raw))
+    } catch (failure: OrtException) {
+        // The exported ROI head cannot infer -1 when its proposal dimension is zero.
+        val message = failure.message.orEmpty()
+        if (!message.contains("Name:'/model/roi_heads/Reshape'") ||
+            !message.contains("Input shape:{0,364}, requested shape:{0,-1}")
+        ) {
+            throw failure
+        }
+        return objectRegions(emptyList(), floatArrayOf(), image)
+    }
+    return output.use {
+        @Suppress("UNCHECKED_CAST")
+        val coordinates = it[0].value as Array<FloatArray>
+        val boxes = coordinates.map { box -> CropBox(box[0], box[1], box[2], box[BOX_BOTTOM]) }
+        objectRegions(boxes, it[1].value as FloatArray, image)
+    }
 }
 
 private fun tensor(environment: OrtEnvironment, values: FloatArray, shape: LongArray): OnnxTensor =
