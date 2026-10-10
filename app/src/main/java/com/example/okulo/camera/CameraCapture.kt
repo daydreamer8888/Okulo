@@ -36,7 +36,7 @@ internal class CameraCapture(
     val controller by lazy {
         LifecycleCameraController(context).apply {
             cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-            setEnabledUseCases(CameraController.IMAGE_CAPTURE)
+            setEnabledUseCases(CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS)
         }
     }
     var state by mutableStateOf(CaptureUiState())

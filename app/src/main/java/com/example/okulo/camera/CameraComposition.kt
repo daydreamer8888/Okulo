@@ -24,14 +24,17 @@ internal data class CameraCompositionState(
 }
 
 /** Owns analysis snapshots without replacing or pausing the live viewfinder. */
+@Suppress("TooManyFunctions") // Operations share the camera scene and its inference lifecycle.
 internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Closeable {
     private val mutableState = MutableStateFlow(CameraCompositionState())
     val state = mutableState.asStateFlow()
     private val tasks = AnalysisWorkQueue(mutableState, analyzer::close)
     private var frame: Bitmap? = null
+    private val scene = CameraSceneGuard()
 
     /** Transfers ownership of the snapshot to this session. */
     fun recommend(snapshot: Bitmap, mode: AnalysisMode) {
+        scene.reset()
         val request = tasks.invalidate()
         releaseFrame()
         frame = snapshot
@@ -104,7 +107,12 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         }
     }
 
+    fun observeScene(samples: IntArray) {
+        if (state.value.active && scene.changed(samples)) invalidateScene()
+    }
+
     fun invalidateScene() {
+        scene.reset()
         tasks.invalidate()
         releaseFrame()
         mutableState.value = CameraCompositionState()

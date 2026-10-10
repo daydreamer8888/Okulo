@@ -150,6 +150,34 @@ class CameraCompositionTest {
         }
     }
 
+    @Test
+    fun smallViewfinderMotionAndExposureChangesPreserveFramingButAPersistentNewSceneClearsIt() {
+        val analyzer = TestAnalyzer()
+        val composition = CameraComposition(analyzer)
+        val baseline = IntArray(64) { if (it % 8 < 4) 30 else 210 }
+        val shifted = IntArray(64) { if (it % 8 < 5) 30 else 210 }
+        val newScene = IntArray(64) { if (it / 8 < 4) 30 else 210 }
+        try {
+            composition.recommend(Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888), AnalysisMode.Fast)
+            await { !composition.state.value.busy }
+            composition.observeScene(baseline)
+            composition.observeScene(shifted)
+            composition.observeScene(baseline.map { it + 20 }.toIntArray())
+            assertEquals(recommendation().crop, composition.state.value.crop)
+            composition.observeScene(newScene)
+            assertTrue(composition.state.value.active)
+            composition.observeScene(baseline)
+            assertTrue(composition.state.value.active)
+            composition.observeScene(newScene)
+            composition.observeScene(newScene)
+            assertFalse(composition.state.value.active)
+            assertEquals(null, composition.state.value.originalScore)
+        } finally {
+            composition.close()
+            assertTrue(analyzer.closed.await(10, TimeUnit.SECONDS))
+        }
+    }
+
     private fun await(condition: () -> Boolean) {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
         while (true) {
