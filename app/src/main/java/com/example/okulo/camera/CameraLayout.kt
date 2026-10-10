@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,6 +37,9 @@ internal fun CameraLayout(
     onViewPhoto: () -> Unit = {},
     onMessageDismissed: () -> Unit = {},
     onSettings: () -> Unit = {},
+    composition: CameraCompositionState = CameraCompositionState(),
+    compositionActions: CameraCompositionActions = CameraCompositionActions(),
+    showScores: Boolean = false,
     viewfinder: @Composable () -> Unit
 ) {
     BoxWithConstraints(modifier.fillMaxSize().background(Color.Black)) {
@@ -56,6 +58,7 @@ internal fun CameraLayout(
                 ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
             }
             Box(Modifier.width(previewWidth).aspectRatio(ratio)) { viewfinder() }
+            CameraCompositionTools(composition, compositionActions, showScores)
             Column(
                 Modifier.fillMaxWidth().weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -80,7 +83,7 @@ internal fun CameraLayout(
                             )
                         )
                     }
-                    Spacer(Modifier.size(56.dp))
+                    CameraRecommendButton(composition, capture.ready, compositionActions.recommend)
                 }
             }
         }
