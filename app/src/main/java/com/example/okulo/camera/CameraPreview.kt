@@ -1,5 +1,6 @@
 package com.example.okulo.camera
 
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
@@ -25,14 +26,14 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.ExecutionException
 
 @Composable
-internal fun CameraPreview(capture: CameraCapture) {
+internal fun CameraPreview(capture: CameraCapture, onFrameSource: ((() -> Bitmap?)?) -> Unit = {}) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val controller = capture.controller
     val preview = remember(controller) {
         PreviewView(context).apply {
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-            scaleType = PreviewView.ScaleType.FIT_CENTER
+            scaleType = PreviewView.ScaleType.FILL_CENTER
             contentDescription = "后置主摄实时预览"
             this.controller = controller
         }
@@ -41,6 +42,7 @@ internal fun CameraPreview(capture: CameraCapture) {
     var error by remember { mutableStateOf<String?>(null) }
     DisposableEffect(controller, owner) {
         var active = true
+        onFrameSource { if (stream == PreviewView.StreamState.STREAMING) preview.bitmap else null }
         val observer = Observer<PreviewView.StreamState> {
             stream = it
             capture.previewReady(it == PreviewView.StreamState.STREAMING)
@@ -70,6 +72,7 @@ internal fun CameraPreview(capture: CameraCapture) {
         )
         onDispose {
             active = false
+            onFrameSource(null)
             capture.previewReady(false)
             preview.previewStreamState.removeObserver(observer)
             controller.unbind()

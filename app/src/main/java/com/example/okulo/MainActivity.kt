@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -29,8 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.example.okulo.camera.CameraCapture
 import com.example.okulo.camera.CameraScreen
+import com.example.okulo.camera.CameraSession
 import com.example.okulo.photo.CropActions
 import com.example.okulo.photo.PhotoScreen
 import com.example.okulo.photo.PhotoViewModel
@@ -65,7 +66,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
     val context = LocalContext.current
-    val capture = remember { CameraCapture(context.applicationContext) }
+    val camera = remember { CameraSession(context.applicationContext) }
+    DisposableEffect(camera) { onDispose { camera.close() } }
     val settings = remember { AppSettings(context.applicationContext) }
     LaunchedEffect(settings.analysisMode) { viewModel.setMode(settings.analysisMode) }
     var page by rememberSaveable { mutableStateOf(AppPage.Camera) }
@@ -103,7 +105,7 @@ private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
             ) {
                 Scaffold(Modifier.fillMaxSize(), containerColor = MaterialTheme.colorScheme.background) { padding ->
                     Column(Modifier.fillMaxSize().padding(padding)) {
-                        AppPageContent(viewModel, settings, capture, navigation.copy(page = visible))
+                        AppPageContent(viewModel, settings, camera, navigation.copy(page = visible))
                     }
                 }
             }
@@ -115,12 +117,15 @@ private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
 private fun AppPageContent(
     viewModel: PhotoViewModel,
     settings: AppSettings,
-    capture: CameraCapture,
+    camera: CameraSession,
     navigation: AppNavigation
 ) {
     when (navigation.page) {
         AppPage.Camera -> CameraScreen(
-            capture,
+            camera.capture,
+            camera.composition,
+            analysisMode = settings.analysisMode,
+            showScores = settings.showModelScores,
             onImportPhoto = navigation.analyze,
             onSettings = navigation.settings,
             modifier = Modifier.fillMaxSize()
