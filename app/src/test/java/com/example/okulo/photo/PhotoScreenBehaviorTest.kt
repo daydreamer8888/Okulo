@@ -155,6 +155,34 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
+    fun cropWarningAndScoresShareACenteredRowWithoutResizingThePortraitPhoto() {
+        val state = mutableStateOf(
+            PhotoState(
+                photo = Bitmap.createBitmap(48, 96, Bitmap.Config.ARGB_8888),
+                sourceSize = Size(1600, 3200),
+                result = recommendation(),
+                manualCrop = CropBox(0.2f, 0.2f, 0.4f, 0.4f)
+            )
+        )
+        compose.setContent {
+            OkuloTheme {
+                Box(Modifier.size(360.dp, 640.dp)) {
+                    PhotoScreen(state.value, {}, {}, {}, showModelScores = true)
+                }
+            }
+        }
+        val image = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        val scores = compose.onNodeWithTag("photo-scores").fetchSemanticsNode().boundsInRoot
+        val warning = compose.onNodeWithText("裁剪后尺寸较小").fetchSemanticsNode().boundsInRoot
+        assertEquals(scores.center.y, warning.center.y, 1f)
+        assertTrue(warning.right < scores.left)
+        compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox.FullFrame) }
+        compose.onNodeWithText("裁剪后尺寸较小").assertDoesNotExist()
+        assertEquals(image, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        assertEquals(scores, compose.onNodeWithTag("photo-scores").fetchSemanticsNode().boundsInRoot)
+    }
+
+    @Test
     fun largeTextKeepsScoresWarningAndBottomActionsInsideThePortraitWindow() {
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale = 2f)) {
