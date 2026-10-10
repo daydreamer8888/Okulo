@@ -58,6 +58,9 @@ class PhotoReaderTest {
             try {
                 assertTrue(imported.config != Bitmap.Config.HARDWARE)
                 val columns = if (index < 4) 2 else 3
+                val size = readPhotoSize(RuntimeEnvironment.getApplication().contentResolver, Uri.fromFile(original))
+                assertEquals(columns * 11, size.width)
+                assertEquals(if (index < 4) 33 else 22, size.height)
                 assertEquals(columns * 11, imported.width)
                 assertEquals(if (index < 4) 33 else 22, imported.height)
                 val actual = IntArray(6) { cell -> imported.getPixel(cell % columns * 11 + 5, cell / columns * 11 + 5) }
@@ -103,7 +106,11 @@ class PhotoReaderTest {
 
     @Test
     fun modernImportLimitsLongestSideWhileKeepingAspectRatio() {
-        val imported = read(writePhoto(3000, 1000))
+        val source = writePhoto(3000, 1000)
+        val size = readPhotoSize(RuntimeEnvironment.getApplication().contentResolver, Uri.fromFile(source))
+        assertEquals(3000, size.width)
+        assertEquals(1000, size.height)
+        val imported = read(source)
         try {
             assertEquals(2048, imported.width)
             assertEquals(683, imported.height)
@@ -115,7 +122,11 @@ class PhotoReaderTest {
     @Test
     @Config(sdk = [26])
     fun legacyImportDownsamplesLargePhotos() {
-        val imported = read(writePhoto(3000, 1000))
+        val source = writePhoto(3000, 1000)
+        val size = readPhotoSize(RuntimeEnvironment.getApplication().contentResolver, Uri.fromFile(source))
+        assertEquals(3000, size.width)
+        assertEquals(1000, size.height)
+        val imported = read(source)
         try {
             assertEquals(1500, imported.width)
             assertEquals(500, imported.height)

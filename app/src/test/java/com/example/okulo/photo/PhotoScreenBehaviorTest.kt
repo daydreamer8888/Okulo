@@ -2,6 +2,7 @@ package com.example.okulo.photo
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.util.Size
 import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -116,6 +117,7 @@ class PhotoScreenBehaviorTest {
         val state = mutableStateOf(
             PhotoState(
                 photo = image(),
+                sourceSize = Size(1600, 1200),
                 result = recommendation(),
                 manualCrop = CropBox(0.2f, 0.2f, 0.4f, 0.4f)
             )
@@ -127,8 +129,8 @@ class PhotoScreenBehaviorTest {
         }
         for (isDark in listOf(false, true)) {
             compose.runOnIdle { dark.value = isDark }
-            compose.onNodeWithText("范围较小").assertIsDisplayed()
-            val bounds = compose.onNodeWithText("范围较小").fetchSemanticsNode().boundsInRoot
+            compose.onNodeWithText("裁剪后尺寸较小").assertIsDisplayed()
+            val bounds = compose.onNodeWithText("裁剪后尺寸较小").fetchSemanticsNode().boundsInRoot
             lateinit var bitmap: Bitmap
             compose.runOnIdle {
                 bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
@@ -149,7 +151,7 @@ class PhotoScreenBehaviorTest {
             compose.onNodeWithContentDescription("保存").assertIsEnabled()
         }
         compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox.FullFrame) }
-        compose.onNodeWithText("范围较小").assertDoesNotExist()
+        compose.onNodeWithText("裁剪后尺寸较小").assertDoesNotExist()
     }
 
     @Test
@@ -175,14 +177,14 @@ class PhotoScreenBehaviorTest {
         }
         val photo = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
         val scores = compose.onNodeWithTag("photo-scores").fetchSemanticsNode().boundsInRoot
-        val warning = compose.onNodeWithText("范围较小").fetchSemanticsNode().boundsInRoot
+        val warning = compose.onNodeWithText("裁剪后尺寸较小").fetchSemanticsNode().boundsInRoot
         val replace = compose.onNodeWithText("换一张照片").fetchSemanticsNode().boundsInRoot
         assertTrue(scores.top > photo.bottom)
         assertTrue(warning.top >= scores.bottom)
         assertTrue(maxOf(scores.bottom, warning.bottom) <= replace.top)
         compose.onNodeWithContentDescription("保存").assertIsDisplayed().assertIsEnabled()
         compose.onNodeWithContentDescription("裁剪比例").assertIsDisplayed().assertIsEnabled()
-        compose.onNodeWithText("范围较小").assertIsDisplayed()
+        compose.onNodeWithText("裁剪后尺寸较小").assertIsDisplayed()
     }
 
     @Test
@@ -530,17 +532,21 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
-    fun smallCropWarningAppearsBelowTheEditorAndClearsWhenEnlarged() {
-        val state = mutableStateOf(PhotoState(photo = image(), manualCrop = CropBox(0f, 0f, 1f, 0.5f)))
+    fun cropSizeWarningUsesOutputPixelsInsteadOfTheRetainedFraction() {
+        val large = Bitmap.createBitmap(2000, 2000, Bitmap.Config.ARGB_8888)
+        val small = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888)
+        val state = mutableStateOf(PhotoState(photo = large, manualCrop = CropBox(0f, 0f, 0.5f, 0.5f)))
         compose.setContent { OkuloTheme { PhotoScreen(state.value, {}, {}, {}) } }
         val bounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
-        compose.onNodeWithText("范围较小").assertDoesNotExist()
-        compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox(0f, 0f, 0.7f, 0.7f)) }
-        compose.onNodeWithText("范围较小").assertExists()
+        compose.onNodeWithText("裁剪后尺寸较小").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(photo = small) }
+        compose.onNodeWithText("裁剪后尺寸较小").assertExists()
         assertEquals(bounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
         compose.onNodeWithContentDescription("保存").assertIsEnabled()
-        compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox.FullFrame) }
-        compose.onNodeWithText("范围较小").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(sourceSize = Size(8000, 8000)) }
+        compose.onNodeWithText("裁剪后尺寸较小").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(sourceSize = null, manualCrop = CropBox.FullFrame) }
+        compose.onNodeWithText("裁剪后尺寸较小").assertDoesNotExist()
     }
 
     @Test
@@ -562,7 +568,7 @@ class PhotoScreenBehaviorTest {
         compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
         compose.onNodeWithText("拖动框内移动，拖动四角或双指缩放").assertDoesNotExist()
         compose.onNodeWithText("保留原图 16%").assertDoesNotExist()
-        compose.onNodeWithText("范围较小").assertExists()
+        compose.onNodeWithText("裁剪后尺寸较小").assertExists()
         compose.runOnIdle { showScores.value = true }
         compose.onNodeWithText("4.00").assertExists()
         compose.onNodeWithText("裁剪评分用时 0.04 秒").assertDoesNotExist()
