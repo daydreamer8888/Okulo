@@ -30,6 +30,7 @@ internal class CameraCapture(
     val controller by lazy {
         LifecycleCameraController(context).apply {
             cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            isPinchToZoomEnabled = false
             setEnabledUseCases(CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS)
         }
     }
@@ -40,8 +41,8 @@ internal class CameraCapture(
         state = state.copy(ready = ready)
     }
 
-    fun permissionDenied() {
-        state = state.copy(message = "保存权限未开启，请允许后重试。")
+    fun reportMessage(message: String) {
+        state = state.copy(message = message)
     }
 
     fun dismissMessage() {

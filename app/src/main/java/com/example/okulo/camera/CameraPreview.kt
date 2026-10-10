@@ -30,7 +30,8 @@ import java.util.concurrent.ExecutionException
 internal fun CameraPreview(
     capture: CameraCapture,
     onFrameSource: ((() -> Bitmap?)?) -> Unit = {},
-    onScene: (IntArray) -> Unit = {}
+    onScene: (IntArray) -> Unit = {},
+    zoom: CameraZoom? = null
 ) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
@@ -46,6 +47,7 @@ internal fun CameraPreview(
     var stream by remember { mutableStateOf(PreviewView.StreamState.IDLE) }
     var error by remember { mutableStateOf<String?>(null) }
     val sceneObserver by rememberUpdatedState(onScene)
+    ObserveCameraZoom(controller, zoom)
     DisposableEffect(controller, owner) {
         var active = true
         val scenes = CameraSceneStream(controller) { sceneObserver(it) }

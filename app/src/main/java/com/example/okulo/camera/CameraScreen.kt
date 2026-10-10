@@ -45,11 +45,20 @@ internal fun CameraScreen(
 ) {
     val context = LocalContext.current
     val framing by composition.state.collectAsState()
+    val zoom = remember(capture, composition) {
+        CameraZoom(
+            capture.controller::setZoomRatio,
+            capture.controller::setLinearZoom,
+            ContextCompat.getMainExecutor(context),
+            composition::invalidateScene,
+            { capture.reportMessage("变焦失败，请重试") }
+        )
+    }
     var frameSource by remember { mutableStateOf<(() -> Bitmap?)?>(null) }
     val frameActions = CameraFrameActions(composition, { frameSource?.invoke() }, { analysisMode })
     val permission = rememberCameraPermission()
     val storage = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        if (it) capture.takePhoto(framing.crop, keepOriginal) else capture.permissionDenied()
+        if (it) capture.takePhoto(framing.crop, keepOriginal) else capture.reportMessage("保存权限未开启，请允许后重试。")
     }
     CameraLayout(
         onImportPhoto = onImportPhoto,
@@ -64,6 +73,7 @@ internal fun CameraScreen(
             composition::dismissError
         ),
         showScores = showScores,
+        recommendationEnabled = capture.state.ready && !zoom.changing,
         onMessageDismissed = capture::dismissMessage,
         onCapture = {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
@@ -78,17 +88,43 @@ internal fun CameraScreen(
         onViewPhoto = { openCapturedPhoto(context, capture.state.savedPhoto) }
     ) {
         if (permission.granted) {
-            Box(Modifier.fillMaxSize().semantics { contentDescription = "取景区域" }) {
-                CameraViewfinder(framing.crop, CropActions(composition::updateCrop, frameActions::score)) {
-                    CameraPreview(
-                        capture,
-                        onFrameSource = { frameSource = it },
-                        onScene = composition::observeScene
-                    )
-                }
-            }
+            CameraLiveView(capture, composition, zoom, frameActions) { frameSource = it }
         } else {
             CameraPermissionNotice(permission.denied, permission.request)
+        }
+    }
+}
+
+@Composable
+private fun CameraLiveView(
+    capture: CameraCapture,
+    composition: CameraComposition,
+    zoom: CameraZoom,
+    frameActions: CameraFrameActions,
+    onFrameSource: ((() -> Bitmap?)?) -> Unit
+) {
+    val framing by composition.state.collectAsState()
+    Box(Modifier.fillMaxSize().semantics { contentDescription = "取景区域" }) {
+        CameraViewfinder(
+            framing.crop,
+            CropActions(composition::updateCrop, frameActions::score),
+            gestureModifier = Modifier.cameraPinchZoom(zoom, !capture.state.saving),
+            controls = {
+                CameraZoomControls(
+                    zoom.state,
+                    zoom::requestRatio,
+                    zoom::requestLinear,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    enabled = capture.state.ready && !capture.state.saving
+                )
+            }
+        ) {
+            CameraPreview(
+                capture,
+                onFrameSource = onFrameSource,
+                onScene = composition::observeScene,
+                zoom = zoom
+            )
         }
     }
 }
