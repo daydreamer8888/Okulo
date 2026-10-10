@@ -73,7 +73,7 @@ internal fun CameraScreen(
         onDispose { lifecycle.removeObserver(observer) }
     }
     val storage = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        if (it) capture.takePhoto() else capture.permissionDenied()
+        if (it) capture.takePhoto(framing.crop) else capture.permissionDenied()
     }
     CameraLayout(
         onImportPhoto = onImportPhoto,
@@ -91,7 +91,7 @@ internal fun CameraScreen(
             ) {
                 storage.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             } else {
-                capture.takePhoto()
+                capture.takePhoto(framing.crop)
             }
         },
         onViewPhoto = { openCapturedPhoto(context, capture.state.savedPhoto) }

@@ -8,5 +8,8 @@ internal class CameraSession(context: Context) : Closeable {
     val capture = CameraCapture(context)
     val composition = CameraComposition(createCompositionAnalyzer(context))
 
-    override fun close() = composition.close()
+    override fun close() {
+        composition.close()
+        capture.close()
+    }
 }
