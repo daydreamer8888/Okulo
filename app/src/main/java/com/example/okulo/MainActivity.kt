@@ -97,7 +97,10 @@ private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
     )
     Box(Modifier.fillMaxSize().background(background)) {
         PageTransition(page, Modifier.fillMaxSize()) { visible ->
-            OkuloTheme(darkTheme = visible == AppPage.Camera || selectedDark, dynamicColor = false) {
+            OkuloTheme(
+                darkTheme = visible == AppPage.Camera || selectedDark,
+                dynamicColor = settings.dynamicColor && visible != AppPage.Camera
+            ) {
                 Scaffold(Modifier.fillMaxSize(), containerColor = MaterialTheme.colorScheme.background) { padding ->
                     Column(Modifier.fillMaxSize().padding(padding)) {
                         AppPageContent(viewModel, settings, capture, navigation.copy(page = visible))
@@ -128,7 +131,14 @@ private fun AppPageContent(
             navigation.back,
             settings.analysisMode,
             settings::selectAnalysisMode,
-            appearance = { AppearanceSettings(settings.theme, settings::selectTheme) }
+            appearance = {
+                AppearanceSettings(
+                    settings.theme,
+                    settings::selectTheme,
+                    settings.dynamicColor,
+                    settings::updateDynamicColor
+                )
+            }
         )
         AppPage.Photo -> AnalysisPage(viewModel, navigation.back, navigation.settings, settings.showModelScores)
     }
