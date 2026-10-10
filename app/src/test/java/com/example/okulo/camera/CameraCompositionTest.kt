@@ -122,6 +122,34 @@ class CameraCompositionTest {
         }
     }
 
+    @Test
+    fun leavingTheSceneClearsTheExistingFrameAndRejectsAReplacementInFlight() {
+        val analyzer = TestAnalyzer()
+        val gate = WorkGate()
+        val composition = CameraComposition(analyzer)
+        try {
+            composition.recommend(Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888), AnalysisMode.Fast)
+            await { !composition.state.value.busy }
+            analyzer.analyze = { _, _ ->
+                gate.block()
+                recommendation()
+            }
+            composition.recommend(Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888), AnalysisMode.Fast)
+            gate.awaitEntry()
+            composition.invalidateScene()
+            assertFalse(composition.state.value.active)
+            assertEquals(null, composition.state.value.originalScore)
+            assertFalse(analyzer.isCurrent())
+            gate.release()
+        } finally {
+            gate.release()
+            composition.close()
+            assertTrue(analyzer.closed.await(10, TimeUnit.SECONDS))
+            shadowOf(Looper.getMainLooper()).idle()
+            assertFalse(composition.state.value.active)
+        }
+    }
+
     private fun await(condition: () -> Boolean) {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
         while (true) {

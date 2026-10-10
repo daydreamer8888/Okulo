@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -32,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.example.okulo.camera.CameraScreen
 import com.example.okulo.camera.CameraSession
+import com.example.okulo.camera.CameraSessionLifetime
 import com.example.okulo.photo.CropActions
 import com.example.okulo.photo.PhotoScreen
 import com.example.okulo.photo.PhotoViewModel
@@ -67,9 +67,12 @@ class MainActivity : ComponentActivity() {
 private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
     val context = LocalContext.current
     val camera = remember { CameraSession(context.applicationContext) }
-    DisposableEffect(camera) { onDispose { camera.close() } }
+    CameraSessionLifetime(camera)
     val settings = remember { AppSettings(context.applicationContext) }
-    LaunchedEffect(settings.analysisMode) { viewModel.setMode(settings.analysisMode) }
+    LaunchedEffect(settings.analysisMode) {
+        viewModel.setMode(settings.analysisMode)
+        camera.composition.invalidateScene()
+    }
     var page by rememberSaveable { mutableStateOf(AppPage.Camera) }
     var settingsOrigin by rememberSaveable { mutableStateOf(AppPage.Camera) }
     val navigation = AppNavigation(
@@ -81,7 +84,10 @@ private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
                 page = AppPage.Settings
             }
         },
-        analyze = { page = AppPage.Photo }
+        analyze = {
+            camera.composition.invalidateScene()
+            page = AppPage.Photo
+        }
     )
     BackHandler(enabled = page != AppPage.Camera, onBack = navigation.back)
     val systemDark = isSystemInDarkTheme()

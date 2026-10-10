@@ -104,6 +104,12 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         }
     }
 
+    fun invalidateScene() {
+        tasks.invalidate()
+        releaseFrame()
+        mutableState.value = CameraCompositionState()
+    }
+
     private fun releaseFrame() {
         frame?.let { previous -> tasks.releaseAfterWork { previous.recycle() } }
         frame = null
