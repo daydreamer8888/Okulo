@@ -1,6 +1,7 @@
 package com.example.okulo
 
 import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.ui.test.assertIsOff
@@ -35,6 +36,23 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class MainActivityTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test
+    fun onlyTheCameraLocksPortraitAcrossNavigationAndRecreation() {
+        compose.onNodeWithContentDescription("导入照片").assertExists()
+        assertOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+        compose.onNodeWithContentDescription("设置").performClick()
+        assertOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+        compose.onNodeWithContentDescription("返回").performClick()
+        assertOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+        compose.onNodeWithContentDescription("导入照片").performClick()
+        assertOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("选择照片").assertExists()
+        assertOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+        compose.onNodeWithContentDescription("返回拍摄").performClick()
+        assertOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+    }
 
     @Test
     fun retainingCaptureOriginalIsDefaultAndTheChoiceSurvivesRecreation() {
@@ -178,5 +196,9 @@ class MainActivityTest {
         compose.runOnIdle { shadowOf(compose.activity).receiveResult(request.intent, Activity.RESULT_CANCELED, null) }
         compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
         compose.onNodeWithText("选择照片").assertExists()
+    }
+
+    private fun assertOrientation(expected: Int) {
+        compose.runOnIdle { assertEquals(expected, compose.activity.requestedOrientation) }
     }
 }
