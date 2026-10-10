@@ -25,6 +25,14 @@ internal class AppSettings(context: Context) {
     )
         private set
 
+    var dynamicColor by mutableStateOf(preferences.getBoolean("dynamic_color", false))
+        private set
+
+    fun updateDynamicColor(enabled: Boolean) {
+        preferences.edit().putBoolean("dynamic_color", enabled).apply()
+        dynamicColor = enabled
+    }
+
     fun selectTheme(theme: AppTheme) {
         preferences.edit().putString("theme", theme.name).apply()
         this.theme = theme

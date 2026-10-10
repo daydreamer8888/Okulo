@@ -1,6 +1,8 @@
 package com.example.okulo
 
 import android.app.Activity
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
@@ -90,6 +92,32 @@ class MainActivityTest {
     private fun usesLightStatusBars(): Boolean =
         WindowInsetsControllerCompat(compose.activity.window, compose.activity.window.decorView)
             .isAppearanceLightStatusBars
+
+    @Test
+    @Config(sdk = [31])
+    fun dynamicColorIsOptInUsesTheSystemPaletteAndSurvivesRecreation() {
+        compose.onNodeWithContentDescription("设置").performClick()
+        compose.onNodeWithText("动态配色").assertIsOff()
+        compose.onNodeWithText("显示评分").performClick()
+        val systemPrimary = compose.activity.getColor(android.R.color.system_accent1_600)
+        compose.onNodeWithText("动态配色").performClick().assertIsOn()
+        assertTrue(renderContains(systemPrimary))
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("动态配色").assertIsOn().performClick().assertIsOff()
+        assertTrue(!renderContains(systemPrimary))
+    }
+
+    private fun renderContains(color: Int): Boolean {
+        lateinit var bitmap: Bitmap
+        compose.runOnIdle {
+            val view = compose.activity.window.decorView
+            bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+        }
+        return (0 until bitmap.width).any { x ->
+            (0 until bitmap.height).any { y -> bitmap.getPixel(x, y) == color }
+        }
+    }
 
     @Test
     fun modelScoresAreOptInAndTheChoiceSurvivesRecreation() {
