@@ -39,12 +39,13 @@ class MainActivityTest {
     @Test
     fun retainingCaptureOriginalIsDefaultAndTheChoiceSurvivesRecreation() {
         compose.onNodeWithContentDescription("设置").performClick()
-        compose.onNodeWithText("保留原图").performScrollTo().assertIsOn().performClick().assertIsOff()
+        compose.onNodeWithText("使用推荐构图拍照时").assertExists()
+        compose.onNodeWithText("同时保存原图").performScrollTo().assertIsOn().performClick().assertIsOff()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("保留原图").performScrollTo().assertIsOff()
+        compose.onNodeWithText("同时保存原图").performScrollTo().assertIsOff()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithContentDescription("设置").performClick()
-        compose.onNodeWithText("保留原图").performScrollTo().assertIsOff().performClick().assertIsOn()
+        compose.onNodeWithText("同时保存原图").performScrollTo().assertIsOff().performClick().assertIsOn()
     }
 
     @Test

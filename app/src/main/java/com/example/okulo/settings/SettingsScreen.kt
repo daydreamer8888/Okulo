@@ -56,8 +56,8 @@ internal fun SettingsScreen(
             SettingsGroup("拍摄") {
                 ListItem(
                     colors = settingsItemColors(),
-                    headlineContent = { Text("保留原图") },
-                    supportingContent = { Text("裁剪拍摄时同时保存原图") },
+                    headlineContent = { Text("同时保存原图") },
+                    supportingContent = { Text("使用推荐构图拍照时") },
                     trailingContent = { Switch(checked = keepOriginal, onCheckedChange = null) },
                     modifier = Modifier.toggleable(keepOriginal, role = Role.Switch, onValueChange = onKeepOriginal)
                 )
