@@ -52,7 +52,10 @@ internal fun CameraLayout(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    CaptureFeedback(capture, onMessageDismissed)
+                    CaptureFeedback(capture.copy(message = composition.error ?: capture.message)) {
+                        onMessageDismissed()
+                        compositionActions.dismissError()
+                    }
                 }
                 ActionIconButton(R.drawable.ic_photo, "导入照片", onImportPhoto)
                 ActionIconButton(R.drawable.ic_settings, "设置", onSettings)

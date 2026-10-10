@@ -86,6 +86,13 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         )
     }
 
+    fun dismissError() { mutableState.value = state.value.copy(error = null) }
+
+    fun previewUnavailable() {
+        tasks.invalidate()
+        mutableState.value = state.value.copy(busy = false, scoring = false, error = "取景尚未就绪，请重试")
+    }
+
     fun dismiss() {
         val current = state.value
         tasks.invalidate()
