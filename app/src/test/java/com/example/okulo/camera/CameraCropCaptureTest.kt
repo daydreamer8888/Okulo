@@ -1,5 +1,6 @@
 package com.example.okulo.camera
 
+import android.annotation.SuppressLint
 import android.content.pm.ProviderInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -31,6 +32,69 @@ import java.util.concurrent.TimeUnit
 @Config(sdk = [29])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CameraCropCaptureTest {
+    @Test
+    @SuppressLint("RestrictedApi") // Inspect the camera output destination at the platform adapter boundary.
+    fun cropOnlyCaptureWritesToPrivateStorageAndPublishesOnlyTheOrientedCrop() {
+        val context = RuntimeEnvironment.getApplication()
+        val fixture = File(context.cacheDir, "crop-only-fixture.jpg")
+        val bitmap = Bitmap.createBitmap(300, 200, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.BLUE) }
+        fixture.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it) }
+        bitmap.recycle()
+        ExifInterface(fixture).apply {
+            setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_ROTATE_90.toString())
+            saveAttributes()
+        }
+        val gallery = ExportGallery(File(context.cacheDir, "crop-only-output.jpg"))
+        gallery.attachInfo(context, ProviderInfo().apply { authority = MediaStore.AUTHORITY })
+        ShadowContentResolver.registerProviderInternal(MediaStore.AUTHORITY, gallery)
+        lateinit var temporary: File
+        CameraCapture(context) { output, callback ->
+            temporary = checkNotNull(output.file)
+            assertEquals(context.cacheDir, temporary.parentFile)
+            fixture.copyTo(temporary, overwrite = true)
+            callback.onImageSaved(ImageCapture.OutputFileResults(null))
+        }.use { capture ->
+            capture.previewReady(true)
+            capture.takePhoto(CropBox(0f, 0.5f, 1f, 1f), keepOriginal = false)
+            await { !capture.state.saving && !temporary.exists() }
+            assertEquals(1, gallery.insertions)
+            val output = context.contentResolver.openInputStream(capture.state.savedPhoto!!).use {
+                BitmapFactory.decodeStream(it)
+            }
+            assertEquals(200, output.width)
+            assertEquals(150, output.height)
+            assertTrue(Color.blue(output.getPixel(100, 75)) > 200)
+            output.recycle()
+            assertTrue(fixture.exists())
+            assertEquals("已保存到相册", capture.state.message)
+        }
+    }
+
+    @Test
+    @SuppressLint("RestrictedApi") // Inspect the capture destination, not CameraX internals.
+    fun failedCropOnlyExportRemovesTemporaryAndIncompleteGalleryFiles() {
+        val context = RuntimeEnvironment.getApplication()
+        val gallery = ExportGallery(File(context.cacheDir, "crop-only-failed.jpg"), failWrites = true)
+        gallery.attachInfo(context, ProviderInfo().apply { authority = MediaStore.AUTHORITY })
+        ShadowContentResolver.registerProviderInternal(MediaStore.AUTHORITY, gallery)
+        lateinit var temporary: File
+        CameraCapture(context) { output, callback ->
+            temporary = checkNotNull(output.file)
+            val bitmap = Bitmap.createBitmap(40, 60, Bitmap.Config.ARGB_8888)
+            temporary.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it) }
+            bitmap.recycle()
+            callback.onImageSaved(ImageCapture.OutputFileResults(null))
+        }.use { capture ->
+            capture.previewReady(true)
+            capture.takePhoto(CropBox(0f, 0f, 0.5f, 1f), keepOriginal = false)
+            await { !capture.state.saving && !temporary.exists() }
+            assertEquals(null, capture.state.savedPhoto)
+            assertEquals("保存失败，请重试。", capture.state.message)
+            assertEquals(1, gallery.deletions)
+            assertTrue(!gallery.file.exists())
+        }
+    }
+
     @Test
     fun shutterKeepsTheOriginalAndSavesTheSelectedCropWithCaptureOrientation() {
         val context = RuntimeEnvironment.getApplication()
@@ -69,7 +133,7 @@ class CameraCropCaptureTest {
             assertEquals("已保存到相册", capture.state.message)
             assertArrayEquals(original, source.readBytes())
             output.recycle()
-            capture.takePhoto()
+            capture.takePhoto(keepOriginal = false)
             assertEquals(2, shots)
             assertEquals(Uri.fromFile(source), capture.state.savedPhoto)
             assertEquals(1, gallery.insertions)

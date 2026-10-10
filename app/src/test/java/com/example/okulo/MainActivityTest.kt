@@ -13,6 +13,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.ViewModelProvider
 import com.example.okulo.composition.AnalysisMode
@@ -33,6 +34,17 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class MainActivityTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test
+    fun retainingCaptureOriginalIsDefaultAndTheChoiceSurvivesRecreation() {
+        compose.onNodeWithContentDescription("设置").performClick()
+        compose.onNodeWithText("保留原图").performScrollTo().assertIsOn().performClick().assertIsOff()
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("保留原图").performScrollTo().assertIsOff()
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithContentDescription("设置").performClick()
+        compose.onNodeWithText("保留原图").performScrollTo().assertIsOff().performClick().assertIsOn()
+    }
 
     @Test
     fun cameraSettingsUseTheTrailingActionPosition() {

@@ -41,7 +41,9 @@ internal fun SettingsScreen(
     onBack: () -> Unit,
     analysisMode: AnalysisMode,
     onMode: (AnalysisMode) -> Unit,
-    appearance: @Composable () -> Unit = {}
+    appearance: @Composable () -> Unit = {},
+    keepOriginal: Boolean = true,
+    onKeepOriginal: (Boolean) -> Unit = {}
 ) {
     var choosingMode by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
@@ -52,6 +54,13 @@ internal fun SettingsScreen(
         )
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             appearance()
+            Text("拍摄", Modifier.padding(16.dp), style = MaterialTheme.typography.labelLarge)
+            ListItem(
+                headlineContent = { Text("保留原图") },
+                supportingContent = { Text("裁剪拍摄时同时保存原图") },
+                trailingContent = { Switch(checked = keepOriginal, onCheckedChange = null) },
+                modifier = Modifier.toggleable(keepOriginal, role = Role.Switch, onValueChange = onKeepOriginal)
+            )
             Text("分析", Modifier.padding(16.dp), style = MaterialTheme.typography.labelLarge)
             ListItem(
                 headlineContent = { Text("分析模式") },

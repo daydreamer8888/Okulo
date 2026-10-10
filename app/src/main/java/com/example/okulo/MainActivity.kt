@@ -132,6 +132,7 @@ private fun AppPageContent(
             camera.composition,
             analysisMode = settings.analysisMode,
             showScores = settings.showModelScores,
+            keepOriginal = settings.keepCaptureOriginal,
             onImportPhoto = navigation.analyze,
             onSettings = navigation.settings,
             modifier = Modifier.fillMaxSize()
@@ -142,6 +143,8 @@ private fun AppPageContent(
             navigation.back,
             settings.analysisMode,
             settings::selectAnalysisMode,
+            keepOriginal = settings.keepCaptureOriginal,
+            onKeepOriginal = settings::setCaptureOriginal,
             appearance = {
                 AppearanceSettings(
                     settings.theme,
