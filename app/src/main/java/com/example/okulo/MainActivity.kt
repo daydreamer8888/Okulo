@@ -35,6 +35,8 @@ import com.example.okulo.photo.CropActions
 import com.example.okulo.photo.PhotoScreen
 import com.example.okulo.photo.PhotoViewModel
 import com.example.okulo.settings.AppSettings
+import com.example.okulo.settings.AppTheme
+import com.example.okulo.settings.AppearanceSettings
 import com.example.okulo.settings.SettingsScreen
 import com.example.okulo.ui.PAGE_TRANSITION_MILLIS
 import com.example.okulo.ui.PageTransition
@@ -81,7 +83,12 @@ private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
     )
     BackHandler(enabled = page != AppPage.Camera, onBack = navigation.back)
     val systemDark = isSystemInDarkTheme()
-    val dark = page == AppPage.Camera || systemDark
+    val selectedDark = when (settings.theme) {
+        AppTheme.System -> systemDark
+        AppTheme.Light -> false
+        AppTheme.Dark -> true
+    }
+    val dark = page == AppPage.Camera || selectedDark
     SideEffect { onTheme(dark) }
     val background by animateColorAsState(
         if (dark) Color.Black else Color.White,
@@ -90,7 +97,7 @@ private fun OkuloApp(viewModel: PhotoViewModel, onTheme: (Boolean) -> Unit) {
     )
     Box(Modifier.fillMaxSize().background(background)) {
         PageTransition(page, Modifier.fillMaxSize()) { visible ->
-            OkuloTheme(darkTheme = visible == AppPage.Camera || systemDark, dynamicColor = false) {
+            OkuloTheme(darkTheme = visible == AppPage.Camera || selectedDark, dynamicColor = false) {
                 Scaffold(Modifier.fillMaxSize(), containerColor = MaterialTheme.colorScheme.background) { padding ->
                     Column(Modifier.fillMaxSize().padding(padding)) {
                         AppPageContent(viewModel, settings, capture, navigation.copy(page = visible))
@@ -120,7 +127,8 @@ private fun AppPageContent(
             settings::setModelScores,
             navigation.back,
             settings.analysisMode,
-            settings::selectAnalysisMode
+            settings::selectAnalysisMode,
+            appearance = { AppearanceSettings(settings.theme, settings::selectTheme) }
         )
         AppPage.Photo -> AnalysisPage(viewModel, navigation.back, navigation.settings, settings.showModelScores)
     }

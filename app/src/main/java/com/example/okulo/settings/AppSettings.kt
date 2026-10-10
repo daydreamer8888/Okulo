@@ -18,6 +18,18 @@ internal class AppSettings(context: Context) {
     )
         private set
 
+    var theme by mutableStateOf(
+        AppTheme.entries.firstOrNull {
+            it.name == preferences.getString("theme", null)
+        } ?: AppTheme.System
+    )
+        private set
+
+    fun selectTheme(theme: AppTheme) {
+        preferences.edit().putString("theme", theme.name).apply()
+        this.theme = theme
+    }
+
     fun selectAnalysisMode(mode: AnalysisMode) {
         preferences.edit().putString("analysis_mode", mode.name).apply()
         analysisMode = mode
@@ -27,4 +39,8 @@ internal class AppSettings(context: Context) {
         preferences.edit().putBoolean("model_scores", enabled).apply()
         showModelScores = enabled
     }
+}
+
+internal enum class AppTheme(val title: String) {
+    System("跟随系统"), Light("浅色"), Dark("深色")
 }
