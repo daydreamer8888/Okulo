@@ -37,19 +37,22 @@ internal fun AppearanceSettings(
     onDynamicColor: (Boolean) -> Unit
 ) {
     var choosingTheme by remember { mutableStateOf(false) }
-    Text("外观", Modifier.padding(16.dp), style = MaterialTheme.typography.labelLarge)
-    ListItem(
-        headlineContent = { Text("主题") },
-        supportingContent = { Text(theme.title) },
-        trailingContent = { Icon(painterResource(R.drawable.ic_chevron_right), null) },
-        modifier = Modifier.clickable { choosingTheme = true }
-    )
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    SettingsGroup("外观") {
         ListItem(
-            headlineContent = { Text("动态配色") },
-            trailingContent = { Switch(checked = dynamicColor, onCheckedChange = null) },
-            modifier = Modifier.toggleable(dynamicColor, role = Role.Switch, onValueChange = onDynamicColor)
+            colors = settingsItemColors(),
+            headlineContent = { Text("主题") },
+            supportingContent = { Text(theme.title) },
+            trailingContent = { Icon(painterResource(R.drawable.ic_chevron_right), null) },
+            modifier = Modifier.clickable { choosingTheme = true }
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ListItem(
+                colors = settingsItemColors(),
+                headlineContent = { Text("动态配色") },
+                trailingContent = { Switch(checked = dynamicColor, onCheckedChange = null) },
+                modifier = Modifier.toggleable(dynamicColor, role = Role.Switch, onValueChange = onDynamicColor)
+            )
+        }
     }
     if (choosingTheme) {
         ModalBottomSheet(onDismissRequest = { choosingTheme = false }) {

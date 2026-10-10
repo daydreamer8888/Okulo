@@ -11,6 +11,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -86,6 +87,12 @@ class MainActivityTest {
         val appearance = compose.onNodeWithText("外观").fetchSemanticsNode().boundsInRoot
         val analysis = compose.onNodeWithText("分析").fetchSemanticsNode().boundsInRoot
         assertTrue(appearance.bottom < analysis.top)
+        val appearanceCard = compose.onNodeWithTag("settings-group-外观").fetchSemanticsNode().boundsInRoot
+        val captureCard = compose.onNodeWithTag("settings-group-拍摄").fetchSemanticsNode().boundsInRoot
+        val analysisCard = compose.onNodeWithTag("settings-group-分析").fetchSemanticsNode().boundsInRoot
+        assertTrue(appearance.bottom < appearanceCard.top)
+        assertTrue(appearanceCard.bottom < captureCard.top)
+        assertTrue(captureCard.bottom < analysis.top && analysis.bottom < analysisCard.top)
         compose.onNodeWithText("跟随系统").assertExists()
         compose.onNodeWithText("主题").performClick()
         compose.onNode(hasText("跟随系统") and hasAnyAncestor(isDialog())).assertIsSelected()
