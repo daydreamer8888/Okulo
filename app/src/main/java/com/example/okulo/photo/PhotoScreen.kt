@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
+import com.example.okulo.ui.FeedbackSnackbar
 import com.example.okulo.ui.rememberFeedbackMessage
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.ceil
@@ -55,51 +56,59 @@ internal fun PhotoScreen(
     saveEvents: Flow<String>? = null
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
-    Column(modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-        PhotoToolbar(onBack, onSettings, rememberFeedbackMessage(saveEvents))
-        Box(Modifier.fillMaxWidth().height(4.dp)) {
-            if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-        }
-        Column(
-            Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            if (state.photo == null) {
-                Column(
-                    Modifier.fillMaxWidth().padding(vertical = 48.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    Icon(
-                        painterResource(R.drawable.ic_photo),
-                        null,
-                        Modifier.size(56.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    FilledTonalButton(onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }) {
-                        Text("选择照片")
+    val feedback = rememberFeedbackMessage(saveEvents)
+    Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.fillMaxSize()) {
+            PhotoToolbar(onBack, onSettings)
+            Box(Modifier.fillMaxWidth().height(4.dp)) {
+                if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            }
+            Column(
+                Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (state.photo == null) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.ic_photo),
+                            null,
+                            Modifier.size(56.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        FilledTonalButton(
+                            onClick = { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }
+                        ) {
+                            Text("选择照片")
+                        }
                     }
                 }
+                AnalysisFeedback(state, onRetry)
+                state.photo?.let { photo ->
+                    PhotoViewPanel(state, photo, cropActions, Modifier.weight(1f), showModelScores)
+                }
             }
-            AnalysisFeedback(state, onRetry)
-            state.photo?.let { photo ->
-                PhotoViewPanel(state, photo, cropActions, Modifier.weight(1f), showModelScores)
+            if (state.photo != null || state.busy) {
+                PhotoBottomTools(
+                    state,
+                    { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
+                    onAspect,
+                    PhotoEditActions(
+                        onAnalyze,
+                        onCancel,
+                        rememberPhotoSaveAction(onSave),
+                        cropActions.restore,
+                        onTransform
+                    ),
+                    saving
+                )
             }
         }
-        if (state.photo != null || state.busy) {
-            PhotoBottomTools(
-                state,
-                { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
-                onAspect,
-                PhotoEditActions(
-                    onAnalyze,
-                    onCancel,
-                    rememberPhotoSaveAction(onSave),
-                    cropActions.restore,
-                    onTransform
-                ),
-                saving
-            )
+        feedback?.let {
+            FeedbackSnackbar(it, Modifier.align(Alignment.TopCenter).padding(top = 128.dp, start = 16.dp, end = 16.dp))
         }
     }
 }

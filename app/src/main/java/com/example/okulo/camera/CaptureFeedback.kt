@@ -8,7 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalAccessibilityManager
-import com.example.okulo.ui.FeedbackPill
+import com.example.okulo.ui.FeedbackSnackbar
 import kotlinx.coroutines.delay
 
 private const val CAPTURE_MESSAGE_DURATION_MS = 2_000L
@@ -31,5 +31,5 @@ internal fun CaptureFeedback(capture: CaptureUiState, onDismiss: () -> Unit) {
         }
     }
     val text = if (capture.saving) "正在保存…" else message.orEmpty()
-    if (text.isNotEmpty()) FeedbackPill(text)
+    if (text.isNotEmpty()) FeedbackSnackbar(text)
 }
