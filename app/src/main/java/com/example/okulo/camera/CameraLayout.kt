@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -45,19 +47,14 @@ internal fun CameraLayout(
 ) {
     BoxWithConstraints(modifier.fillMaxSize().background(Color.Black)) {
         val ratio = if (maxWidth > maxHeight) CAMERA_ASPECT_RATIO else 1f / CAMERA_ASPECT_RATIO
-        val previewWidth = minOf(maxWidth, (maxHeight - 208.dp).coerceAtLeast(0.dp) * ratio)
+        val previewWidth = minOf(maxWidth, (maxHeight - 264.dp).coerceAtLeast(0.dp) * ratio)
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
                 Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    CaptureFeedback(capture.copy(message = composition.error ?: capture.message)) {
-                        onMessageDismissed()
-                        compositionActions.dismissError()
-                    }
-                }
+                Spacer(Modifier.weight(1f))
                 ActionIconButton(R.drawable.ic_photo, "导入照片", onImportPhoto)
                 ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
             }
@@ -68,28 +65,47 @@ internal fun CameraLayout(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+                Box(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 16.dp)) {
+                    CaptureFeedback(capture.copy(message = composition.error ?: capture.message)) {
+                        onMessageDismissed()
+                        compositionActions.dismissError()
+                    }
+                }
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     SavedPhotoButton(capture.savedPhoto, onViewPhoto)
-                    IconButton(
-                        onClick = onCapture,
-                        enabled = capture.ready && !capture.saving,
-                        modifier = Modifier.size(88.dp).border(3.dp, Color.White, CircleShape)
-                            .semantics { contentDescription = "拍照" }
-                    ) {
-                        Box(
-                            Modifier.size(68.dp).background(
-                                if (capture.ready && !capture.saving) Color.White else Color.Gray,
-                                CircleShape
-                            )
-                        )
-                    }
+                    CaptureButton(capture, onCapture)
                     CameraRecommendButton(composition, recommendationEnabled, compositionActions.recommend)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CaptureButton(capture: CaptureUiState, onCapture: () -> Unit) {
+    IconButton(
+        onClick = onCapture,
+        enabled = capture.ready && !capture.saving,
+        modifier = Modifier.size(88.dp).border(3.dp, Color.White, CircleShape)
+            .semantics { contentDescription = "拍照" }
+    ) {
+        if (capture.saving) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(32.dp).semantics { contentDescription = "正在保存" },
+                color = Color.White,
+                strokeWidth = 3.dp
+            )
+        } else {
+            Box(
+                Modifier.size(68.dp).background(
+                    if (capture.ready) Color.White else Color.Gray,
+                    CircleShape
+                )
+            )
         }
     }
 }
