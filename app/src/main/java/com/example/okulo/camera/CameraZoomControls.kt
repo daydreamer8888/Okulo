@@ -5,10 +5,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
@@ -32,7 +34,6 @@ import com.example.okulo.R
 import com.example.okulo.ui.ActionIconButton
 import kotlinx.coroutines.delay
 import java.text.NumberFormat
-import kotlin.math.abs
 
 @Composable
 internal fun CameraZoomControls(
@@ -58,7 +59,6 @@ internal fun CameraZoomControls(
             expanded = false
         }
     }
-    val label = zoomLabel(state.zoomRatio)
     Surface(
         modifier.padding(horizontal = 24.dp, vertical = 12.dp).then(
             if (expanded) Modifier.widthIn(max = 320.dp).fillMaxWidth() else Modifier
@@ -69,20 +69,37 @@ internal fun CameraZoomControls(
         if (expanded) {
             ZoomSliderRow(state, onLinear, enabled, interactions) { expanded = false }
         } else {
-            Row(
-                Modifier.height(56.dp).padding(horizontal = 4.dp),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
+            ZoomShortcutRow(state, onRatio, enabled) { expanded = true }
+        }
+    }
+}
+
+@Composable
+private fun ZoomShortcutRow(state: ZoomState, onRatio: (Float) -> Unit, enabled: Boolean, onExpand: () -> Unit) {
+    val shortcuts = zoomShortcuts(state)
+    val selected = shortcuts.lastOrNull { it <= state.zoomRatio + ZOOM_SHORTCUT_TOLERANCE } ?: shortcuts.first()
+    Row(
+        Modifier.height(56.dp).padding(horizontal = 4.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
+        shortcuts.forEach { ratio ->
+            val size = Modifier.width(64.dp).height(48.dp)
+            val padding = PaddingValues(horizontal = 8.dp)
+            if (ratio == selected) {
+                val label = zoomLabel(state.zoomRatio)
                 FilledTonalButton(
-                    onClick = { expanded = true },
+                    onClick = onExpand,
                     enabled = enabled,
-                    modifier = Modifier.height(48.dp).semantics { contentDescription = "变焦，当前 $label" }
+                    modifier = size.semantics { contentDescription = "变焦，当前 $label" },
+                    contentPadding = padding
                 ) { Text(label) }
-                zoomShortcuts(state).forEach { ratio ->
-                    TextButton(onClick = { onRatio(ratio) }, enabled = enabled, modifier = Modifier.height(48.dp)) {
-                        Text(zoomLabel(ratio))
-                    }
-                }
+            } else {
+                TextButton(
+                    onClick = { onRatio(ratio) },
+                    enabled = enabled,
+                    modifier = size,
+                    contentPadding = padding
+                ) { Text(zoomLabel(ratio)) }
             }
         }
     }
@@ -118,7 +135,10 @@ private fun zoomShortcuts(state: ZoomState): List<Float> = buildList {
     if (state.minZoomRatio < 1f) add(state.minZoomRatio)
     add(1f)
     add(2f)
-}.filter { it in state.minZoomRatio..state.maxZoomRatio && abs(it - state.zoomRatio) > ZOOM_SHORTCUT_TOLERANCE }
+}.filter { it in state.minZoomRatio..state.maxZoomRatio }
+    .distinct()
+    .sorted()
+    .ifEmpty { listOf(state.minZoomRatio) }
 
 private fun zoomLabel(ratio: Float): String = NumberFormat.getNumberInstance().apply {
     maximumFractionDigits = 1
