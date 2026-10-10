@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
@@ -148,6 +150,39 @@ class PhotoScreenBehaviorTest {
         }
         compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox.FullFrame) }
         compose.onNodeWithText("范围较小").assertDoesNotExist()
+    }
+
+    @Test
+    fun largeTextKeepsScoresWarningAndBottomActionsInsideThePortraitWindow() {
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale = 2f)) {
+                OkuloTheme {
+                    Box(Modifier.size(360.dp, 640.dp)) {
+                        PhotoScreen(
+                            PhotoState(
+                                photo = image(),
+                                result = recommendation(),
+                                manualCrop = CropBox(0.2f, 0.2f, 0.4f, 0.4f)
+                            ),
+                            {},
+                            {},
+                            {},
+                            showModelScores = true
+                        )
+                    }
+                }
+            }
+        }
+        val photo = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        val scores = compose.onNodeWithTag("photo-scores").fetchSemanticsNode().boundsInRoot
+        val warning = compose.onNodeWithText("范围较小").fetchSemanticsNode().boundsInRoot
+        val replace = compose.onNodeWithText("换一张照片").fetchSemanticsNode().boundsInRoot
+        assertTrue(scores.top > photo.bottom)
+        assertTrue(warning.top >= scores.bottom)
+        assertTrue(maxOf(scores.bottom, warning.bottom) <= replace.top)
+        compose.onNodeWithContentDescription("保存").assertIsDisplayed().assertIsEnabled()
+        compose.onNodeWithContentDescription("裁剪比例").assertIsDisplayed().assertIsEnabled()
+        compose.onNodeWithText("范围较小").assertIsDisplayed()
     }
 
     @Test
