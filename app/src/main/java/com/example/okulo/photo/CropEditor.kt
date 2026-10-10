@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.okulo.composition.CropBox
@@ -45,7 +47,9 @@ internal fun CropEditor(bitmap: Bitmap, crop: CropBox, actions: CropActions, loc
     val locked by rememberUpdatedState(lockedRatio)
     Box(
         Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height)
-            .testTag("crop-editor").pointerInput(bitmap) {
+            .testTag("crop-editor").semantics(mergeDescendants = true) {
+                customActions = cropAccessibilityActions(current, callbacks)
+            }.pointerInput(bitmap) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     var box = current
