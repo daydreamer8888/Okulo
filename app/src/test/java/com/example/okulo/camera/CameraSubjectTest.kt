@@ -104,6 +104,26 @@ class CameraSubjectTest {
         }
     }
 
+    @Test
+    fun clearingTheSubjectReturnsToLiveViewAndReleasesTheSelectionPhoto() {
+        val engine = TestAnalyzer()
+        val composition = CameraComposition(engine)
+        val still = photo()
+        val actions = CameraFrameActions(composition, { image() }, frozenCapture = { it(still) })
+        try {
+            actions.selectSubject()
+            composition.commitSubject(CropBox(0.2f, 0.3f, 0.6f, 0.7f))
+            composition.clearSubject()
+            assertEquals(null, composition.state.value.retainedRegion)
+            assertEquals(null, composition.state.value.frozenPhoto)
+            assertFalse(composition.state.value.active)
+            await { still.image.isRecycled }
+        } finally {
+            composition.close()
+            assertTrue(engine.closed.await(10, TimeUnit.SECONDS))
+        }
+    }
+
     private fun image() = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
 
     private fun photo(): FrozenCameraPhoto {

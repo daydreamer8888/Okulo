@@ -153,8 +153,9 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
     }
 
     fun clearSubject() {
+        if (state.value.crop != null) return
         cancelSubjectSelection()
-        mutableState.value = state.value.copy(retainedRegion = null)
+        invalidateScene()
     }
 
     fun updateCrop(crop: CropBox) {
