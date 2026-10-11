@@ -2,12 +2,12 @@ package com.example.okulo.camera
 
 import android.graphics.Bitmap
 import com.example.okulo.composition.AnalysisMode
-import com.example.okulo.composition.AnalysisWorkQueue
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.CropSearch
 import com.example.okulo.composition.DEFAULT_MINIMUM_CROP_AREA
+import com.example.okulo.work.LatestWorkQueue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.Closeable
@@ -30,7 +30,7 @@ internal data class CameraCompositionState(
 internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Closeable {
     private val mutableState = MutableStateFlow(CameraCompositionState())
     val state = mutableState.asStateFlow()
-    private val tasks = AnalysisWorkQueue(mutableState, analyzer::close)
+    private val tasks = LatestWorkQueue(analyzer::close)
     private var frame: Bitmap? = null
     private val scene = CameraSceneGuard()
 
@@ -41,8 +41,8 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         releaseFrame()
         frame = snapshot
         mutableState.value = state.value.copy(busy = true, scoring = false, error = null)
-        tasks.submit(request, { current, _ ->
-            current.copy(busy = false, scoring = false, error = "推荐失败，请重试")
+        tasks.submit(request, { _ ->
+            mutableState.value = state.value.copy(busy = false, scoring = false, error = "推荐失败，请重试")
         }) {
             val result = analyzer.analyze(
                 snapshot,
@@ -52,7 +52,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
                 {}
             )
             tasks.publish(request) {
-                CameraCompositionState(
+                mutableState.value = CameraCompositionState(
                     recommendation = result,
                     crop = result.crop,
                     originalScore = result.originalScore,
@@ -80,10 +80,14 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         releaseFrame()
         frame = snapshot
         mutableState.value = current.copy(busy = false, scoring = true, error = null)
-        tasks.submit(request, { value, _ -> value.copy(scoring = false, error = "评分失败，请重试") }) {
+        tasks.submit(request, { _ ->
+            mutableState.value = state.value.copy(scoring = false, error = "评分失败，请重试")
+        }) {
             val result = analyzer.evaluate(snapshot, mode, crop) { tasks.isCurrent(request) }
             tasks.publish(request) {
-                it.copy(originalScore = result.originalScore, cropScore = result.cropScore, scoring = false)
+                mutableState.value = state.value.copy(
+                    originalScore = result.originalScore, cropScore = result.cropScore, scoring = false
+                )
             }
         }
     }
