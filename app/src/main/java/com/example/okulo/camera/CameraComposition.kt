@@ -19,28 +19,39 @@ internal data class CameraCompositionState(
     val cropScore: Float? = null,
     val busy: Boolean = false,
     val scoring: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val frozenPhoto: FrozenCameraPhoto? = null
 ) {
     val canRestore: Boolean get() = recommendation != null && crop != recommendation.crop
-    val active: Boolean get() = busy || crop != null
+    val active: Boolean get() = busy || crop != null || frozenPhoto != null
 }
 
-/** Owns analysis snapshots without replacing or pausing the live viewfinder. */
+/** Owns recommendation snapshots and optional stills throughout crop editing. */
 @Suppress("TooManyFunctions") // Operations share the camera scene and its inference lifecycle.
 internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Closeable {
     private val mutableState = MutableStateFlow(CameraCompositionState())
     val state = mutableState.asStateFlow()
     private val tasks = LatestWorkQueue(analyzer::close)
     private var frame: Bitmap? = null
+    private var heldPhoto: FrozenCameraPhoto? = null
+    private var freezing = false
     private val scene = CameraSceneGuard()
 
     /** Transfers ownership of the snapshot to this session. */
-    fun recommend(snapshot: Bitmap, mode: AnalysisMode, minimumArea: Float = DEFAULT_MINIMUM_CROP_AREA) {
+    fun recommend(
+        snapshot: Bitmap,
+        mode: AnalysisMode,
+        minimumArea: Float = DEFAULT_MINIMUM_CROP_AREA,
+        frozenPhoto: FrozenCameraPhoto? = null
+    ) {
+        freezing = false
         scene.reset()
         val request = tasks.invalidate()
         releaseFrame()
+        releaseFrozenPhoto()
+        heldPhoto = frozenPhoto
         frame = snapshot
-        mutableState.value = state.value.copy(busy = true, scoring = false, error = null)
+        mutableState.value = state.value.copy(busy = true, scoring = false, error = null, frozenPhoto = frozenPhoto)
         tasks.submit(request, { _ ->
             mutableState.value = state.value.copy(busy = false, scoring = false, error = "推荐失败，请重试")
         }) {
@@ -56,8 +67,36 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
                     recommendation = result,
                     crop = result.crop,
                     originalScore = result.originalScore,
-                    cropScore = result.cropScore
+                    cropScore = result.cropScore,
+                    frozenPhoto = frozenPhoto
                 )
+            }
+        }
+    }
+
+    fun recommendFrozen(
+        capture: ((FrozenCameraPhoto?) -> Unit) -> Unit,
+        mode: AnalysisMode,
+        minimumArea: Float
+    ) {
+        val current = heldPhoto
+        if (current != null) {
+            recommend(checkNotNull(current.image.copy(Bitmap.Config.ARGB_8888, false)), mode, minimumArea, current.retain())
+            return
+        }
+        val request = tasks.invalidate()
+        releaseFrame()
+        scene.reset()
+        freezing = true
+        mutableState.value = CameraCompositionState(busy = true)
+        capture { photo ->
+            if (!tasks.isCurrent(request)) {
+                photo?.close()
+            } else if (photo == null) {
+                freezing = false
+                mutableState.value = CameraCompositionState(error = "无法定格画面，请重试")
+            } else {
+                recommend(checkNotNull(photo.image.copy(Bitmap.Config.ARGB_8888, false)), mode, minimumArea, photo)
             }
         }
     }
@@ -112,22 +151,31 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         val current = state.value
         tasks.invalidate()
         releaseFrame()
-        mutableState.value = if (current.busy) {
+        freezing = false
+        mutableState.value = if (current.busy && current.crop != null) {
             current.copy(busy = false, scoring = false, error = null)
         } else {
+            releaseFrozenPhoto()
             CameraCompositionState()
         }
     }
 
     fun observeScene(samples: IntArray) {
-        if (state.value.active && scene.changed(samples)) invalidateScene()
+        if (!freezing && heldPhoto == null && state.value.active && scene.changed(samples)) invalidateScene()
     }
 
     fun invalidateScene() {
+        freezing = false
         scene.reset()
         tasks.invalidate()
         releaseFrame()
+        releaseFrozenPhoto()
         mutableState.value = CameraCompositionState()
+    }
+
+    private fun releaseFrozenPhoto() {
+        heldPhoto?.let { photo -> tasks.releaseAfterWork(photo::close) }
+        heldPhoto = null
     }
 
     private fun releaseFrame() {
@@ -136,8 +184,10 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
     }
 
     override fun close() {
+        freezing = false
         tasks.invalidate()
         releaseFrame()
+        releaseFrozenPhoto()
         tasks.close()
     }
 }
