@@ -1,15 +1,16 @@
 package com.example.okulo.photo
 
 import android.graphics.Bitmap
-import androidx.exifinterface.media.ExifInterface
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.exifinterface.media.ExifInterface
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropBox
+import com.example.okulo.image.orientationMatrix
 import com.example.okulo.ui.theme.OkuloTheme
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.CropAspect
+import com.example.okulo.image.PhotoOperation
 import com.example.okulo.ui.ActionIconButton
 import com.example.okulo.ui.ActionIconStyle
 

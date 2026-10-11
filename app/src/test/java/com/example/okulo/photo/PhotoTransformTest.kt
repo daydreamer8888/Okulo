@@ -1,6 +1,8 @@
 package com.example.okulo.photo
 
 import android.graphics.Bitmap
+import com.example.okulo.image.PhotoOperation
+import com.example.okulo.image.PhotoTransform
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Test

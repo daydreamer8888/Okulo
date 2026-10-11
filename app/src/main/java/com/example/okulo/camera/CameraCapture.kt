@@ -15,8 +15,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import com.example.okulo.composition.CropBox
-import com.example.okulo.photo.CropExporter
-import com.example.okulo.photo.PhotoTransform
+import com.example.okulo.image.CropExporter
+import com.example.okulo.image.PhotoTransform
 import java.io.Closeable
 import java.io.IOException
 import java.util.concurrent.Executors

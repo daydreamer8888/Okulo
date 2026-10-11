@@ -1,4 +1,4 @@
-package com.example.okulo.photo
+package com.example.okulo.image
 
 import android.content.ContentResolver
 import android.graphics.Bitmap

@@ -16,6 +16,10 @@ import com.example.okulo.composition.CropSearch
 import com.example.okulo.composition.DEFAULT_MINIMUM_CROP_AREA
 import com.example.okulo.composition.createCompositionAnalyzer
 import com.example.okulo.composition.fitCropAspect
+import com.example.okulo.image.CropExporter
+import com.example.okulo.image.PhotoOperation
+import com.example.okulo.image.PhotoTransform
+import com.example.okulo.image.readPhoto
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel

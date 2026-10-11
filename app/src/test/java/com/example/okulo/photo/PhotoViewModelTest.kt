@@ -4,6 +4,8 @@ import android.net.Uri
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
+import com.example.okulo.image.PhotoOperation
+import com.example.okulo.image.PhotoTransform
 import com.example.okulo.settings.AppSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
