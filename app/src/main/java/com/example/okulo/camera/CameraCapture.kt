@@ -18,10 +18,12 @@ import com.example.okulo.composition.CropBox
 import com.example.okulo.image.CropExporter
 import com.example.okulo.image.CropWriter
 import com.example.okulo.image.PhotoTransform
+import com.example.okulo.image.readPhoto
 import java.io.Closeable
 import java.io.IOException
 import java.util.concurrent.Executors
 
+@Suppress("TooManyFunctions") // Capture and frozen export share the shutter state and camera lifetime.
 internal class CameraCapture(
     private val context: Context,
     private val writer: CropWriter = CropExporter(context),
@@ -29,6 +31,7 @@ internal class CameraCapture(
 ) : Closeable {
     private val exports = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
+    private var closed = false
     val controller by lazy {
         LifecycleCameraController(context).apply {
             cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
@@ -52,7 +55,7 @@ internal class CameraCapture(
     }
 
     fun takePhoto(crop: CropBox? = null, keepOriginal: Boolean = true) {
-        if (!state.ready || state.saving) return
+        if (!state.ready || state.saving || state.preparing) return
         state = state.copy(saving = true, message = null)
         var output: CaptureOutput? = null
         try {
@@ -65,6 +68,75 @@ internal class CameraCapture(
             failed(exception, output)
         } catch (exception: IllegalStateException) {
             failed(exception, output)
+        }
+    }
+
+    fun freeze(onFrame: (FrozenCameraPhoto?) -> Unit) {
+        if (closed || !state.ready || (state.saving || state.preparing)) {
+            onFrame(null)
+            return
+        }
+        state = state.copy(preparing = true, message = null)
+        val output = runCatching { captureOutput(context, cropOnly = true) }.getOrElse {
+            state = state.copy(preparing = false)
+            onFrame(null)
+            return
+        }
+        val callback = object : ImageCapture.OnImageSavedCallback {
+            override fun onImageSaved(result: ImageCapture.OutputFileResults) {
+                if (closed) {
+                    output.close()
+                    return
+                }
+                exports.execute {
+                    val photo = runCatching {
+                        val uri = checkNotNull(output.source(result))
+                        FrozenCameraPhoto(readPhoto(context.contentResolver, uri), java.io.File(checkNotNull(uri.path)))
+                    }.getOrNull()
+                    if (photo == null) output.close()
+                    main.post {
+                        state = state.copy(preparing = false)
+                        if (closed) photo?.close() else onFrame(photo)
+                    }
+                }
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                output.close()
+                state = state.copy(preparing = false)
+                onFrame(null)
+            }
+        }
+        runCatching { capture(output.options, callback) }.onFailure {
+            output.close()
+            state = state.copy(preparing = false)
+            onFrame(null)
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught") // Preserve an exported original if the crop export fails.
+    fun saveFrozen(photo: FrozenCameraPhoto, crop: CropBox, keepOriginal: Boolean) {
+        if (closed || state.saving || state.preparing) return
+        val source = photo.retain()
+        state = state.copy(saving = true, message = null)
+        exports.execute {
+            var original: Uri? = null
+            try {
+                if (keepOriginal) original = writer.save(source.uri, PhotoTransform(), CropBox.FullFrame)
+                val cropped = writer.save(source.uri, PhotoTransform(), crop)
+                main.post { complete(cropped) }
+            } catch (failure: Exception) {
+                val retained = original
+                main.post {
+                    if (retained != null) {
+                        state = state.copy(saving = false, savedPhoto = retained, message = "裁剪保存失败，原图已保留")
+                    } else {
+                        failed(failure)
+                    }
+                }
+            } finally {
+                source.close()
+            }
         }
     }
 
@@ -120,7 +192,10 @@ internal class CameraCapture(
         )
     }
 
-    override fun close() { exports.shutdown() }
+    override fun close() {
+        closed = true
+        exports.shutdown()
+    }
 
     private fun failed(exception: Exception, output: CaptureOutput? = null) {
         output?.close()

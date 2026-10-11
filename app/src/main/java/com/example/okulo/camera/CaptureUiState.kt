@@ -6,5 +6,6 @@ internal data class CaptureUiState(
     val ready: Boolean = false,
     val saving: Boolean = false,
     val savedPhoto: Uri? = null,
-    val message: String? = null
+    val message: String? = null,
+    val preparing: Boolean = false
 )
