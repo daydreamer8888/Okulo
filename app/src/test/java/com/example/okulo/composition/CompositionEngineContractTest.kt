@@ -14,6 +14,19 @@ import kotlin.math.abs
 @Config(sdk = [28])
 class CompositionEngineContractTest {
     @Test
+    fun configuredAreaFloorAppliesToOriginalFixedAndFreeSearchIncludingRefinement() {
+        val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
+        try {
+            val searches = listOf(1f, 4f / 3f, null).flatMap { ratio ->
+                listOf(0.2f, 0.7f).map { CropSearch(ratio, it) }
+            }
+            for (search in searches) assertAreaFloor(photo, search)
+        } finally {
+            photo.recycle()
+        }
+    }
+
+    @Test
     fun freeSearchCanSelectACropWithADifferentAspectFromTheSource() {
         val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
         val model = RecordingModel { boxes ->
@@ -102,6 +115,29 @@ class CompositionEngineContractTest {
         }
         CompositionEngine(model).use { engine ->
             engine.analyze(photo, AnalysisMode.Fast, { current }, {})
+        }
+    }
+
+    private fun assertAreaFloor(photo: Bitmap, search: CropSearch) {
+        val ratio = search.normalizedRatio
+        val minimum = search.minimumArea
+        val model = RecordingModel { boxes -> boxes.map { -it.area }.toFloatArray() }
+        CompositionEngine(model).use { engine ->
+            val result = engine.analyze(photo, AnalysisMode.Fast, search, { true }, {})
+            assertEquals(minimum, result.crop.area, 1e-5f)
+            assertEquals(-1f, result.originalScore, 0f)
+            assertEligibleCrops(model.requests.flatten(), ratio, minimum)
+            assertTrue(result.candidateCount <= if (ratio == null) 600 else 250)
+            if (ratio == null) assertEquals(2, model.requests.size)
+        }
+    }
+
+    private fun assertEligibleCrops(boxes: List<CropBox>, ratio: Float?, minimum: Float) {
+        for (box in boxes) {
+            assertTrue("Crop $box is below $minimum", box.area >= minimum - 1e-6f)
+            if (ratio != null && box != CropBox.FullFrame) {
+                assertEquals(ratio, box.width / box.height, 1e-5f)
+            }
         }
     }
 

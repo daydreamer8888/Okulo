@@ -8,6 +8,7 @@ import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropBox
+import com.example.okulo.composition.CropSearch
 import org.junit.Assert.assertTrue
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
@@ -75,13 +76,13 @@ internal class TestAnalyzer : CompositionAnalyzer {
     override fun analyze(
         bitmap: Bitmap,
         mode: AnalysisMode,
-        normalizedRatio: Float?,
+        search: CropSearch,
         isCurrent: () -> Boolean,
         status: (String) -> Unit
     ): CompositionResult {
         this.isCurrent = isCurrent
         analysisCalls.incrementAndGet()
-        requestedRatios.add(normalizedRatio)
+        requestedRatios.add(search.normalizedRatio)
         status("正在分析照片…")
         return analyze(bitmap, mode)
     }
