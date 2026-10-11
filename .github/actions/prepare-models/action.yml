@@ -3,12 +3,22 @@ description: Fetch and verify the versioned ONNX models used by the app.
 runs:
   using: composite
   steps:
+    - name: Set up model tools
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+
+    - name: Test model packaging
+      shell: bash
+      run: |
+        python3 -m unittest discover -s tools/models -p 'test_*.py'
+
     - name: Restore model cache
       id: models
       uses: actions/cache@v5
       with:
         path: ${{ runner.temp }}/okulo-models
-        key: okulo-model-assets-v1-${{ hashFiles('tools/models/package.py') }}
+        key: okulo-model-assets-v1-${{ hashFiles('tools/models/*.py') }}
 
     - name: Download model assets
       if: steps.models.outputs.cache-hit != 'true'
@@ -19,7 +29,7 @@ runs:
         mkdir -p "$RUNNER_TEMP/okulo-models"
         gh release download model-assets-v1 \
           --repo daydreamer8888/Okulo \
-          --pattern '*.onnx' \
+          --pattern 's2c.onnx' --pattern 'yolo26n.onnx' \
           --dir "$RUNNER_TEMP/okulo-models"
 
     - name: Verify and stage model assets
@@ -27,5 +37,4 @@ runs:
       run: |
         python3 tools/models/package.py \
           --scorer "$RUNNER_TEMP/okulo-models/s2c.onnx" \
-          --standard-detector "$RUNNER_TEMP/okulo-models/detector-800.onnx" \
-          --fast-detector "$RUNNER_TEMP/okulo-models/detector-320.onnx"
+          --detector "$RUNNER_TEMP/okulo-models/yolo26n.onnx"

@@ -2,7 +2,6 @@ package com.example.okulo.composition.s2c
 
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
-import ai.onnxruntime.OrtException
 import ai.onnxruntime.OrtSession
 import android.content.Context
 import android.graphics.Bitmap
@@ -18,8 +17,7 @@ internal class S2cCropScorer(context: Context) : CropScoringModel {
     private val assets = ModelAssets(context)
     private val environment by lazy { OrtEnvironment.getEnvironment() }
     private var scorer: OrtSession? = null
-    private var detector: OrtSession? = null
-    private var detectorMode: AnalysisMode? = null
+    private var detector: ObjectDetector? = null
     private var cached: CachedPhoto? = null
 
     override fun score(
@@ -31,14 +29,7 @@ internal class S2cCropScorer(context: Context) : CropScoringModel {
 
     override fun load(mode: AnalysisMode) {
         if (scorer == null) scorer = session("s2c.onnx")
-        if (detectorMode != mode) {
-            cached = null
-            detector?.close()
-            detector = null
-            detectorMode = null
-            detector = session(detectorAsset(mode))
-            detectorMode = mode
-        }
+        if (detector == null) detector = ObjectDetector(environment, assets)
     }
 
     private fun session(name: String): OrtSession = OrtSession.SessionOptions().use { options ->
@@ -52,7 +43,7 @@ internal class S2cCropScorer(context: Context) : CropScoringModel {
         if (previous != null && previous.bitmap === bitmap && previous.mode == mode) return previous.image
         val inputs = imageTensors(bitmap)
         checkCurrent(isCurrent)
-        val image = detectionInputs(environment, checkNotNull(detector), inputs)
+        val image = detectionInputs(checkNotNull(detector), inputs)
         checkCurrent(isCurrent)
         cached = CachedPhoto(bitmap, mode, image)
         return image
@@ -63,7 +54,7 @@ internal class S2cCropScorer(context: Context) : CropScoringModel {
         candidates: List<CropBox>,
         isCurrent: () -> Boolean = { true }
     ): FloatArray {
-        val image = detectionInputs(environment, checkNotNull(detector), inputs)
+        val image = detectionInputs(checkNotNull(detector), inputs)
         checkCurrent(isCurrent)
         return scoreCrops(image, candidates)
     }
@@ -100,7 +91,6 @@ internal class S2cCropScorer(context: Context) : CropScoringModel {
         scorer?.close()
         detector = null
         scorer = null
-        detectorMode = null
         cached = null
     }
 }
@@ -108,43 +98,19 @@ internal class S2cCropScorer(context: Context) : CropScoringModel {
 private data class ScoringImage(val values: FloatArray, val shape: LongArray, val objects: FloatArray)
 private data class CachedPhoto(val bitmap: Bitmap, val mode: AnalysisMode, val image: ScoringImage)
 
-private fun detectionInputs(environment: OrtEnvironment, detector: OrtSession, inputs: ImageTensors): ScoringImage {
+private fun detectionInputs(detector: ObjectDetector, inputs: ImageTensors): ScoringImage {
     val sx = inputs.normalizedShape[WIDTH_DIM].toDouble() / inputs.rawShape[WIDTH_DIM]
     val sy = inputs.normalizedShape[HEIGHT_DIM].toDouble() / inputs.rawShape[HEIGHT_DIM]
-    val image = CropBox(0f, 0f, inputs.rawShape[WIDTH_DIM].toFloat(), inputs.rawShape[HEIGHT_DIM].toFloat())
-    val objects = tensor(environment, inputs.raw, inputs.rawShape).use { raw ->
-        detectionRegions(detector, raw, image).flatMap { box ->
-            listOf(
-                0f,
-                floor(box.left * sx).toFloat(),
-                floor(box.top * sy).toFloat(),
-                ceil(box.right * sx).toFloat(),
-                ceil(box.bottom * sy).toFloat()
-            )
-        }.toFloatArray()
-    }
+    val objects = detector.regions(inputs).flatMap { box ->
+        listOf(
+            0f,
+            floor(box.left * sx).toFloat(),
+            floor(box.top * sy).toFloat(),
+            ceil(box.right * sx).toFloat(),
+            ceil(box.bottom * sy).toFloat()
+        )
+    }.toFloatArray()
     return ScoringImage(inputs.normalized, inputs.normalizedShape, objects)
-}
-
-private fun detectionRegions(detector: OrtSession, raw: OnnxTensor, image: CropBox): List<CropBox> {
-    val output = try {
-        detector.run(mapOf("image" to raw))
-    } catch (failure: OrtException) {
-        // The exported ROI head cannot infer -1 when its proposal dimension is zero.
-        val message = failure.message.orEmpty()
-        if (!message.contains("Name:'/model/roi_heads/Reshape'") ||
-            !message.contains("Input shape:{0,364}, requested shape:{0,-1}")
-        ) {
-            throw failure
-        }
-        return objectRegions(emptyList(), floatArrayOf(), image)
-    }
-    return output.use {
-        @Suppress("UNCHECKED_CAST")
-        val coordinates = it[0].value as Array<FloatArray>
-        val boxes = coordinates.map { box -> CropBox(box[0], box[1], box[2], box[BOX_BOTTOM]) }
-        objectRegions(boxes, it[1].value as FloatArray, image)
-    }
 }
 
 private fun tensor(environment: OrtEnvironment, values: FloatArray, shape: LongArray): OnnxTensor =
@@ -157,9 +123,3 @@ private fun checkCurrent(isCurrent: () -> Boolean) {
 private const val HEIGHT_DIM = 2
 private const val WIDTH_DIM = 3
 private const val ROI_FIELDS = 5L
-private const val BOX_BOTTOM = 3
-
-private fun detectorAsset(mode: AnalysisMode): String = when (mode) {
-    AnalysisMode.Standard -> "detector-800.onnx"
-    AnalysisMode.Fast -> "detector-320.onnx"
-}

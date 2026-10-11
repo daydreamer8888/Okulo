@@ -1,9 +1,28 @@
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.detekt)
     alias(libs.plugins.kover)
+}
+
+abstract class PrepareLicenseAssets : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val notices: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @TaskAction
+    fun copyNotices() {
+        val directory = outputDirectory.get().asFile
+        directory.mkdirs()
+        notices.files.forEach { it.copyTo(directory.resolve(it.name), overwrite = true) }
+    }
 }
 
 android {
@@ -25,7 +44,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -94,7 +114,7 @@ detekt {
 
 val modelAssetRoot = providers.gradleProperty("okuloModelAssets").orElse("model-assets")
 val verifyModelAssets by tasks.registering {
-    val models = listOf("s2c.onnx", "detector-800.onnx", "detector-320.onnx")
+    val models = listOf("s2c.onnx", "yolo26n.onnx")
     inputs.files(models.map { file("${modelAssetRoot.get()}/models/$it") })
     doLast {
         models.forEach { name ->
@@ -106,4 +126,15 @@ val verifyModelAssets by tasks.registering {
 }
 tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") }.configureEach {
     dependsOn(verifyModelAssets)
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        val notices = tasks.register<PrepareLicenseAssets>(
+            "prepare${variant.name.replaceFirstChar { it.uppercase() }}LicenseAssets"
+        ) {
+            notices.from(rootProject.file("LICENSE"), rootProject.file("NOTICE"))
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(notices, PrepareLicenseAssets::outputDirectory)
+    }
 }

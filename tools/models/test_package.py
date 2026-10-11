@@ -39,6 +39,19 @@ class ModelPackageTest(unittest.TestCase):
             self.assertEqual({"s2c.onnx"}, {p.name for p in destination.iterdir()})
             self.assertEqual(b"existing", (destination / "s2c.onnx").read_bytes())
 
+    def test_incomplete_source_set_leaves_existing_assets_intact(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            sources = self.sources(root)
+            del sources["yolo26n.onnx"]
+            destination = root / "models"
+            destination.mkdir()
+            (destination / "s2c.onnx").write_bytes(b"existing")
+            with patch.dict("package.ARTIFACTS", self.hashes(), clear=True):
+                with self.assertRaises(ValueError):
+                    stage(sources, destination)
+            self.assertEqual(b"existing", (destination / "s2c.onnx").read_bytes())
+
     @staticmethod
     def sources(root):
         sources = {name: root / name for name in ("s2c.onnx", "yolo26n.onnx")}

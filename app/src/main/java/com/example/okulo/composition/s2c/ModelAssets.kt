@@ -7,7 +7,12 @@ import java.security.MessageDigest
 internal class ModelAssets(private val context: Context) {
     fun file(name: String): File {
         val expected = checkNotNull(HASHES[name])
-        val directory = File(context.noBackupFilesDir, "models").apply { mkdirs() }
+        val root = File(context.noBackupFilesDir, "models")
+        return prepare(name, expected, root)
+    }
+
+    private fun prepare(name: String, expected: String, directory: File): File {
+        directory.mkdirs()
         val target = File(directory, "$expected.onnx")
         if (!target.exists()) {
             val partial = File(directory, "$expected.partial")
@@ -41,8 +46,7 @@ internal class ModelAssets(private val context: Context) {
     companion object {
         val HASHES = mapOf(
             "s2c.onnx" to "e9d5b6518a878f6873f00482bd48c96c82980ef22e7715fb0cb73a066156348a",
-            "detector-800.onnx" to "c71ccb64fd0221b9308d10f45e5b66182de09e96f214ffcfacf4e2a42578bdef",
-            "detector-320.onnx" to "d5c15586b8c10bfd2b1f729766af1a754eb6b3fe1475d12ed5efd8b87439f339"
+            "yolo26n.onnx" to "b6e38fcd4bd123458e5f2d2e611107547b7587634f6ef46e328b9213ddad8e7d"
         )
     }
 }

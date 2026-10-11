@@ -47,7 +47,7 @@ class S2cInferenceTest {
     }
 
     @Test
-    fun bothDetectorSizesMatchIndependentReferenceScoresAndRanking() {
+    fun detectorMatchesOfficialYoloAndS2cReferenceScoresAndRanking() {
         val reference = resource("model-reference.json").bufferedReader().use { JSONObject(it.readText()) }
         val input = referenceInput()
         S2cCropScorer(context).use { model ->
