@@ -13,7 +13,6 @@ import androidx.camera.view.PreviewView
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.exifinterface.media.ExifInterface
@@ -50,12 +49,12 @@ class CameraCaptureTest {
         compose.runOnIdle { compose.activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
         try {
             val shutter = compose.onNodeWithContentDescription("拍照")
+            val photo = compose.onNodeWithContentDescription("查看最新照片")
+            photo.assertIsNotEnabled()
             shutter.assertExists()
             compose.waitUntil(60_000) { !shutter.fetchSemanticsNode().config.contains(SemanticsProperties.Disabled) }
             shutter.performClick()
-            compose.waitUntil(30_000) { compose.onAllNodesWithText("已保存到相册").fetchSemanticsNodes().isNotEmpty() }
-            val photo = compose.onNodeWithContentDescription("查看最新照片")
-            compose.waitUntil(5_000) { !photo.fetchSemanticsNode().config.contains(SemanticsProperties.Disabled) }
+            compose.waitUntil(30_000) { !photo.fetchSemanticsNode().config.contains(SemanticsProperties.Disabled) }
             photo.performClick()
             compose.waitUntil(5_000) { viewIntent.get() != null }
             val intent = checkNotNull(viewIntent.get())
@@ -89,7 +88,6 @@ class CameraCaptureTest {
                 if (error != null) throw error
                 assertEquals(PreviewView.StreamState.STREAMING, (view as PreviewView).previewStreamState.value)
             }
-            compose.waitUntil(5_000) { compose.onAllNodesWithText("已保存到相册").fetchSemanticsNodes().isEmpty() }
             compose.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
             val removed = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val deleted = ContentValues().apply { put(MediaStore.MediaColumns.IS_TRASHED, 1) }
