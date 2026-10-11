@@ -64,8 +64,10 @@ class CameraFrozenCompositionTest {
             assertEquals(frozen, composition.state.value.frozenPhoto)
             composition.dismiss()
             assertFalse(composition.state.value.active)
-            await { frozen.image.isRecycled }
-            assertFalse(File(checkNotNull(frozen.uri.path)).exists())
+            val frozenFile = File(checkNotNull(frozen.uri.path))
+            await { frozen.image.isRecycled && !frozenFile.exists() }
+            assertTrue(frozen.image.isRecycled)
+            assertFalse(frozenFile.exists())
         } finally {
             composition.close()
             assertTrue(engine.closed.await(10, TimeUnit.SECONDS))
