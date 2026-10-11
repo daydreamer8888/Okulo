@@ -41,7 +41,7 @@ class CameraCaptureTest {
         val viewIntent = AtomicReference<Intent?>()
         val monitor = object : Instrumentation.ActivityMonitor() {
             override fun onStartActivity(intent: Intent): Instrumentation.ActivityResult? {
-                if (intent.action != Intent.ACTION_VIEW) return null
+                if (intent.action != MediaStore.ACTION_REVIEW) return null
                 viewIntent.set(intent)
                 return Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null)
             }
@@ -63,6 +63,7 @@ class CameraCaptureTest {
             photo.performClick()
             compose.waitUntil(5_000) { viewIntent.get() != null }
             val intent = checkNotNull(viewIntent.get())
+            assertEquals(MediaStore.ACTION_REVIEW, intent.action)
             assertEquals("image/jpeg", intent.type)
             assertTrue(intent.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
             val uri = checkNotNull(intent.data)

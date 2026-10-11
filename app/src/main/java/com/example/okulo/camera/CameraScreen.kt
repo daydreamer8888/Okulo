@@ -1,14 +1,12 @@
 package com.example.okulo.camera
 
 import android.Manifest
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -183,17 +181,5 @@ private fun CameraPermissionNotice(denied: Boolean, onRequest: () -> Unit) {
         }) {
             Text(if (denied) "打开权限设置" else "开启相机")
         }
-    }
-}
-
-private fun openCapturedPhoto(context: android.content.Context, uri: Uri?) {
-    if (uri == null) return
-    try {
-        context.startActivity(
-            Intent(Intent.ACTION_VIEW).setDataAndType(uri, "image/jpeg")
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        )
-    } catch (_: ActivityNotFoundException) {
-        Toast.makeText(context, "未找到可查看照片的应用。", Toast.LENGTH_SHORT).show()
     }
 }
