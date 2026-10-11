@@ -11,9 +11,13 @@ internal fun searchCrops(
     val ratio = search.normalizedRatio
     var candidates = ratio?.let { cropCandidates(it, search.minimumArea) }
         ?: freeCropCandidates(width, height, search.minimumArea)
+    val required = search.requiredBounds
+    if (required != null) candidates = candidates.filter { it.contains(required) }
+    require(ratio == null || candidates.size > 1 || ratio == 1f) { "所选比例无法完整保留主体" }
     val coarseScores = score(candidates)
     val refinement = if (ratio == null) {
         refineFreeCrops(width, height, candidates, coarseScores, search.minimumArea)
+            .filter { required == null || it.contains(required) }
     } else {
         emptyList()
     }
@@ -26,7 +30,7 @@ internal fun searchCrops(
         coarseScores + fineScores
     }
     // Fixed-aspect searches use the source only as a score baseline.
-    val firstEligible = if (ratio == null) 0 else 1
+    val firstEligible = if (ratio == null || candidates.size == 1) 0 else 1
     val best = (firstEligible until scores.size).maxBy { scores[it] }
     return CropSearchResult(candidates[best], scores[0], scores[best], candidates.size - 1)
 }
