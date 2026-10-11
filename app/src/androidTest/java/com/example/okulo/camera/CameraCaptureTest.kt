@@ -13,6 +13,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.exifinterface.media.ExifInterface
@@ -50,11 +51,15 @@ class CameraCaptureTest {
         try {
             val shutter = compose.onNodeWithContentDescription("拍照")
             val photo = compose.onNodeWithContentDescription("查看最新照片")
-            photo.assertIsNotEnabled()
+            photo.assertDoesNotExist()
             shutter.assertExists()
             compose.waitUntil(60_000) { !shutter.fetchSemanticsNode().config.contains(SemanticsProperties.Disabled) }
             shutter.performClick()
-            compose.waitUntil(30_000) { !photo.fetchSemanticsNode().config.contains(SemanticsProperties.Disabled) }
+            compose.waitUntil(30_000) {
+                compose.onAllNodesWithContentDescription("查看最新照片").fetchSemanticsNodes().any {
+                    !it.config.contains(SemanticsProperties.Disabled)
+                }
+            }
             photo.performClick()
             compose.waitUntil(5_000) { viewIntent.get() != null }
             val intent = checkNotNull(viewIntent.get())
