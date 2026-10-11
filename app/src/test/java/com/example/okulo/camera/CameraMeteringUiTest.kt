@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -29,6 +30,30 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CameraMeteringUiTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun exposureSliderRemainsContinuousWithManyDeviceExposureLevels() {
+        val requests = mutableListOf<Float>()
+        compose.setContent {
+            OkuloTheme {
+                Box(Modifier.size(300.dp, 400.dp)) {
+                    CameraMeteringControls(
+                        CameraMeteringState(
+                            TapToFocusInfo(CameraController.TAP_TO_FOCUS_FOCUSED, PointF(100f, 100f)),
+                            -12..12,
+                            0
+                        )
+                    ) { requests += it }
+                }
+            }
+        }
+        val slider = compose.onNodeWithContentDescription("曝光补偿")
+        val range = slider.fetchSemanticsNode().config[SemanticsProperties.ProgressBarRangeInfo]
+        assertEquals(-12f..12f, range.range)
+        assertEquals(0, range.steps)
+        slider.performSemanticsAction(SemanticsActions.SetProgress) { it(1.4f) }
+        assertEquals(listOf(1.4f), requests)
+    }
 
     @Test
     fun focusAndExposureStayInsideThePreviewAndHideAfterThreeSecondsWithoutResettingExposure() {

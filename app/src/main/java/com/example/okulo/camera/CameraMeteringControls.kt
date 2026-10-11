@@ -157,7 +157,6 @@ private fun ExposurePanel(
                     value = index.toFloat(),
                     onValueChange = onExposure,
                     valueRange = range.first.toFloat()..range.last.toFloat(),
-                    steps = (range.last - range.first - 1).coerceAtLeast(0),
                     interactionSource = interactions,
                     modifier = Modifier.requiredSize(120.dp, 48.dp).rotate(-90f)
                         .semantics { contentDescription = "曝光补偿" }
