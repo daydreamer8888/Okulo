@@ -51,7 +51,7 @@ class CameraCaptureTest {
         try {
             val shutter = compose.onNodeWithContentDescription("拍照")
             val photo = compose.onNodeWithContentDescription("查看最新照片")
-            photo.assertDoesNotExist()
+            photo.assertIsNotEnabled()
             shutter.assertExists()
             compose.waitUntil(60_000) { !shutter.fetchSemanticsNode().config.contains(SemanticsProperties.Disabled) }
             shutter.performClick()
