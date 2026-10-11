@@ -22,7 +22,7 @@ class FreezeCameraSettingsTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
-    fun freezingStartsOffAndPersistsIndependentlyOfKeepingTheOriginal() {
+    fun freezingStartsOnAndPersistsIndependentlyOfKeepingTheOriginal() {
         val context = RuntimeEnvironment.getApplication()
         context.getSharedPreferences("okulo_settings", 0).edit().clear().commit()
         val settings = mutableStateOf(AppSettings(context))
@@ -41,17 +41,17 @@ class FreezeCameraSettingsTest {
         }
         val freeze = compose.onNodeWithText("构图时定格画面")
         val original = compose.onNodeWithText("同时保存原图")
-        freeze.performScrollTo().assertIsOff()
+        freeze.performScrollTo().assertIsOn()
         original.assertIsOn()
         assertTrue(freeze.fetchSemanticsNode().boundsInRoot.top < original.fetchSemanticsNode().boundsInRoot.top)
-        freeze.performClick().assertIsOn()
+        freeze.performClick().assertIsOff()
         original.performClick().assertIsOff()
         compose.runOnIdle { settings.value = AppSettings(context) }
-        freeze.assertIsOn()
-        original.assertIsOff()
-        freeze.performClick().assertIsOff()
-        compose.runOnIdle { settings.value = AppSettings(context) }
         freeze.assertIsOff()
+        original.assertIsOff()
+        freeze.performClick().assertIsOn()
+        compose.runOnIdle { settings.value = AppSettings(context) }
+        freeze.assertIsOn()
         original.assertIsOff()
     }
 }

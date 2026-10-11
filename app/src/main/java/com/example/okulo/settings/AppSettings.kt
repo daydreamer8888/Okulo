@@ -21,7 +21,7 @@ internal class AppSettings(context: Context) {
         cropWarningPercent = percent
     }
 
-    var freezeComposition by mutableStateOf(preferences.getBoolean("freeze_composition", false))
+    var freezeComposition by mutableStateOf(preferences.getBoolean("freeze_composition", true))
         private set
 
     fun updateFreezeComposition(enabled: Boolean) {
