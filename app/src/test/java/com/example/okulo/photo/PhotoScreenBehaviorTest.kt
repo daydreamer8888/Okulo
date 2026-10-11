@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
+import com.example.okulo.image.PhotoOperation
 import com.example.okulo.ui.theme.OkuloTheme
 import org.junit.After
 import org.junit.Assert.assertEquals

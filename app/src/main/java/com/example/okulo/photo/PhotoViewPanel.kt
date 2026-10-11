@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.testTag
 import com.example.okulo.composition.DEFAULT_CROP_AREA_PERCENT
+import com.example.okulo.image.cropPreview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

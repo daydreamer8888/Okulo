@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.ColorSpace
 import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
+import com.example.okulo.image.readPhoto
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

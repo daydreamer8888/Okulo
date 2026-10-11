@@ -14,6 +14,9 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import com.example.okulo.composition.CropBox
+import com.example.okulo.image.CropExporter
+import com.example.okulo.image.PhotoOperation
+import com.example.okulo.image.PhotoTransform
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

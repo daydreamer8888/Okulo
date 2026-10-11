@@ -2,7 +2,6 @@
 
 package com.example.okulo.photo
 
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -30,13 +29,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.CropAspect
-import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.DEFAULT_CROP_AREA_PERCENT
+import com.example.okulo.image.PhotoOperation
 import com.example.okulo.ui.FeedbackSnackbar
 import com.example.okulo.ui.rememberFeedbackMessage
 import kotlinx.coroutines.flow.Flow
-import kotlin.math.ceil
-import kotlin.math.floor
 
 @Composable
 internal fun PhotoScreen(
@@ -158,12 +155,4 @@ private fun AnalysisFeedback(state: PhotoState, onRetry: () -> Unit) {
         Text(state.error, color = MaterialTheme.colorScheme.error)
         FilledTonalButton(onClick = onRetry) { Text("重试") }
     }
-}
-
-internal fun cropPreview(bitmap: Bitmap, box: CropBox): Bitmap {
-    val left = floor(box.left * bitmap.width).toInt().coerceIn(0, bitmap.width - 1)
-    val top = floor(box.top * bitmap.height).toInt().coerceIn(0, bitmap.height - 1)
-    val right = ceil(box.right * bitmap.width).toInt().coerceIn(left + 1, bitmap.width)
-    val bottom = ceil(box.bottom * bitmap.height).toInt().coerceIn(top + 1, bitmap.height)
-    return Bitmap.createBitmap(bitmap, left, top, right - left, bottom - top)
 }
