@@ -7,7 +7,7 @@ import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.CropSearch
-import com.example.okulo.settings.DEFAULT_MINIMUM_CROP_AREA
+import com.example.okulo.composition.DEFAULT_MINIMUM_CROP_AREA
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.Closeable

@@ -2,7 +2,7 @@ package com.example.okulo.camera
 
 import android.graphics.Bitmap
 import com.example.okulo.composition.AnalysisMode
-import com.example.okulo.settings.DEFAULT_MINIMUM_CROP_AREA
+import com.example.okulo.composition.DEFAULT_MINIMUM_CROP_AREA
 
 internal class CameraFrameActions(
     private val composition: CameraComposition,

@@ -2,6 +2,7 @@ package com.example.okulo.composition
 
 import android.graphics.Bitmap
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -13,6 +14,26 @@ import kotlin.math.abs
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class CompositionEngineContractTest {
+    @Test
+    fun invalidSearchRequestsAreRejectedBeforeLoadingTheModel() = withPhoto { photo ->
+        val model = RecordingModel()
+        CompositionEngine(model).use { engine ->
+            val invalid = listOf(0f, -1f, Float.NaN, Float.POSITIVE_INFINITY)
+            for (ratio in invalid) {
+                assertThrows(IllegalArgumentException::class.java) {
+                    engine.analyze(photo, AnalysisMode.Fast, CropSearch(ratio, 0.2f), { true }, {})
+                }
+            }
+            for (area in invalid + 1.1f) {
+                assertThrows(IllegalArgumentException::class.java) {
+                    engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, area), { true }, {})
+                }
+            }
+            assertTrue(model.modes.isEmpty())
+            assertTrue(model.requests.isEmpty())
+        }
+    }
+
     @Test
     fun configuredAreaFloorAppliesToOriginalFixedAndFreeSearchIncludingRefinement() {
         val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
@@ -35,7 +56,7 @@ class CompositionEngineContractTest {
             }.toFloatArray()
         }
         CompositionEngine(model).use { engine ->
-            val result = engine.analyze(photo, AnalysisMode.Fast, null, { true }, {})
+            val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.5f), { true }, {})
             assertEquals(1f, result.crop.width * 400 / (result.crop.height * 300), 1e-5f)
             assertEquals(8f, result.cropScore, 0f)
             assertTrue(result.candidateCount <= 600)
@@ -56,7 +77,7 @@ class CompositionEngineContractTest {
             }.toFloatArray()
         }
         CompositionEngine(model).use { engine ->
-            val result = engine.analyze(photo, AnalysisMode.Fast, 4f / 3f, { true }, {})
+            val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(4f / 3f, 0.5f), { true }, {})
             assertEquals(0f, result.crop.left, 1e-6f)
             assertEquals(0.25f, result.crop.top, 1e-6f)
             assertEquals(1f, result.crop.right, 1e-6f)
@@ -76,7 +97,7 @@ class CompositionEngineContractTest {
         val photo = Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888)
         try {
             CompositionEngine(model).use { engine ->
-                val result = engine.analyze(photo, AnalysisMode.Fast, { true }, {})
+                val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(1f, 0.5f), { true }, {})
                 assertEquals(cropCandidates()[1], result.crop)
                 assertEquals(10f, result.originalScore, 0f)
                 assertEquals(5f, result.cropScore, 0f)
@@ -95,14 +116,14 @@ class CompositionEngineContractTest {
     @Test(expected = IllegalStateException::class)
     fun rejectsModelScoresWithWrongCount() = withPhoto { photo ->
         CompositionEngine(RecordingModel { floatArrayOf(1f) }).use { engine ->
-            engine.analyze(photo, AnalysisMode.Fast, { true }, {})
+            engine.analyze(photo, AnalysisMode.Fast, CropSearch(1f, 0.5f), { true }, {})
         }
     }
 
     @Test(expected = IllegalStateException::class)
     fun rejectsNonFiniteModelScores() = withPhoto { photo ->
         CompositionEngine(RecordingModel { boxes -> FloatArray(boxes.size) { Float.NaN } }).use { engine ->
-            engine.analyze(photo, AnalysisMode.Fast, { true }, {})
+            engine.analyze(photo, AnalysisMode.Fast, CropSearch(1f, 0.5f), { true }, {})
         }
     }
 
@@ -114,7 +135,7 @@ class CompositionEngineContractTest {
             FloatArray(boxes.size)
         }
         CompositionEngine(model).use { engine ->
-            engine.analyze(photo, AnalysisMode.Fast, { current }, {})
+            engine.analyze(photo, AnalysisMode.Fast, CropSearch(1f, 0.5f), { current }, {})
         }
     }
 
