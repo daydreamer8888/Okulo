@@ -79,21 +79,22 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         }
     }
 
+    fun recommendRetained(minimumArea: Float): Boolean {
+        val current = heldPhoto ?: return false
+        recommend(
+            checkNotNull(current.image.copy(Bitmap.Config.ARGB_8888, false)),
+            minimumArea,
+            current.retain()
+        )
+        return true
+    }
+
     fun recommendFrozen(
         capture: ((FrozenCameraPhoto?) -> Unit) -> Unit,
 
         minimumArea: Float
     ) {
-        val current = heldPhoto
-        if (current != null) {
-            recommend(
-                checkNotNull(current.image.copy(Bitmap.Config.ARGB_8888, false)),
-
-                minimumArea,
-                current.retain()
-            )
-            return
-        }
+        if (recommendRetained(minimumArea)) return
         val request = tasks.invalidate()
         releaseFrame()
         scene.reset()

@@ -14,12 +14,15 @@ internal class CameraFrameActions(
 
     fun recommend() {
         if (composition.state.value.selectingSubject) return
-        frozenCapture?.let { capture ->
-            composition.recommendFrozen(capture, minimumArea())
-            return
+        val area = minimumArea()
+        if (composition.recommendRetained(area)) return
+        val capture = frozenCapture
+        if (capture != null) {
+            composition.recommendFrozen(capture, area)
+        } else {
+            val frame = source()
+            if (frame != null) composition.recommend(frame, area) else composition.previewUnavailable()
         }
-        val frame = source()
-        if (frame != null) composition.recommend(frame, minimumArea()) else composition.previewUnavailable()
     }
 
     fun score() {

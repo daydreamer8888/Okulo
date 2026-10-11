@@ -58,10 +58,11 @@ class CameraSubjectTest {
             assertTrue(composition.state.value.selectingSubject)
             composition.cancelSubjectSelection()
             assertEquals(selection, composition.state.value)
-            actions.recommend()
+            CameraFrameActions(composition, { image() }).recommend()
             await { !composition.state.value.busy }
             assertEquals(subject, requested)
             assertEquals(Color.RED, checkNotNull(analyzed).getPixel(0, 0))
+            assertEquals(still, composition.state.value.frozenPhoto)
             val result = composition.state.value
             actions.selectSubject()
             assertFalse(composition.state.value.selectingSubject)
