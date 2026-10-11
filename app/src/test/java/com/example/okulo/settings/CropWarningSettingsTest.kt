@@ -65,12 +65,12 @@ class CropWarningSettingsTest {
                 }
             }
         }
-        compose.onNodeWithText("小于原图的 50% 时提醒裁剪区域较小").performScrollTo().performClick()
+        compose.onNodeWithText("小于原图的 20% 时提醒裁剪区域较小").performScrollTo().performClick()
         compose.onAllNodes(isDialog()).assertCountEquals(0)
         setProgress(90f)
         compose.onAllNodes(androidx.compose.ui.test.hasText("小于原图的 90% 时提醒裁剪区域较小")).assertCountEquals(1)
         compose.onNodeWithText("取消").performScrollTo().performClick()
-        compose.onNodeWithText("小于原图的 50% 时提醒裁剪区域较小").performScrollTo().performClick()
+        compose.onNodeWithText("小于原图的 20% 时提醒裁剪区域较小").performScrollTo().performClick()
         setProgress(34f)
         compose.onNodeWithText("小于原图的 30% 时提醒裁剪区域较小").assertExists()
         compose.onNodeWithText("确定").performScrollTo().performClick()

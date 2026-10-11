@@ -557,16 +557,16 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
-    fun cropAreaWarningUsesStrictlyLessThanHalfRegardlessOfPhotoResolution() {
+    fun cropAreaWarningDefaultsToTwentyPercentRegardlessOfPhotoResolution() {
         val large = Bitmap.createBitmap(2000, 2000, Bitmap.Config.ARGB_8888)
         val small = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888)
-        val state = mutableStateOf(PhotoState(photo = large, manualCrop = CropBox(0f, 0f, 1f, 0.5f)))
+        val state = mutableStateOf(PhotoState(photo = large, manualCrop = CropBox(0f, 0f, 1f, 0.2f)))
         compose.setContent { OkuloTheme { PhotoScreen(state.value, {}, {}, {}) } }
         val bounds = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
         compose.onNodeWithText("裁剪区域较小").assertDoesNotExist()
         compose.runOnIdle { state.value = state.value.copy(photo = small) }
         compose.onNodeWithText("裁剪区域较小").assertDoesNotExist()
-        compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox(0f, 0f, 1f, 0.49f)) }
+        compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox(0f, 0f, 1f, 0.19f)) }
         compose.onNodeWithText("裁剪区域较小").assertExists()
         assertEquals(bounds, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
         compose.onNodeWithContentDescription("保存").assertIsEnabled()
