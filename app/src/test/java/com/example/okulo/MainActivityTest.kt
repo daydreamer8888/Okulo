@@ -55,12 +55,13 @@ class MainActivityTest {
     }
 
     @Test
-    fun retainingCaptureOriginalIsDefaultAndTheChoiceSurvivesRecreation() {
+    fun capturePreferencesPersistIndependentlyAcrossRecreation() {
         compose.onNodeWithContentDescription("设置").performClick()
-        compose.onNodeWithText("使用推荐构图拍照时").assertExists()
+        compose.onNodeWithText("构图时定格画面").assertIsOff().performClick().assertIsOn()
         compose.onNodeWithText("同时保存原图").performScrollTo().assertIsOn().performClick().assertIsOff()
         compose.activityRule.scenario.recreate()
         compose.onNodeWithText("同时保存原图").performScrollTo().assertIsOff()
+        compose.onNodeWithText("构图时定格画面").assertIsOn()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithContentDescription("设置").performClick()
         compose.onNodeWithText("同时保存原图").performScrollTo().assertIsOff().performClick().assertIsOn()
