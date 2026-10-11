@@ -72,7 +72,7 @@ internal enum class AppTheme(val title: String) {
     System("跟随系统"), Light("浅色"), Dark("深色")
 }
 
-internal const val DEFAULT_CROP_WARNING_PERCENT = 50
+internal const val DEFAULT_CROP_WARNING_PERCENT = 20
 internal const val CROP_WARNING_MIN_PERCENT = 10
 internal const val CROP_WARNING_MAX_PERCENT = 90
 internal const val CROP_WARNING_STEP_PERCENT = 10
