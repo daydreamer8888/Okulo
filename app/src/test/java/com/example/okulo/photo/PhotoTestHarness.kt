@@ -10,6 +10,8 @@ import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.CropSearch
+import com.example.okulo.image.CropExporter
+import com.example.okulo.image.CropWriter
 import org.junit.Assert.assertTrue
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
@@ -18,11 +20,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-internal class PhotoTestHarness : Closeable {
+internal class PhotoTestHarness(
+    writer: CropWriter = CropExporter(RuntimeEnvironment.getApplication())
+) : Closeable {
     val bitmap: Bitmap = Bitmap.createBitmap(4, 3, Bitmap.Config.ARGB_8888)
     val analyzer = TestAnalyzer()
     var reader: (Uri) -> Bitmap = { bitmap }
-    val model = PhotoViewModel(RuntimeEnvironment.getApplication(), analyzer) { _, uri -> reader(uri) }
+    val model = PhotoViewModel(RuntimeEnvironment.getApplication(), analyzer, writer) { _, uri -> reader(uri) }
     private val store = ViewModelStore().apply { put("photo", model) }
     private val gates = mutableListOf<WorkGate>()
 
