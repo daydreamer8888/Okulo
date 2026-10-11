@@ -2,8 +2,12 @@ package com.example.okulo.camera
 
 import android.graphics.Bitmap
 import android.os.Looper
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -13,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
+import androidx.compose.ui.unit.dp
 import com.example.okulo.photo.TestAnalyzer
 import com.example.okulo.ui.crop.CropActions
 import com.example.okulo.ui.theme.OkuloTheme
@@ -56,6 +61,25 @@ class CameraSubjectUiTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun narrowCameraKeepsBothCompositionControlsSeparateFromTheCenteredShutter() {
+        compose.setContent {
+            OkuloTheme(darkTheme = true) {
+                Box(Modifier.size(320.dp, 600.dp).testTag("camera-layout")) {
+                    CameraLayout({}, capture = CaptureUiState(ready = true)) {}
+                }
+            }
+        }
+        val camera = compose.onNodeWithTag("camera-layout").fetchSemanticsNode().boundsInRoot
+        val shutter = compose.onNodeWithContentDescription("拍照").fetchSemanticsNode().boundsInRoot
+        val subject = compose.onNodeWithContentDescription("框选主体").fetchSemanticsNode().boundsInRoot
+        val recommend = compose.onNodeWithContentDescription("推荐构图").fetchSemanticsNode().boundsInRoot
+        assertEquals(camera.center.x, shutter.center.x, 1f)
+        assertTrue(shutter.right <= subject.left)
+        assertTrue(subject.right <= recommend.left)
+        assertTrue(recommend.right <= camera.right)
     }
 
     @Test

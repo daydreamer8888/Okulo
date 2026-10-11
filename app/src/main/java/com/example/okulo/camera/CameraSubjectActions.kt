@@ -2,7 +2,7 @@ package com.example.okulo.camera
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -36,7 +36,7 @@ internal data class CameraSubjectActions(
 internal fun CameraSubjectButton(state: CameraCompositionState, ready: Boolean, actions: CameraSubjectActions) {
     var expanded by remember { mutableStateOf(false) }
     LaunchedEffect(state, ready) { expanded = false }
-    Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
         ActionIconButton(
             subjectIcon,
             if (state.selectingSubject) "取消框选" else "框选主体",
@@ -50,7 +50,7 @@ internal fun CameraSubjectButton(state: CameraCompositionState, ready: Boolean, 
             enabled = state.selectingSubject || (ready && !state.busy && state.crop == null),
             selected = state.retainedRegion != null || state.selectingSubject
         )
-        DropdownMenu(expanded, { expanded = false }, modifier = Modifier.width(128.dp)) {
+        DropdownMenu(expanded, { expanded = false }, modifier = Modifier.widthIn(min = 128.dp)) {
             DropdownMenuItem(
                 text = { Text("重新框选") },
                 leadingIcon = { Icon(subjectIcon, contentDescription = null) },

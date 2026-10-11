@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -58,7 +58,7 @@ internal fun CameraRecommendButton(
 ) {
     var expanded by remember { mutableStateOf(false) }
     LaunchedEffect(state.active, state.busy) { if (!state.active || state.busy) expanded = false }
-    Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
         ActionIconButton(
             R.drawable.ic_analyze,
             if (state.busy) "取消推荐" else "推荐构图",
@@ -79,7 +79,7 @@ internal fun CameraRecommendButton(
                 strokeWidth = 2.dp
             )
         }
-        DropdownMenu(expanded, { expanded = false }, modifier = Modifier.width(128.dp)) {
+        DropdownMenu(expanded, { expanded = false }, modifier = Modifier.widthIn(min = 128.dp)) {
             DropdownMenuItem(
                 text = { Text("恢复") },
                 leadingIcon = { Icon(painterResource(R.drawable.ic_restore), contentDescription = null) },
