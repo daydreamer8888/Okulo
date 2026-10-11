@@ -22,7 +22,7 @@ import com.example.okulo.ui.theme.LocalWarningColor
 
 @Composable
 internal fun SmallCropWarning(state: PhotoState, thresholdPercent: Int) {
-    val smallCrop = state.displayedCrop?.area?.let { it < thresholdPercent / PERCENT_SCALE } == true
+    val smallCrop = state.displayedCrop?.area?.let { it < thresholdPercent / PERCENT_SCALE - AREA_TOLERANCE } == true
     Row(
         modifier = Modifier.auxiliaryVisibility(smallCrop),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -42,3 +42,5 @@ private fun Modifier.auxiliaryVisibility(visible: Boolean): Modifier =
     if (visible) this else alpha(0f).clearAndSetSemantics {}
 
 private const val PERCENT_SCALE = 100f
+
+private const val AREA_TOLERANCE = 1e-6f

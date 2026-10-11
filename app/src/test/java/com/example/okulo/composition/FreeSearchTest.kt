@@ -101,7 +101,7 @@ class FreeSearchTest {
         }
         try {
             CompositionEngine(model).use { engine ->
-                val result = engine.analyze(photo, AnalysisMode.Fast, null, { true }, {})
+                val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.2f), { true }, {})
                 assertEquals(2, requests.size)
                 val coarse = requests[0]
                 val fine = requests[1]
@@ -118,8 +118,7 @@ class FreeSearchTest {
                 }
                 for (box in fine) {
                     assertTrue(box.left >= 0f && box.top >= 0f && box.right <= 1f && box.bottom <= 1f)
-                    val maximum = minOf(box.width / box.height, box.height / box.width)
-                    assertTrue(box.area >= maximum * 0.5f - 1e-6f)
+                    assertTrue(box.area >= 0.2f - 1e-6f)
                 }
             }
         } finally {

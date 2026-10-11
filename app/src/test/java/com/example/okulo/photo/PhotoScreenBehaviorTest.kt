@@ -557,6 +557,17 @@ class PhotoScreenBehaviorTest {
     }
 
     @Test
+    fun roundingAtTheRecommendedAreaFloorDoesNotShowASmallCropWarning() {
+        val state = mutableStateOf(
+            PhotoState(photo = image(), result = recommendation().copy(crop = CropBox(0f, 0f, 0.4472136f, 0.4472136f)))
+        )
+        compose.setContent { OkuloTheme { PhotoScreen(state.value, {}, {}, {}) } }
+        compose.onNodeWithText("裁剪区域较小").assertDoesNotExist()
+        compose.runOnIdle { state.value = state.value.copy(manualCrop = CropBox(0f, 0f, 0.4f, 0.4f)) }
+        compose.onNodeWithText("裁剪区域较小").assertExists()
+    }
+
+    @Test
     fun cropAreaWarningDefaultsToTwentyPercentRegardlessOfPhotoResolution() {
         val large = Bitmap.createBitmap(2000, 2000, Bitmap.Config.ARGB_8888)
         val small = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888)
