@@ -28,9 +28,11 @@ class SavedPhotoButtonTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun missingPhotosLeaveNoUnavailableViewerAction() {
-        compose.setContent { SavedPhotoButton(null) {} }
-        compose.onNodeWithContentDescription("查看最新照片").assertDoesNotExist()
+    fun missingPhotosKeepTheViewerVisibleButDisabled() {
+        var views = 0
+        compose.setContent { SavedPhotoButton(null) { views++ } }
+        compose.onNodeWithContentDescription("查看最新照片").assertIsNotEnabled().performClick()
+        assertEquals(0, views)
         compose.onNodeWithTag("saved-photo-thumbnail", useUnmergedTree = true).assertDoesNotExist()
     }
 
