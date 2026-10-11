@@ -7,12 +7,12 @@ import kotlin.math.abs
 
 class CropGeometryTest {
     @Test
-    fun freeSearchBalancesEveryAspectAcrossPositionsAndSizesWithinFourHundredCrops() {
+    fun freeSearchBalancesEveryAspectAcrossPositionsAndSizesWithinFiveHundredFiftyCrops() {
         for ((width, height) in listOf(400 to 300, 300 to 400, 400 to 273)) {
             val boxes = freeCropCandidates(width, height, 0.2f)
             assertEquals(CropBox.FullFrame, boxes.first())
             assertEquals(boxes.size, boxes.distinct().size)
-            assertTrue(boxes.size <= 401)
+            assertTrue(boxes.size <= 551)
             val ratios = CropAspect.entries.mapNotNull { it.normalizedRatio(width, height) }.distinct()
             val counts = ratios.map { ratio ->
                 val matching = boxes.drop(1).filter { abs(it.width / it.height / ratio - 1f) < 1e-5f }

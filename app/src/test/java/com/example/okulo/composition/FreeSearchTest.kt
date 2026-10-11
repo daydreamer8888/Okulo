@@ -15,6 +15,39 @@ import kotlin.math.abs
 @Config(sdk = [28])
 class FreeSearchTest {
     @Test
+    fun freeSearchFindsTheExpandedCoarseWinnerWithAtMostFiftyRefinementCrops() {
+        val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
+        val winner = CropBox(0f, 0f, 0.83666003f, 0.83666003f)
+        val requests = mutableListOf<List<CropBox>>()
+        val model = object : CropScoringModel {
+            override fun load(mode: AnalysisMode) = Unit
+            override fun close() = Unit
+            override fun score(
+                bitmap: Bitmap,
+                mode: AnalysisMode,
+                candidates: List<CropBox>,
+                isCurrent: () -> Boolean
+            ): FloatArray {
+                requests.add(candidates)
+                return candidates.map { if (it == winner) 42f else 1f }.toFloatArray()
+            }
+        }
+        try {
+            CompositionEngine(model).use { engine ->
+                val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.2f), { true }, {})
+                assertEquals(winner, result.crop)
+                assertEquals(42f, result.cropScore, 0f)
+                assertTrue(requests.first().contains(winner))
+                assertTrue(requests.first().size <= 551)
+                assertTrue(requests[1].size in 1..50)
+                assertTrue(result.candidateCount <= 600)
+            }
+        } finally {
+            photo.recycle()
+        }
+    }
+
+    @Test
     fun inferiorRefinementKeepsTheWinningCoarseCropOrUncroppedSource() {
         val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
         try {
@@ -83,7 +116,7 @@ class FreeSearchTest {
     }
 
     @Test
-    fun refinementImprovesTheCoarseWinnerAndKeepsEveryAspectWithinSixHundredCrops() {
+    fun refinementImprovesTheCoarseWinnerAndKeepsCoarseAspectCoverageWithinSixHundredCrops() {
         val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
         val requests = mutableListOf<List<CropBox>>()
         val model = object : CropScoringModel {
@@ -105,8 +138,8 @@ class FreeSearchTest {
                 assertEquals(2, requests.size)
                 val coarse = requests[0]
                 val fine = requests[1]
-                assertTrue(coarse.size <= 401)
-                assertTrue(fine.size <= 200 && fine.isNotEmpty())
+                assertTrue(coarse.size <= 551)
+                assertTrue(fine.size <= 50 && fine.isNotEmpty())
                 assertTrue(result.candidateCount <= 600)
                 assertEquals(coarse.size + fine.size - 1, result.candidateCount)
                 assertEquals(coarse.size + fine.size, (coarse + fine).distinct().size)
@@ -114,7 +147,10 @@ class FreeSearchTest {
                 assertEquals(quality(CropBox.FullFrame), result.originalScore, 0f)
                 val ratios = CropAspect.entries.mapNotNull { it.normalizedRatio(400, 300) }.distinct()
                 for (ratio in ratios) {
-                    assertTrue("No refinement for $ratio", fine.any { abs(it.width / it.height / ratio - 1f) < 1e-5f })
+                    assertTrue(
+                        "No coarse coverage for $ratio",
+                        coarse.any { abs(it.width / it.height / ratio - 1f) < 1e-5f }
+                    )
                 }
                 for (box in fine) {
                     assertTrue(box.left >= 0f && box.top >= 0f && box.right <= 1f && box.bottom <= 1f)

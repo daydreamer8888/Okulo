@@ -36,7 +36,7 @@ internal fun cropCandidates(normalizedRatio: Float, minimumArea: Float = MIN_ARE
     return listOf(CropBox.FullFrame) + aspectGrid(normalizedRatio, GRID_POINTS, areas)
 }
 
-/** Balance aspect coverage within four hundred unique coarse-search crops. */
+/** Balance aspect coverage within the coarse-search budget. */
 internal fun freeCropCandidates(width: Int, height: Int, minimumArea: Float = MIN_AREA.toFloat()): List<CropBox> {
     require(width > 0 && height > 0)
     require(minimumArea > 0f && minimumArea <= 1f)
@@ -60,7 +60,7 @@ private fun areaLevels(maximum: Double, minimum: Double, count: Int): List<Doubl
     }
 
 private const val FREE_GRID_POINTS = 3
-private const val FREE_COARSE_BUDGET = 400
+private const val FREE_COARSE_BUDGET = 550
 
 private fun aspectGrid(ratio: Float, points: Int, areas: List<Double>): List<CropBox> = buildList {
     val maximumWidth = minOf(1.0, ratio.toDouble())

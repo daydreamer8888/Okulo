@@ -9,9 +9,9 @@ private const val TRANSLATION_STEP = 0.25f
 private const val SCALE_STEP = 0.025f
 private const val ASPECT_STEP = 0.05f
 private const val AREA_TOLERANCE = 1e-6f
-private const val REFINEMENT_BUDGET = 200
+private const val REFINEMENT_BUDGET = 50
 
-/** Reserve refinement for each aspect and avoid spending it on overlapping winners. */
+/** Refine diverse winners in aspect order within a bounded scoring budget. */
 internal fun refineFreeCrops(
     width: Int,
     height: Int,
