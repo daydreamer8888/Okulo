@@ -59,7 +59,7 @@ internal fun CameraLayout(
                 ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
             }
             Box(Modifier.width(previewWidth).aspectRatio(ratio)) { viewfinder() }
-            CameraCompositionTools(composition, compositionActions, showScores)
+            CameraCompositionTools(composition, showScores)
             Column(
                 Modifier.fillMaxWidth().weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -78,7 +78,7 @@ internal fun CameraLayout(
                 ) {
                     SavedPhotoButton(capture.savedPhoto, onViewPhoto)
                     CaptureButton(capture, onCapture)
-                    CameraRecommendButton(composition, recommendationEnabled, compositionActions.recommend)
+                    CameraRecommendButton(composition, recommendationEnabled, compositionActions)
                 }
             }
         }

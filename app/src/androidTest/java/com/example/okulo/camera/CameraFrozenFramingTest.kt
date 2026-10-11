@@ -8,6 +8,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -58,14 +59,18 @@ class CameraFrozenFramingTest {
             val frozen = compose.runOnIdle { checkNotNull(composition.state.value.frozenPhoto) }
             val source = File(checkNotNull(frozen.uri.path))
             compose.onNodeWithContentDescription("定格画面").assertExists()
-            compose.onNodeWithContentDescription("恢复推荐").assertIsNotEnabled()
+            compose.onNodeWithContentDescription("推荐构图").performClick()
+            compose.onNodeWithText("恢复").assertIsNotEnabled()
+            compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
             val before = compose.runOnIdle { checkNotNull(composition.state.value.crop) }
             compose.onNodeWithTag("camera-crop").performTouchInput {
                 val start = Offset(width * before.right, height * (before.top + before.bottom) / 2f)
                 swipe(start, start - Offset(width * 0.08f, 0f), durationMillis = 300)
             }
             awaitScore(composition)
-            compose.onNodeWithContentDescription("恢复推荐").assertIsEnabled()
+            compose.onNodeWithContentDescription("推荐构图").performClick()
+            compose.onNodeWithText("恢复").assertIsEnabled()
+            compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
             val crop = compose.runOnIdle { checkNotNull(composition.state.value.crop) }
             assertTrue(crop.width < before.width)
             assertEquals(frozen, compose.runOnIdle { composition.state.value.frozenPhoto })
@@ -87,7 +92,8 @@ class CameraFrozenFramingTest {
                     image.recycle()
                 }
             }
-            compose.onNodeWithContentDescription("关闭推荐").performClick()
+            compose.onNodeWithContentDescription("推荐构图").performClick()
+            compose.onNodeWithText("关闭").performClick()
             compose.onNodeWithContentDescription("定格画面").assertDoesNotExist()
             compose.waitUntil(10_000) { !source.exists() }
         } finally {

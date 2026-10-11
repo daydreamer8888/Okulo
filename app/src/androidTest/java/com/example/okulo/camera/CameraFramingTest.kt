@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -72,11 +73,16 @@ class CameraFramingTest {
             compose.onNodeWithTag("camera-crop").assertExists()
             compose.onNodeWithTag("composition-scores").assertExists()
             assertPreviewStreaming()
-            compose.onNodeWithContentDescription("恢复推荐").assertIsNotEnabled()
+            compose.onNodeWithContentDescription("推荐构图").performClick()
+            compose.onNodeWithText("恢复").assertIsNotEnabled()
+            compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
             resizeRightEdge(composition)
             awaitScore(composition)
-            compose.onNodeWithContentDescription("恢复推荐").assertIsEnabled().performClick()
-            compose.onNodeWithContentDescription("恢复推荐").assertIsNotEnabled()
+            compose.onNodeWithContentDescription("推荐构图").performClick()
+            compose.onNodeWithText("恢复").assertIsEnabled().performClick()
+            compose.onNodeWithContentDescription("推荐构图").performClick()
+            compose.onNodeWithText("恢复").assertIsNotEnabled()
+            compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
             compose.runOnIdle {
                 assertEquals(composition.state.value.recommendation!!.crop, composition.state.value.crop)
             }
@@ -97,7 +103,8 @@ class CameraFramingTest {
             val savedArea = cropSize.first.toDouble() * cropSize.second / (sourceSize.first.toDouble() * sourceSize.second)
             assertEquals("Saved crop must match edited framing", area.toDouble(), savedArea, 0.02)
             assertPreviewStreaming()
-            compose.onNodeWithContentDescription("关闭推荐").performClick()
+            compose.onNodeWithContentDescription("推荐构图").performClick()
+            compose.onNodeWithText("关闭").performClick()
             compose.onNodeWithTag("camera-crop").assertDoesNotExist()
             assertPreviewStreaming()
         } finally {

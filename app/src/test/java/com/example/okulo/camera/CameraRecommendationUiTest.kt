@@ -16,6 +16,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
@@ -41,6 +42,51 @@ import java.util.concurrent.TimeUnit
 class CameraRecommendationUiTest {
     @get:Rule val compose = createComposeRule()
 
+    private fun gatedRecommendation(gate: WorkGate): com.example.okulo.composition.CompositionResult {
+        gate.block()
+        return recommendation()
+    }
+
+    private fun openRecommendationMenu() {
+        compose.onNodeWithContentDescription("推荐构图").performClick()
+    }
+
+    @Test
+    fun completedRecommendationsOfferRestoreAndCloseInTheButtonMenu() {
+        val result = recommendation()
+        val state = mutableStateOf(CameraCompositionState(result, result.crop, 2.8f, 3.13f))
+        var restores = 0
+        var dismissals = 0
+        var recommendations = 0
+        compose.setContent {
+            OkuloTheme(darkTheme = true) {
+                CameraLayout(
+                    onImportPhoto = {},
+                    capture = CaptureUiState(ready = true),
+                    composition = state.value,
+                    compositionActions = CameraCompositionActions(
+                        { recommendations++ },
+                        { restores++ },
+                        { dismissals++ }
+                    ),
+                    showScores = true
+                ) {}
+            }
+        }
+        compose.onNodeWithText("恢复").assertDoesNotExist()
+        openRecommendationMenu()
+        compose.onNodeWithText("恢复").assertIsNotEnabled()
+        compose.onNodeWithText("关闭").assertIsEnabled()
+        assertEquals(0, recommendations)
+        compose.runOnIdle { state.value = state.value.copy(crop = result.crop.copy(left = 0.05f)) }
+        compose.onNodeWithText("恢复").assertIsEnabled().performClick()
+        assertEquals(1, restores)
+        compose.onNodeWithText("关闭").assertDoesNotExist()
+        openRecommendationMenu()
+        compose.onNodeWithText("关闭").performClick()
+        assertEquals(1, dismissals)
+    }
+
     @Test
     fun signedScoresAndLoadingKeepTheCardAndLabelsInPlace() {
         val result = recommendation()
@@ -51,6 +97,8 @@ class CameraRecommendationUiTest {
             }
         }
         val card = compose.onNodeWithTag("composition-scores").fetchSemanticsNode().boundsInRoot
+        val root = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        assertEquals(root.center.x, card.center.x, 1f)
         val original = compose.onNodeWithText("原图").fetchSemanticsNode().boundsInRoot
         val crop = compose.onNodeWithText("裁剪").fetchSemanticsNode().boundsInRoot
         compose.runOnIdle { state.value = state.value.copy(originalScore = -2.5f, cropScore = -11.75f) }
@@ -92,14 +140,13 @@ class CameraRecommendationUiTest {
         }
         val scores = compose.onNodeWithTag("composition-scores").fetchSemanticsNode().boundsInRoot
         val shutter = compose.onNodeWithContentDescription("拍照").fetchSemanticsNode().boundsInRoot
-        compose.onNodeWithContentDescription("恢复推荐").assertIsNotEnabled()
-        compose.onNodeWithContentDescription("推荐构图").performClick()
+        compose.runOnIdle { state.value = state.value.copy(busy = true, scoring = false, cropScore = null) }
         compose.onNodeWithContentDescription("正在推荐构图").assertExists()
         compose.onNodeWithContentDescription("正在更新裁剪评分").assertDoesNotExist()
         compose.onNodeWithText("2.00").assertExists()
         assertEquals(scores, compose.onNodeWithTag("composition-scores").fetchSemanticsNode().boundsInRoot)
         assertEquals(shutter, compose.onNodeWithContentDescription("拍照").fetchSemanticsNode().boundsInRoot)
-        compose.onNodeWithContentDescription("恢复推荐").assertIsNotEnabled()
+        compose.onNodeWithText("恢复").assertDoesNotExist()
         compose.onNodeWithContentDescription("取消推荐").assertIsEnabled().performClick()
         compose.onNodeWithContentDescription("拍照").assertIsEnabled().performClick()
         assertEquals(1, cancellations)
@@ -110,10 +157,7 @@ class CameraRecommendationUiTest {
     fun recommendationOverlaysTheContinuingPreviewAndScoresAfterDragging() {
         val analyzer = TestAnalyzer()
         val gate = WorkGate()
-        analyzer.analyze = { _ ->
-            gate.block()
-            recommendation()
-        }
+        analyzer.analyze = { gatedRecommendation(gate) }
         val session = CameraComposition(analyzer)
         val preview = mutableStateOf("实时画面一")
         fun frame() = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
@@ -141,7 +185,7 @@ class CameraRecommendationUiTest {
                     }
                 }
             }
-            compose.onNodeWithContentDescription("推荐构图").performClick()
+            openRecommendationMenu()
             gate.awaitEntry()
             compose.runOnIdle { preview.value = "实时画面二" }
             compose.onNodeWithText("实时画面二").assertExists()
@@ -154,10 +198,12 @@ class CameraRecommendationUiTest {
             await { !session.state.value.scoring }
             assertEquals(1, analyzer.evaluationCalls.get())
             compose.onNodeWithText("4.00").assertExists()
-            compose.onNodeWithContentDescription("恢复推荐").assertIsEnabled().performClick()
+            openRecommendationMenu()
+            compose.onNodeWithText("恢复").assertIsEnabled().performClick()
             assertEquals(recommendation().crop, session.state.value.crop)
             compose.onNodeWithText("3.00").assertExists()
-            compose.onNodeWithContentDescription("关闭推荐").performClick()
+            openRecommendationMenu()
+            compose.onNodeWithText("关闭").performClick()
             compose.onNodeWithTag("camera-crop").assertDoesNotExist()
             compose.onNodeWithTag("live-preview").assertExists()
         } finally {
@@ -191,8 +237,10 @@ class CameraRecommendationUiTest {
         val failure = compose.onNodeWithText("评分失败，请重试").fetchSemanticsNode().boundsInRoot
         val shutter = compose.onNodeWithContentDescription("拍照").fetchSemanticsNode().boundsInRoot
         assertTrue(failure.bottom < shutter.top)
-        compose.onNodeWithContentDescription("恢复推荐").assertIsEnabled()
         compose.onNodeWithContentDescription("推荐构图").assertIsEnabled()
+        compose.mainClock.autoAdvance = true
+        openRecommendationMenu()
+        compose.onNodeWithText("恢复").assertIsEnabled()
     }
 
     private fun await(condition: () -> Boolean) {
