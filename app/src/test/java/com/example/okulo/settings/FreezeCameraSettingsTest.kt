@@ -39,7 +39,7 @@ class FreezeCameraSettingsTest {
                 )
             }
         }
-        val freeze = compose.onNodeWithText("构图时定格画面")
+        val freeze = compose.onNodeWithText("推荐构图时定格画面")
         val original = compose.onNodeWithText("同时保存原图")
         freeze.performScrollTo().assertIsOn()
         original.assertIsOn()

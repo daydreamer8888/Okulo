@@ -44,7 +44,7 @@ internal fun SettingsScreen(
             SettingsGroup("拍摄") {
                 ListItem(
                     colors = settingsItemColors(),
-                    headlineContent = { Text("构图时定格画面") },
+                    headlineContent = { Text("推荐构图时定格画面") },
                     trailingContent = { Switch(checked = freezeComposition, onCheckedChange = null) },
                     modifier = Modifier.toggleable(
                         freezeComposition,
