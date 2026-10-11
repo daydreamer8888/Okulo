@@ -68,7 +68,7 @@ class FreeSearchTest {
             CompositionEngine(model).use { engine ->
                 try {
                     engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.5f), { current }) { status ->
-                        if (status == "正在细化构图…") current = false
+                        if (status == AnalysisStage.Refining) current = false
                     }
                 } catch (_: CancellationException) {
                     cancelled = true

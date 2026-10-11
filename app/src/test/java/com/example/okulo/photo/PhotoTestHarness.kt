@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Looper
 import androidx.lifecycle.ViewModelStore
 import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.composition.AnalysisStage
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropBox
@@ -79,13 +80,13 @@ internal class TestAnalyzer : CompositionAnalyzer {
         mode: AnalysisMode,
         search: CropSearch,
         isCurrent: () -> Boolean,
-        status: (String) -> Unit
+        status: (AnalysisStage) -> Unit
     ): CompositionResult {
         this.isCurrent = isCurrent
         analysisCalls.incrementAndGet()
         requestedRatios.add(search.normalizedRatio)
         requestedMinimumAreas.add(search.minimumArea)
-        status("正在分析照片…")
+        status(AnalysisStage.Searching)
         return analyze(bitmap, mode)
     }
 
