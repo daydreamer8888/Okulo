@@ -34,7 +34,7 @@ class FreeSearchTest {
                     }
                 }
                 CompositionEngine(model).use { engine ->
-                    val result = engine.analyze(photo, AnalysisMode.Fast, null, { true }, {})
+                    val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.5f), { true }, {})
                     assertEquals(2, calls)
                     assertEquals(winner, result.crop)
                     assertEquals(42f, result.cropScore, 0f)
@@ -67,7 +67,7 @@ class FreeSearchTest {
         try {
             CompositionEngine(model).use { engine ->
                 try {
-                    engine.analyze(photo, AnalysisMode.Fast, null, { current }) { status ->
+                    engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.5f), { current }) { status ->
                         if (status == "正在细化构图…") current = false
                     }
                 } catch (_: CancellationException) {

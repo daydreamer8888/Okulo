@@ -29,7 +29,7 @@ class CompositionEngineTest {
             createCompositionAnalyzer(context).use { engine ->
                 for (bitmap in listOf(plain, singleSubject)) {
                     for (mode in AnalysisMode.entries) {
-                        val result = engine.analyze(bitmap, mode, null, { true }, {})
+                        val result = engine.analyze(bitmap, mode, CropSearch(null, 0.5f), { true }, {})
                         assertTrue(result.originalScore.isFinite())
                         assertTrue(result.cropScore.isFinite())
                         assertTrue(result.crop.left >= 0f && result.crop.top >= 0f)
@@ -80,7 +80,7 @@ class CompositionEngineTest {
         val bitmap = instrumentation.context.assets.open("scene.png").use { BitmapFactory.decodeStream(it) }
         createCompositionAnalyzer(instrumentation.targetContext).use { engine ->
             for (mode in AnalysisMode.entries) {
-                val recommendation = engine.analyze(bitmap, mode, { true }, {})
+                val recommendation = engine.analyze(bitmap, mode, CropSearch(1f, 0.5f), { true }, {})
                 val manual = engine.evaluate(bitmap, mode, recommendation.crop) { true }
                 assertEquals(recommendation.originalScore, manual.originalScore, 2e-5f)
                 assertEquals(recommendation.cropScore, manual.cropScore, 2e-5f)

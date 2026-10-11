@@ -7,6 +7,7 @@ import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
+import com.example.okulo.composition.CropSearch
 import com.example.okulo.composition.createCompositionAnalyzer
 import com.example.okulo.composition.cropCandidates
 import org.json.JSONObject
@@ -121,7 +122,7 @@ class S2cInferenceTest {
 
     private fun assertAspectRecommendation(analyzer: CompositionAnalyzer, photo: Bitmap, aspect: CropAspect) {
         val ratio = aspect.normalizedRatio(photo.width, photo.height)
-        val result = analyzer.analyze(photo, AnalysisMode.Fast, ratio, { true }, {})
+        val result = analyzer.analyze(photo, AnalysisMode.Fast, CropSearch(ratio, 0.5f), { true }, {})
         if (ratio != null) assertEquals(ratio, result.crop.width / result.crop.height, 1e-5f)
         assertTrue(result.cropScore.isFinite())
         val evaluated = analyzer.evaluate(photo, AnalysisMode.Fast, result.crop) { true }
@@ -155,7 +156,7 @@ class S2cInferenceTest {
     }
 
     private fun compareManualAndFresh(analyzer: CompositionAnalyzer, photo: Bitmap, mode: AnalysisMode) {
-        val recommendation = analyzer.analyze(photo, mode, { true }, {})
+        val recommendation = analyzer.analyze(photo, mode, CropSearch(1f, 0.5f), { true }, {})
         val manual = analyzer.evaluate(photo, mode, recommendation.crop) { true }
         assertEquals(recommendation.cropScore, manual.cropScore, 2e-5f)
         val adjusted = CropBox(0.2f, 0.2f, 0.6f, 0.6f)

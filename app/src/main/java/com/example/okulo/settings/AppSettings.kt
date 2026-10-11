@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.composition.DEFAULT_CROP_AREA_PERCENT
 
 internal class AppSettings(context: Context) {
     private val preferences = context.getSharedPreferences("okulo_settings", Context.MODE_PRIVATE)
@@ -74,10 +75,9 @@ internal enum class AppTheme(val title: String) {
     System("跟随系统"), Light("浅色"), Dark("深色")
 }
 
-internal const val DEFAULT_CROP_WARNING_PERCENT = 20
+internal const val DEFAULT_CROP_WARNING_PERCENT = DEFAULT_CROP_AREA_PERCENT
 internal const val CROP_WARNING_MIN_PERCENT = 10
 internal const val CROP_WARNING_MAX_PERCENT = 90
 internal const val CROP_WARNING_STEP_PERCENT = 10
 
 private const val PERCENT_SCALE = 100f
-internal const val DEFAULT_MINIMUM_CROP_AREA = DEFAULT_CROP_WARNING_PERCENT / PERCENT_SCALE

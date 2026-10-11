@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
-import com.example.okulo.settings.DEFAULT_CROP_WARNING_PERCENT
+import com.example.okulo.composition.DEFAULT_CROP_AREA_PERCENT
 import com.example.okulo.ui.FeedbackSnackbar
 import com.example.okulo.ui.rememberFeedbackMessage
 import kotlinx.coroutines.flow.Flow
@@ -55,7 +55,7 @@ internal fun PhotoScreen(
     onSave: () -> Unit = {},
     saving: Boolean = false,
     saveEvents: Flow<String>? = null,
-    cropWarningPercent: Int = DEFAULT_CROP_WARNING_PERCENT
+    cropWarningPercent: Int = DEFAULT_CROP_AREA_PERCENT
 ) {
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri -> uri?.let(onPhoto) }
     val feedback = rememberFeedbackMessage(saveEvents)
