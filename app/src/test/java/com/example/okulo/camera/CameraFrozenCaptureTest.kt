@@ -10,7 +10,9 @@ import android.provider.MediaStore
 import androidx.camera.core.ImageCapture
 import androidx.exifinterface.media.ExifInterface
 import com.example.okulo.composition.CropBox
+import com.example.okulo.image.CropWriter
 import com.example.okulo.photo.ExportGallery
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -23,6 +25,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowContentResolver
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
@@ -73,6 +76,30 @@ class CameraFrozenCaptureTest {
             exported.recycle()
             assertFalse(source.exists())
             assertTrue(frozen.image.isRecycled)
+        }
+    }
+
+    @Test
+    fun keepingTheOriginalPreservesCapturedBytesEvenWhenCropExportFails() {
+        val context = RuntimeEnvironment.getApplication()
+        val gallery = ExportGallery(File(context.cacheDir, "frozen-original.jpg"))
+        gallery.attachInfo(context, ProviderInfo().apply { authority = MediaStore.AUTHORITY })
+        ShadowContentResolver.registerProviderInternal(MediaStore.AUTHORITY, gallery)
+        val source = File.createTempFile("frozen-original-", ".jpg", context.cacheDir)
+        val bitmap = Bitmap.createBitmap(30, 40, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
+        source.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it) }
+        val bytes = source.readBytes()
+        val frozen = FrozenCameraPhoto(bitmap, source)
+        val unavailable = CropWriter { _, _, _ -> throw IOException("Gallery crop write failed") }
+        CameraCapture(context, writer = unavailable).use { capture ->
+            capture.saveFrozen(frozen, CropBox(0f, 0f, 0.5f, 1f), keepOriginal = true)
+            frozen.close()
+            await { !capture.state.saving }
+            assertEquals("裁剪保存失败，原图已保留", capture.state.message)
+            assertTrue(capture.state.savedPhoto != null)
+            assertEquals(1, gallery.insertions)
+            assertArrayEquals(bytes, gallery.file.readBytes())
+            await { !source.exists() }
         }
     }
 

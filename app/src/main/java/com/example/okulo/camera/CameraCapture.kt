@@ -19,6 +19,7 @@ import com.example.okulo.image.CropExporter
 import com.example.okulo.image.CropWriter
 import com.example.okulo.image.PhotoTransform
 import com.example.okulo.image.readPhoto
+import com.example.okulo.image.saveOriginalPhoto
 import java.io.Closeable
 import java.io.IOException
 import java.util.concurrent.Executors
@@ -55,7 +56,7 @@ internal class CameraCapture(
     }
 
     fun takePhoto(crop: CropBox? = null, keepOriginal: Boolean = true) {
-        if (!state.ready || state.saving || state.preparing) return
+        if (!state.canCapture) return
         state = state.copy(saving = true, message = null)
         var output: CaptureOutput? = null
         try {
@@ -72,7 +73,7 @@ internal class CameraCapture(
     }
 
     fun freeze(onFrame: (FrozenCameraPhoto?) -> Unit) {
-        if (closed || !state.ready || (state.saving || state.preparing)) {
+        if (closed || !state.canCapture) {
             onFrame(null)
             return
         }
@@ -122,7 +123,7 @@ internal class CameraCapture(
         exports.execute {
             var original: Uri? = null
             try {
-                if (keepOriginal) original = writer.save(source.uri, PhotoTransform(), CropBox.FullFrame)
+                if (keepOriginal) original = saveOriginalPhoto(context.contentResolver, source.uri)
                 val cropped = writer.save(source.uri, PhotoTransform(), crop)
                 main.post { complete(cropped) }
             } catch (failure: Exception) {
