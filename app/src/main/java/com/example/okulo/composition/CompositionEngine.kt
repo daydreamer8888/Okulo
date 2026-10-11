@@ -11,8 +11,6 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
         isCurrent: () -> Boolean,
         status: (String) -> Unit
     ): CompositionResult {
-        val normalizedRatio = search.normalizedRatio
-        val minimumArea = search.minimumArea
         val loadStart = System.nanoTime()
         status("正在准备模型…")
         model.load(mode)
@@ -20,31 +18,20 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
         val loadMillis = elapsed(loadStart)
         val started = System.nanoTime()
         status("正在分析照片…")
-        var candidates = normalizedRatio?.let { cropCandidates(it, minimumArea) }
-            ?: freeCropCandidates(bitmap.width, bitmap.height, minimumArea)
-        val coarseScores = score(bitmap, mode, candidates, isCurrent)
-        val refinement = if (normalizedRatio == null) {
-            refineFreeCrops(bitmap.width, bitmap.height, candidates, coarseScores, minimumArea)
-        } else {
-            emptyList()
-        }
-        val scores = if (refinement.isEmpty()) {
-            coarseScores
-        } else {
-            status("正在细化构图…")
-            val fineScores = score(bitmap, mode, refinement, isCurrent)
-            candidates = candidates + refinement
-            coarseScores + fineScores
-        }
-        val firstEligible = if (normalizedRatio == null) 0 else 1
-        val best = (firstEligible until scores.size).maxBy { scores[it] }
+        val result = searchCrops(
+            bitmap.width,
+            bitmap.height,
+            search,
+            { candidates -> score(bitmap, mode, candidates, isCurrent) },
+            { status("正在细化构图…") }
+        )
         return CompositionResult(
-            candidates[best],
-            scores[0],
-            scores[best],
+            result.crop,
+            result.originalScore,
+            result.cropScore,
             loadMillis,
             elapsed(started),
-            candidates.size - 1
+            result.candidateCount
         )
     }
 
