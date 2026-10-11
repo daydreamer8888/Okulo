@@ -7,7 +7,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.ui.theme.OkuloTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -30,7 +29,7 @@ class FreezeCameraSettingsTest {
         compose.setContent {
             OkuloTheme {
                 SettingsScreen(
-                    false, {}, {}, AnalysisMode.Fast, {},
+                    false, {}, {},
                     keepOriginal = settings.value.keepCaptureOriginal,
                     onKeepOriginal = settings.value::setCaptureOriginal,
                     freezeComposition = settings.value.freezeComposition,

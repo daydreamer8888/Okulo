@@ -77,28 +77,26 @@ class MainActivityTest {
     }
 
     @Test
-    fun analysisModeIsConfiguredInSettingsAndSurvivesRecreation() {
+    fun analysisSettingsKeepScoresAndAreaWithoutModeSelection() {
+        compose.activity.getSharedPreferences("okulo_settings", 0).edit()
+            .putString("analysis_mode", "Standard").commit()
+        compose.activityRule.scenario.recreate()
         compose.onNodeWithContentDescription("设置").performClick()
-        compose.onNodeWithText("快速").assertExists()
+        compose.onNodeWithText("分析模式").assertDoesNotExist()
+        compose.onNodeWithText("快速").assertDoesNotExist()
         compose.onNodeWithText("标准").assertDoesNotExist()
-        compose.onNodeWithText("分析模式").performClick()
-        compose.onNode(hasText("快速") and hasAnyAncestor(isDialog())).assertIsSelected()
-        compose.onNodeWithText("标准").performClick()
-        compose.onNodeWithText("标准").assertExists()
+        compose.onNodeWithText("显示评分").performScrollTo().assertIsOff().performClick().assertIsOn()
+        compose.onNodeWithText("裁剪面积提醒").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithContentDescription("导入照片").performClick()
-        compose.onNodeWithText("快速").assertDoesNotExist()
-        compose.onNodeWithText("标准").assertDoesNotExist()
         compose.runOnIdle {
             val model = ViewModelProvider(compose.activity)[PhotoViewModel::class.java]
-            assertEquals(AnalysisMode.Standard, model.state.value.mode)
+            assertEquals(AnalysisMode.Fast, model.state.value.mode)
         }
-        compose.onNodeWithContentDescription("设置").performClick()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("标准").assertExists()
-        compose.onNodeWithText("快速").assertDoesNotExist()
-        compose.onNodeWithText("分析模式").performClick()
-        compose.onNode(hasText("标准") and hasAnyAncestor(isDialog())).assertIsSelected()
+        compose.onNodeWithContentDescription("设置").performClick()
+        compose.onNodeWithText("显示评分").performScrollTo().assertIsOn()
+        compose.onNodeWithText("分析模式").assertDoesNotExist()
     }
 
     @Test

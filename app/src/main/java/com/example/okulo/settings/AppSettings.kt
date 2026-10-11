@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.DEFAULT_CROP_AREA_PERCENT
 
 internal class AppSettings(context: Context) {
@@ -41,13 +40,6 @@ internal class AppSettings(context: Context) {
     var showModelScores by mutableStateOf(preferences.getBoolean("model_scores", false))
         private set
 
-    var analysisMode by mutableStateOf(
-        AnalysisMode.entries.firstOrNull {
-            it.name == preferences.getString("analysis_mode", null)
-        } ?: AnalysisMode.Fast
-    )
-        private set
-
     var theme by mutableStateOf(
         AppTheme.entries.firstOrNull {
             it.name == preferences.getString("theme", null)
@@ -66,11 +58,6 @@ internal class AppSettings(context: Context) {
     fun selectTheme(theme: AppTheme) {
         preferences.edit().putString("theme", theme.name).apply()
         this.theme = theme
-    }
-
-    fun selectAnalysisMode(mode: AnalysisMode) {
-        preferences.edit().putString("analysis_mode", mode.name).apply()
-        analysisMode = mode
     }
 
     fun setModelScores(enabled: Boolean) {

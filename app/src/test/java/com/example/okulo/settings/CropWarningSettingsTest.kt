@@ -12,7 +12,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropBox
 import com.example.okulo.photo.PhotoScreen
 import com.example.okulo.photo.PhotoState
@@ -55,8 +54,6 @@ class CropWarningSettingsTest {
                         false,
                         {},
                         { showingSettings.value = false },
-                        AnalysisMode.Fast,
-                        {},
                         cropWarningPercent = settings.value.cropWarningPercent,
                         onCropWarning = settings.value::updateCropWarningPercent
                     )
