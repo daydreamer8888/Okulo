@@ -52,10 +52,12 @@ class CameraCaptureUiTest {
 
     @Test
     fun successfulCapturesUpdateThePhotoEntryWithoutShowingABanner() {
-        val state = mutableStateOf(
-            CaptureUiState(ready = true, savedPhoto = Uri.parse("content://photos/1"), message = "已保存到相册")
-        )
+        val state = mutableStateOf(CaptureUiState(ready = true))
         compose.setContent { CameraLayout({}, capture = state.value) {} }
+        compose.onNodeWithContentDescription("查看最新照片").assertDoesNotExist()
+        compose.runOnIdle {
+            state.value = state.value.copy(savedPhoto = Uri.parse("content://photos/1"), message = "已保存到相册")
+        }
         compose.onNodeWithText("已保存到相册").assertDoesNotExist()
         compose.onNodeWithContentDescription("查看最新照片").assertExists()
         compose.runOnIdle {
