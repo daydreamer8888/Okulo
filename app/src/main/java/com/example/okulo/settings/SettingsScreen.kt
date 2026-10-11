@@ -63,7 +63,9 @@ internal fun SettingsScreen(
                     headlineContent = { Text("构图时定格画面") },
                     trailingContent = { Switch(checked = freezeComposition, onCheckedChange = null) },
                     modifier = Modifier.toggleable(
-                        freezeComposition, role = Role.Switch, onValueChange = onFreezeComposition
+                        freezeComposition,
+                        role = Role.Switch,
+                        onValueChange = onFreezeComposition
                     )
                 )
                 ListItem(

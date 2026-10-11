@@ -30,7 +30,10 @@ class CameraFrozenCompositionTest {
         engine.analyze = { image, _ -> recommendation().copy(originalScore = redScore(image)) }
         val analyzer = object : CompositionAnalyzer by engine {
             override fun evaluate(
-                bitmap: Bitmap, mode: AnalysisMode, crop: CropBox, isCurrent: () -> Boolean
+                bitmap: Bitmap,
+                mode: AnalysisMode,
+                crop: CropBox,
+                isCurrent: () -> Boolean
             ): CompositionResult = recommendation().copy(crop = crop, cropScore = redScore(bitmap))
         }
         val composition = CameraComposition(analyzer)
@@ -75,7 +78,9 @@ class CameraFrozenCompositionTest {
         val composition = CameraComposition(engine)
         var ready: ((FrozenCameraPhoto?) -> Unit)? = null
         val actions = CameraFrameActions(
-            composition, { image(Color.BLUE) }, { AnalysisMode.Fast },
+            composition,
+            { image(Color.BLUE) },
+            { AnalysisMode.Fast },
             frozenCapture = { ready = it }
         )
         try {
@@ -101,7 +106,9 @@ class CameraFrozenCompositionTest {
         val composition = CameraComposition(engine)
         val still = photo(Color.RED)
         CameraFrameActions(
-            composition, { image(Color.BLUE) }, { AnalysisMode.Fast },
+            composition,
+            { image(Color.BLUE) },
+            { AnalysisMode.Fast },
             frozenCapture = { it(still) }
         ).recommend()
         await { !composition.state.value.busy }

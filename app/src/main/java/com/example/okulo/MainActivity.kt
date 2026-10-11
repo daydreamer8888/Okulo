@@ -76,7 +76,7 @@ private fun OkuloApp(viewModel: PhotoViewModel, onCameraPage: (Boolean) -> Unit,
     val camera = remember { CameraSession(context.applicationContext) }
     CameraSessionLifetime(camera)
     val settings = remember { AppSettings(context.applicationContext) }
-    LaunchedEffect(settings.analysisMode, settings.cropWarningPercent) {
+    LaunchedEffect(settings.analysisMode, settings.cropWarningPercent, settings.freezeComposition) {
         viewModel.setMode(settings.analysisMode)
         viewModel.setMinimumCropArea(settings.minimumCropArea)
         camera.composition.invalidateScene()
@@ -145,6 +145,7 @@ private fun AppPageContent(
             showScores = settings.showModelScores,
             keepOriginal = settings.keepCaptureOriginal,
             minimumCropArea = settings.minimumCropArea,
+            freezeComposition = settings.freezeComposition,
             onImportPhoto = navigation.analyze,
             onSettings = navigation.settings,
             modifier = Modifier.fillMaxSize()

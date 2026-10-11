@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.core.content.ContextCompat
 import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.DEFAULT_MINIMUM_CROP_AREA
 import com.example.okulo.ui.crop.CropActions
 
@@ -43,7 +44,8 @@ internal fun CameraScreen(
     analysisMode: AnalysisMode = AnalysisMode.Fast,
     showScores: Boolean = false,
     keepOriginal: Boolean = true,
-    minimumCropArea: Float = DEFAULT_MINIMUM_CROP_AREA
+    minimumCropArea: Float = DEFAULT_MINIMUM_CROP_AREA,
+    freezeComposition: Boolean = false
 ) {
     val context = LocalContext.current
     val framing by composition.state.collectAsState()
@@ -61,17 +63,16 @@ internal fun CameraScreen(
         composition,
         { frameSource?.invoke() },
         { analysisMode },
-        { minimumCropArea }
+        { minimumCropArea },
+        frozenCapture = if (freezeComposition) capture::freeze else null
     )
     val permission = rememberCameraPermission()
-    val storage = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        if (it) capture.takePhoto(framing.crop, keepOriginal) else capture.reportMessage("保存权限未开启，请允许后重试。")
-    }
+    val onCapture = rememberCameraShutter(capture, framing, keepOriginal)
     CameraLayout(
         onImportPhoto = onImportPhoto,
         onSettings = onSettings,
         modifier = modifier,
-        capture = capture.state,
+        capture = capture.state.copy(ready = capture.state.ready && !(freezeComposition && framing.busy)),
         composition = framing,
         compositionActions = CameraCompositionActions(
             frameActions::recommend,
@@ -80,24 +81,46 @@ internal fun CameraScreen(
             composition::dismissError
         ),
         showScores = showScores,
-        recommendationEnabled = capture.state.ready && !zoom.changing,
+        recommendationEnabled = capture.state.ready && !zoom.changing &&
+            !capture.state.saving && !capture.state.preparing,
         onMessageDismissed = capture::dismissMessage,
-        onCapture = {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
-                PackageManager.PERMISSION_GRANTED
-            ) {
-                storage.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            } else {
-                capture.takePhoto(framing.crop, keepOriginal)
-            }
-        },
+        onCapture = onCapture,
         onViewPhoto = { openCapturedPhoto(context, capture.state.savedPhoto) }
     ) {
         if (permission.granted) {
             CameraLiveView(capture, composition, zoom, frameActions) { frameSource = it }
         } else {
             CameraPermissionNotice(permission.denied, permission.request)
+        }
+    }
+}
+
+@Composable
+private fun rememberCameraShutter(
+    capture: CameraCapture,
+    framing: CameraCompositionState,
+    keepOriginal: Boolean
+): () -> Unit {
+    val context = LocalContext.current
+    val takePhoto = {
+        val photo = framing.frozenPhoto
+        if (photo != null) {
+            capture.saveFrozen(photo, framing.crop ?: CropBox.FullFrame, keepOriginal)
+        } else {
+            capture.takePhoto(framing.crop, keepOriginal)
+        }
+    }
+    val storage = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        if (it) takePhoto() else capture.reportMessage("保存权限未开启，请允许后重试。")
+    }
+    return {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            storage.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            takePhoto()
         }
     }
 }
@@ -111,20 +134,22 @@ private fun CameraLiveView(
     onFrameSource: ((() -> Bitmap?)?) -> Unit
 ) {
     val framing by composition.state.collectAsState()
+    val canZoom = !capture.state.saving && !capture.state.preparing && framing.frozenPhoto == null
     Box(Modifier.fillMaxSize().semantics { contentDescription = "取景区域" }) {
         CameraViewfinder(
             framing.crop,
             CropActions(composition::updateCrop, frameActions::score),
-            gestureModifier = Modifier.cameraPinchZoom(zoom, !capture.state.saving),
+            gestureModifier = Modifier.cameraPinchZoom(zoom, canZoom),
             controls = {
                 CameraZoomControls(
                     zoom.state,
                     zoom::requestRatio,
                     zoom::requestLinear,
                     modifier = Modifier.align(Alignment.BottomCenter),
-                    enabled = capture.state.ready && !capture.state.saving
+                    enabled = capture.state.ready && canZoom
                 )
-            }
+            },
+            frozenPhoto = framing.frozenPhoto
         ) {
             CameraPreview(
                 capture,

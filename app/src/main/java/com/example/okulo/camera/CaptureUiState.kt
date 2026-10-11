@@ -8,4 +8,6 @@ internal data class CaptureUiState(
     val savedPhoto: Uri? = null,
     val message: String? = null,
     val preparing: Boolean = false
-)
+) {
+    val canCapture: Boolean get() = ready && !saving && !preparing
+}

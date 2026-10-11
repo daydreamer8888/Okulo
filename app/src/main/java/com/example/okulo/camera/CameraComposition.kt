@@ -81,7 +81,12 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
     ) {
         val current = heldPhoto
         if (current != null) {
-            recommend(checkNotNull(current.image.copy(Bitmap.Config.ARGB_8888, false)), mode, minimumArea, current.retain())
+            recommend(
+                checkNotNull(current.image.copy(Bitmap.Config.ARGB_8888, false)),
+                mode,
+                minimumArea,
+                current.retain()
+            )
             return
         }
         val request = tasks.invalidate()
@@ -161,7 +166,8 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
     }
 
     fun observeScene(samples: IntArray) {
-        if (!freezing && heldPhoto == null && state.value.active && scene.changed(samples)) invalidateScene()
+        if (freezing || heldPhoto != null) return
+        if (state.value.active && scene.changed(samples)) invalidateScene()
     }
 
     fun invalidateScene() {

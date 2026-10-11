@@ -89,7 +89,7 @@ internal fun CameraLayout(
 private fun CaptureButton(capture: CaptureUiState, onCapture: () -> Unit) {
     IconButton(
         onClick = onCapture,
-        enabled = capture.ready && !capture.saving && !capture.preparing,
+        enabled = capture.canCapture,
         modifier = Modifier.size(88.dp).border(3.dp, Color.White, CircleShape)
             .semantics { contentDescription = "拍照" }
     ) {
