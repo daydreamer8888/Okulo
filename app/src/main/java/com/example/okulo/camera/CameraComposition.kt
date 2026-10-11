@@ -209,7 +209,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         tasks.invalidate()
         releaseFrame()
         freezing = false
-        mutableState.value = if (current.busy && current.crop != null) {
+        mutableState.value = if (current.busy && (current.crop != null || current.retainedRegion != null)) {
             current.copy(busy = false, scoring = false, error = null)
         } else {
             releaseFrozenPhoto()
