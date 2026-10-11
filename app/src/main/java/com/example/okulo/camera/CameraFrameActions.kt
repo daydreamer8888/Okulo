@@ -10,7 +10,10 @@ internal class CameraFrameActions(
     private val minimumArea: () -> Float = { DEFAULT_MINIMUM_CROP_AREA },
     private val frozenCapture: (((FrozenCameraPhoto?) -> Unit) -> Unit)? = null
 ) {
+    fun selectSubject() { composition.beginSubjectSelection(frozenCapture) }
+
     fun recommend() {
+        if (composition.state.value.selectingSubject) return
         frozenCapture?.let { capture ->
             composition.recommendFrozen(capture, minimumArea())
             return
