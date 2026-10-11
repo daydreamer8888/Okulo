@@ -11,8 +11,10 @@ import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
+import com.example.okulo.composition.CropSearch
 import com.example.okulo.composition.createCompositionAnalyzer
 import com.example.okulo.composition.fitCropAspect
+import com.example.okulo.settings.DEFAULT_MINIMUM_CROP_AREA
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -35,6 +37,7 @@ class PhotoViewModel internal constructor(
     internal val state = mutableState.asStateFlow()
     private val tasks = PhotoWorkQueue(mutableState, engine::close)
     private var selectedUri: Uri? = null
+    private var minimumCropArea = DEFAULT_MINIMUM_CROP_AREA
     private val mutableSaving = MutableStateFlow(false)
     internal val saving = mutableSaving.asStateFlow()
     private val saveMessages = Channel<String>(Channel.BUFFERED)
@@ -86,15 +89,24 @@ class PhotoViewModel internal constructor(
         if (current.photo == null) selectedUri?.let(::selectPhoto)
     }
 
+    fun setMinimumCropArea(area: Float) {
+        require(area > 0f && area <= 1f)
+        if (minimumCropArea == area) return
+        minimumCropArea = area
+        tasks.invalidate()
+        mutableState.value = state.value.copy(busy = false, scoring = false)
+    }
+
     fun analyze() {
         val current = state.value
         val photo = current.photo ?: return
         val mode = current.mode
         val ratio = current.freeRatio ?: current.aspect.normalizedRatio(photo.width, photo.height)
+        val search = CropSearch(ratio, minimumCropArea)
         val request = tasks.invalidate()
         mutableState.value = state.value.copy(busy = true, scoring = false, status = "正在准备分析…", error = null)
         tasks.submit(request, ::analysisFailureMessage) {
-            val result = engine.analyze(photo, mode, ratio, { tasks.isCurrent(request) }) { status ->
+            val result = engine.analyze(photo, mode, search, { tasks.isCurrent(request) }) { status ->
                 tasks.publish(request) { it.copy(status = status) }
             }
             tasks.publish(request) {

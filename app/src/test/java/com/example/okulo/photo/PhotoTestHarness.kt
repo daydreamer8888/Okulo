@@ -66,6 +66,7 @@ internal class WorkGate {
 internal class TestAnalyzer : CompositionAnalyzer {
     val analysisCalls = AtomicInteger()
     val requestedRatios = mutableListOf<Float?>()
+    val requestedMinimumAreas = mutableListOf<Float>()
     val evaluationCalls = AtomicInteger()
     val closed = CountDownLatch(1)
     var isCurrent: () -> Boolean = { false }
@@ -83,6 +84,7 @@ internal class TestAnalyzer : CompositionAnalyzer {
         this.isCurrent = isCurrent
         analysisCalls.incrementAndGet()
         requestedRatios.add(search.normalizedRatio)
+        requestedMinimumAreas.add(search.minimumArea)
         status("正在分析照片…")
         return analyze(bitmap, mode)
     }

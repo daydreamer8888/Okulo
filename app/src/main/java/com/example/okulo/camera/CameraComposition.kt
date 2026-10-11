@@ -6,6 +6,8 @@ import com.example.okulo.composition.AnalysisWorkQueue
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropBox
+import com.example.okulo.composition.CropSearch
+import com.example.okulo.settings.DEFAULT_MINIMUM_CROP_AREA
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.Closeable
@@ -33,7 +35,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
     private val scene = CameraSceneGuard()
 
     /** Transfers ownership of the snapshot to this session. */
-    fun recommend(snapshot: Bitmap, mode: AnalysisMode) {
+    fun recommend(snapshot: Bitmap, mode: AnalysisMode, minimumArea: Float = DEFAULT_MINIMUM_CROP_AREA) {
         scene.reset()
         val request = tasks.invalidate()
         releaseFrame()
@@ -42,7 +44,13 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         tasks.submit(request, { current, _ ->
             current.copy(busy = false, scoring = false, error = "推荐失败，请重试")
         }) {
-            val result = analyzer.analyze(snapshot, mode, null, { tasks.isCurrent(request) }) {}
+            val result = analyzer.analyze(
+                snapshot,
+                mode,
+                CropSearch(null, minimumArea),
+                { tasks.isCurrent(request) },
+                {}
+            )
             tasks.publish(request) {
                 CameraCompositionState(
                     recommendation = result,

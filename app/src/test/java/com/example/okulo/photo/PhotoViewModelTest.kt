@@ -4,6 +4,7 @@ import android.net.Uri
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
+import com.example.okulo.settings.AppSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -12,12 +13,41 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class PhotoViewModelTest {
+    @Test
+    fun changedAreaSettingsRejectPendingAnalysisAndApplyToTheNextRecommendation() = PhotoTestHarness().use { fixture ->
+        val context = RuntimeEnvironment.getApplication()
+        context.getSharedPreferences("okulo_settings", 0).edit().clear().commit()
+        val settings = AppSettings(context)
+        fixture.model.setMinimumCropArea(settings.minimumCropArea)
+        fixture.select()
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        assertEquals(0.2f, fixture.analyzer.requestedMinimumAreas.single(), 0f)
+        val gate = fixture.gate()
+        fixture.analyzer.analyze = { _, _ ->
+            gate.block()
+            recommendation().copy(cropScore = 99f)
+        }
+        fixture.model.analyze()
+        gate.awaitEntry()
+        settings.updateCropWarningPercent(80)
+        fixture.model.setMinimumCropArea(AppSettings(context).minimumCropArea)
+        assertFalse(fixture.model.state.value.busy)
+        gate.release()
+        fixture.analyzer.analyze = { _, _ -> recommendation().copy(cropScore = 4f) }
+        fixture.model.analyze()
+        fixture.await { !fixture.model.state.value.busy }
+        assertEquals(listOf(0.2f, 0.2f, 0.8f), fixture.analyzer.requestedMinimumAreas)
+        assertEquals(4f, checkNotNull(fixture.model.state.value.result).cropScore, 0f)
+    }
+
     @Test
     fun reshapedFreeCropsRestoreTheLatestRecommendationAndItsSearchRatio() = PhotoTestHarness().use { fixture ->
         fixture.select()
