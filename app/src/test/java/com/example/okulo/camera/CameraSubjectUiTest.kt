@@ -115,6 +115,9 @@ class CameraSubjectUiTest {
         val shutter = compose.onNodeWithContentDescription("拍照").fetchSemanticsNode().boundsInRoot
         val subject = compose.onNodeWithContentDescription("框选主体").fetchSemanticsNode().boundsInRoot
         val recommend = compose.onNodeWithContentDescription("推荐构图").fetchSemanticsNode().boundsInRoot
+        val recent = compose.onNodeWithContentDescription("查看最新照片").fetchSemanticsNode().boundsInRoot
+        assertTrue(recent.right < shutter.left)
+        assertTrue(shutter.left - recent.right <= with(compose.density) { 24.dp.toPx() })
         assertEquals(camera.center.x, shutter.center.x, 1f)
         assertTrue(shutter.right <= subject.left)
         assertTrue(subject.right <= recommend.left)

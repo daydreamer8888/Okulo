@@ -73,7 +73,9 @@ internal fun CameraLayout(
                     }
                 }
                 Box(Modifier.fillMaxWidth().height(88.dp).padding(horizontal = 16.dp)) {
-                    Box(Modifier.align(Alignment.CenterStart)) { SavedPhotoButton(capture.savedPhoto, onViewPhoto) }
+                    Box(Modifier.align(Alignment.Center).width(232.dp)) {
+                        SavedPhotoButton(capture.savedPhoto, onViewPhoto)
+                    }
                     Box(Modifier.align(Alignment.Center)) { CaptureButton(capture, onCapture) }
                     Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
                         CameraSubjectButton(composition, recommendationEnabled, subjectActions)
