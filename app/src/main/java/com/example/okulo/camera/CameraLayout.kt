@@ -49,6 +49,7 @@ internal fun CameraLayout(
     BoxWithConstraints(modifier.fillMaxSize().background(Color.Black)) {
         val ratio = if (maxWidth > maxHeight) CAMERA_ASPECT_RATIO else 1f / CAMERA_ASPECT_RATIO
         val previewWidth = minOf(maxWidth, (maxHeight - 264.dp).coerceAtLeast(0.dp) * ratio)
+        val recentPhotoWidth = (maxWidth - 88.dp) / 2
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
                 Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 16.dp),
@@ -72,12 +73,18 @@ internal fun CameraLayout(
                         compositionActions.dismissError()
                     }
                 }
-                Box(Modifier.fillMaxWidth().height(88.dp).padding(horizontal = 16.dp)) {
-                    Box(Modifier.align(Alignment.Center).width(232.dp)) {
+                Box(Modifier.fillMaxWidth().height(88.dp)) {
+                    Box(
+                        Modifier.align(Alignment.CenterStart).width(recentPhotoWidth),
+                        contentAlignment = Alignment.Center
+                    ) {
                         SavedPhotoButton(capture.savedPhoto, onViewPhoto)
                     }
                     Box(Modifier.align(Alignment.Center)) { CaptureButton(capture, onCapture) }
-                    Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.align(Alignment.CenterEnd).padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         CameraSubjectButton(composition, recommendationEnabled, subjectActions)
                         CameraRecommendButton(composition, recommendationEnabled, compositionActions)
                     }
