@@ -69,7 +69,7 @@ internal fun CameraRecommendButton(
                     else -> actions.recommend()
                 }
             },
-            enabled = ready || state.busy,
+            enabled = !state.selectingSubject && (ready || state.busy),
             iconModifier = if (state.busy) Modifier.alpha(0f) else Modifier,
             style = ActionIconStyle.Tonal
         )

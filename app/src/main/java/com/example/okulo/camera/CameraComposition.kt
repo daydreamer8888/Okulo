@@ -112,7 +112,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
     }
 
     fun beginSubjectSelection(capture: (((FrozenCameraPhoto?) -> Unit) -> Unit)? = null) {
-        if (state.value.busy || state.value.selectingSubject) return
+        if (state.value.busy || state.value.selectingSubject || state.value.crop != null) return
         selectionBackup = state.value.copy(scoring = false)
         val request = tasks.invalidate()
         mutableState.value = state.value.copy(selectingSubject = true, scoring = false, error = null)

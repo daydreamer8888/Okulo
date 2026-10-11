@@ -68,7 +68,9 @@ internal fun CameraScreen(
         onImportPhoto = onImportPhoto,
         onSettings = onSettings,
         modifier = modifier,
-        capture = capture.state.copy(ready = capture.state.ready && !(freezeComposition && framing.busy)),
+        capture = capture.state.copy(
+            ready = capture.state.ready && !framing.selectingSubject && !(freezeComposition && framing.busy)
+        ),
         composition = framing,
         compositionActions = CameraCompositionActions(
             frameActions::recommend,
@@ -77,6 +79,12 @@ internal fun CameraScreen(
             composition::dismissError
         ),
         showScores = showScores,
+        subjectActions = CameraSubjectActions(
+            frameActions::selectSubject,
+            composition::cancelSubjectSelection,
+            composition::commitSubject,
+            composition::clearSubject
+        ),
         recommendationEnabled = capture.state.ready && !zoom.changing &&
             !capture.state.saving && !capture.state.preparing,
         onMessageDismissed = capture::dismissMessage,
@@ -130,7 +138,8 @@ private fun CameraLiveView(
     onFrameSource: ((() -> Bitmap?)?) -> Unit
 ) {
     val framing by composition.state.collectAsState()
-    val canZoom = !capture.state.saving && !capture.state.preparing && framing.frozenPhoto == null
+    val canZoom = !capture.state.saving && !capture.state.preparing &&
+        framing.frozenPhoto == null && !framing.selectingSubject
     Box(Modifier.fillMaxSize().semantics { contentDescription = "取景区域" }) {
         CameraViewfinder(
             framing.crop,
@@ -145,7 +154,14 @@ private fun CameraLiveView(
                     enabled = capture.state.ready && canZoom
                 )
             },
-            frozenPhoto = framing.frozenPhoto
+            frozenPhoto = framing.frozenPhoto,
+            subjectState = framing,
+            subjectActions = CameraSubjectActions(
+                frameActions::selectSubject,
+                composition::cancelSubjectSelection,
+                composition::commitSubject,
+                composition::clearSubject
+            )
         ) {
             CameraPreview(
                 capture,

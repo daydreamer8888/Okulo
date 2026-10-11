@@ -42,6 +42,7 @@ internal fun CameraLayout(
     composition: CameraCompositionState = CameraCompositionState(),
     compositionActions: CameraCompositionActions = CameraCompositionActions(),
     showScores: Boolean = false,
+    subjectActions: CameraSubjectActions = CameraSubjectActions(),
     recommendationEnabled: Boolean = capture.ready,
     viewfinder: @Composable () -> Unit
 ) {
@@ -71,14 +72,13 @@ internal fun CameraLayout(
                         compositionActions.dismissError()
                     }
                 }
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SavedPhotoButton(capture.savedPhoto, onViewPhoto)
-                    CaptureButton(capture, onCapture)
-                    CameraRecommendButton(composition, recommendationEnabled, compositionActions)
+                Box(Modifier.fillMaxWidth().height(88.dp).padding(horizontal = 16.dp)) {
+                    Box(Modifier.align(Alignment.CenterStart)) { SavedPhotoButton(capture.savedPhoto, onViewPhoto) }
+                    Box(Modifier.align(Alignment.Center)) { CaptureButton(capture, onCapture) }
+                    Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
+                        CameraSubjectButton(composition, recommendationEnabled, subjectActions)
+                        CameraRecommendButton(composition, recommendationEnabled, compositionActions)
+                    }
                 }
             }
         }

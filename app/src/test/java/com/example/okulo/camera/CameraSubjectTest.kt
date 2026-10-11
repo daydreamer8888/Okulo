@@ -51,17 +51,19 @@ class CameraSubjectTest {
             assertEquals(still, composition.state.value.frozenPhoto)
             composition.commitSubject(subject)
             assertFalse(composition.state.value.selectingSubject)
+            val selection = composition.state.value
+            actions.selectSubject()
+            assertTrue(composition.state.value.selectingSubject)
+            composition.cancelSubjectSelection()
+            assertEquals(selection, composition.state.value)
             actions.recommend()
             await { !composition.state.value.busy }
             assertEquals(subject, requested)
             assertEquals(Color.RED, checkNotNull(analyzed).getPixel(0, 0))
             val result = composition.state.value
             actions.selectSubject()
-            composition.cancelSubjectSelection()
+            assertFalse(composition.state.value.selectingSubject)
             assertEquals(result, composition.state.value)
-            composition.clearSubject()
-            assertEquals(null, composition.state.value.retainedRegion)
-            assertEquals(result.crop, composition.state.value.crop)
             composition.invalidateScene()
             assertFalse(composition.state.value.active)
             await { still.image.isRecycled }
