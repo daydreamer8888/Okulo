@@ -9,6 +9,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import com.example.okulo.composition.CropBox
+import com.example.okulo.ui.crop.CropActions
+import com.example.okulo.ui.crop.CropEditor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule

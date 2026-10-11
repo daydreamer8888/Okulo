@@ -20,10 +20,10 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import com.example.okulo.composition.AnalysisMode
-import com.example.okulo.photo.CropActions
 import com.example.okulo.photo.TestAnalyzer
 import com.example.okulo.photo.WorkGate
 import com.example.okulo.photo.recommendation
+import com.example.okulo.ui.crop.CropActions
 import com.example.okulo.ui.theme.OkuloTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

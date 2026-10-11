@@ -1,4 +1,4 @@
-package com.example.okulo.photo
+package com.example.okulo.ui.crop
 
 import com.example.okulo.composition.CropBox
 

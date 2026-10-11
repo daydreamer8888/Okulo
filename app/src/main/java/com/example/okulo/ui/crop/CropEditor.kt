@@ -1,6 +1,6 @@
 @file:Suppress("MagicNumber") // Overlay dimensions and normalized gesture coordinates.
 
-package com.example.okulo.photo
+package com.example.okulo.ui.crop
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas

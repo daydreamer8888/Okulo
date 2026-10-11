@@ -1,4 +1,4 @@
-package com.example.okulo.photo
+package com.example.okulo.ui.crop
 
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import com.example.okulo.composition.CropBox

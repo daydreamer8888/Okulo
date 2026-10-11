@@ -7,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.example.okulo.composition.CropBox
-import com.example.okulo.photo.CropActions
-import com.example.okulo.photo.CropFrame
+import com.example.okulo.ui.crop.CropActions
+import com.example.okulo.ui.crop.CropFrame
 
 @Composable
 internal fun CameraViewfinder(
