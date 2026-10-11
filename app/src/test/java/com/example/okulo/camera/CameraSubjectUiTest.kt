@@ -64,6 +64,25 @@ class CameraSubjectUiTest {
     }
 
     @Test
+    fun selectingASubjectShowsTheDrawingControlWithoutInstructionText() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            OkuloTheme {
+                Box(Modifier.size(300.dp, 400.dp)) {
+                    CameraSubjectOverlay(
+                        CameraCompositionState(selectingSubject = true),
+                        CameraSubjectActions()
+                    )
+                }
+            }
+        }
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitForIdle()
+        compose.onNodeWithTag("subject-selection").assertExists()
+        compose.onNodeWithText("框选主体").assertDoesNotExist()
+    }
+
+    @Test
     fun freezingForSubjectSelectionShowsItsOwnProgressAndAllowsCancelling() {
         var cancellations = 0
         compose.setContent {
