@@ -10,7 +10,7 @@ interface CompositionAnalyzer : Closeable {
         mode: AnalysisMode,
         search: CropSearch,
         isCurrent: () -> Boolean,
-        status: (String) -> Unit
+        status: (AnalysisStage) -> Unit
     ): CompositionResult
 
     fun evaluate(bitmap: Bitmap, mode: AnalysisMode, crop: CropBox, isCurrent: () -> Boolean): CompositionResult

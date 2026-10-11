@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.okulo.composition.AnalysisMode
+import com.example.okulo.composition.AnalysisStage
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
@@ -106,8 +107,8 @@ class PhotoViewModel internal constructor(
         val request = tasks.invalidate()
         mutableState.value = state.value.copy(busy = true, scoring = false, status = "正在准备分析…", error = null)
         tasks.submit(request, ::analysisFailureMessage) {
-            val result = engine.analyze(photo, mode, search, { tasks.isCurrent(request) }) { status ->
-                tasks.publish(request) { it.copy(status = status) }
+            val result = engine.analyze(photo, mode, search, { tasks.isCurrent(request) }) { stage ->
+                tasks.publish(request) { it.copy(status = stage.photoStatus()) }
             }
             tasks.publish(request) {
                 it.copy(
@@ -245,4 +246,10 @@ private fun analysisFailureMessage(failure: Exception): String = when (failure) 
     is IllegalStateException -> failure.message ?: "分析失败，请重试"
     is java.io.IOException -> "无法准备本地模型，请检查存储空间后重试"
     else -> "模型未能完成这张照片的分析，请重试或换张照片"
+}
+
+private fun AnalysisStage.photoStatus(): String = when (this) {
+    AnalysisStage.Loading -> "正在准备模型…"
+    AnalysisStage.Searching -> "正在分析照片…"
+    AnalysisStage.Refining -> "正在细化构图…"
 }

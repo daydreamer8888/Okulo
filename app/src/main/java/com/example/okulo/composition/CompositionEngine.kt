@@ -9,21 +9,21 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
         mode: AnalysisMode,
         search: CropSearch,
         isCurrent: () -> Boolean,
-        status: (String) -> Unit
+        status: (AnalysisStage) -> Unit
     ): CompositionResult {
         val loadStart = System.nanoTime()
-        status("正在准备模型…")
+        status(AnalysisStage.Loading)
         model.load(mode)
         checkCurrent(isCurrent)
         val loadMillis = elapsed(loadStart)
         val started = System.nanoTime()
-        status("正在分析照片…")
+        status(AnalysisStage.Searching)
         val result = searchCrops(
             bitmap.width,
             bitmap.height,
             search,
             { candidates -> score(bitmap, mode, candidates, isCurrent) },
-            { status("正在细化构图…") }
+            { status(AnalysisStage.Refining) }
         )
         return CompositionResult(
             result.crop,
