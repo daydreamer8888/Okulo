@@ -64,6 +64,26 @@ class CameraSubjectUiTest {
     }
 
     @Test
+    fun freezingForSubjectSelectionShowsItsOwnProgressAndAllowsCancelling() {
+        var cancellations = 0
+        compose.setContent {
+            OkuloTheme(darkTheme = true) {
+                CameraLayout(
+                    {},
+                    capture = CaptureUiState(ready = true),
+                    composition = CameraCompositionState(busy = true, selectingSubject = true),
+                    subjectActions = CameraSubjectActions(cancel = { cancellations++ })
+                ) {}
+            }
+        }
+        compose.onNodeWithContentDescription("正在定格画面").assertExists()
+        compose.onNodeWithContentDescription("正在推荐构图").assertDoesNotExist()
+        compose.onNodeWithContentDescription("推荐构图").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("取消框选").assertIsEnabled().performClick()
+        assertEquals(1, cancellations)
+    }
+
+    @Test
     fun narrowCameraKeepsBothCompositionControlsSeparateFromTheCenteredShutter() {
         compose.setContent {
             OkuloTheme(darkTheme = true) {

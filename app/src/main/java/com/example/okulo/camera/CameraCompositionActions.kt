@@ -56,24 +56,25 @@ internal fun CameraRecommendButton(
     ready: Boolean,
     actions: CameraCompositionActions
 ) {
+    val recommending = state.busy && !state.selectingSubject
     var expanded by remember { mutableStateOf(false) }
-    LaunchedEffect(state.active, state.busy) { if (!state.active || state.busy) expanded = false }
+    LaunchedEffect(state.active, recommending) { if (!state.active || recommending) expanded = false }
     Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
         ActionIconButton(
             R.drawable.ic_analyze,
-            if (state.busy) "取消推荐" else "推荐构图",
+            if (recommending) "取消推荐" else "推荐构图",
             {
                 when {
-                    state.busy -> actions.dismiss()
+                    recommending -> actions.dismiss()
                     state.crop != null -> expanded = true
                     else -> actions.recommend()
                 }
             },
-            enabled = !state.selectingSubject && (ready || state.busy),
-            iconModifier = if (state.busy) Modifier.alpha(0f) else Modifier,
+            enabled = !state.selectingSubject && (ready || recommending),
+            iconModifier = if (recommending) Modifier.alpha(0f) else Modifier,
             style = ActionIconStyle.Tonal
         )
-        if (state.busy) {
+        if (recommending) {
             CircularProgressIndicator(
                 Modifier.size(24.dp).semantics { contentDescription = "正在推荐构图" },
                 strokeWidth = 2.dp

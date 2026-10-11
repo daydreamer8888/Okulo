@@ -49,9 +49,18 @@ internal fun ActionIconButton(
     label: String,
     onClick: () -> Unit,
     enabled: Boolean = true,
-    selected: Boolean = false
+    selected: Boolean = false,
+    iconModifier: Modifier = Modifier
 ) {
-    ActionIconButton(rememberVectorPainter(icon), label, onClick, enabled, Modifier, ActionIconStyle.Tonal, selected)
+    ActionIconButton(
+        rememberVectorPainter(icon),
+        label,
+        onClick,
+        enabled,
+        iconModifier,
+        ActionIconStyle.Tonal,
+        selected
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

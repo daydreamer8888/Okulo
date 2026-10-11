@@ -3,6 +3,7 @@ package com.example.okulo.camera
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -15,11 +16,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.CropBox
@@ -34,6 +38,7 @@ internal data class CameraSubjectActions(
 
 @Composable
 internal fun CameraSubjectButton(state: CameraCompositionState, ready: Boolean, actions: CameraSubjectActions) {
+    val freezing = state.busy && state.selectingSubject
     var expanded by remember { mutableStateOf(false) }
     LaunchedEffect(state, ready) { expanded = false }
     Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
@@ -48,8 +53,15 @@ internal fun CameraSubjectButton(state: CameraCompositionState, ready: Boolean, 
                 }
             },
             enabled = state.selectingSubject || (ready && !state.busy && state.crop == null),
-            selected = state.retainedRegion != null || state.selectingSubject
+            selected = state.retainedRegion != null || state.selectingSubject,
+            iconModifier = if (freezing) Modifier.alpha(0f) else Modifier
         )
+        if (freezing) {
+            CircularProgressIndicator(
+                Modifier.size(24.dp).semantics { contentDescription = "正在定格画面" },
+                strokeWidth = 2.dp
+            )
+        }
         DropdownMenu(expanded, { expanded = false }, modifier = Modifier.widthIn(min = 128.dp)) {
             DropdownMenuItem(
                 text = { Text("重新框选") },
