@@ -21,6 +21,7 @@ import androidx.compose.ui.test.swipe
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.Espresso.pressBack
 import androidx.test.espresso.matcher.ViewMatchers.withContentDescription
 import androidx.test.filters.SdkSuppress
 import androidx.test.rule.GrantPermissionRule
@@ -75,14 +76,14 @@ class CameraFramingTest {
             assertPreviewStreaming()
             compose.onNodeWithContentDescription("推荐构图").performClick()
             compose.onNodeWithText("恢复").assertIsNotEnabled()
-            compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+            pressBack()
             resizeRightEdge(composition)
             awaitScore(composition)
             compose.onNodeWithContentDescription("推荐构图").performClick()
             compose.onNodeWithText("恢复").assertIsEnabled().performClick()
             compose.onNodeWithContentDescription("推荐构图").performClick()
             compose.onNodeWithText("恢复").assertIsNotEnabled()
-            compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+            pressBack()
             compose.runOnIdle {
                 assertEquals(composition.state.value.recommendation!!.crop, composition.state.value.crop)
             }

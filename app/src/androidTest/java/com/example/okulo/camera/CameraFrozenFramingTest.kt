@@ -16,6 +16,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
+import androidx.test.espresso.Espresso.pressBack
 import androidx.test.filters.SdkSuppress
 import androidx.test.rule.GrantPermissionRule
 import com.example.okulo.composition.createCompositionAnalyzer
@@ -61,7 +62,7 @@ class CameraFrozenFramingTest {
             compose.onNodeWithContentDescription("定格画面").assertExists()
             compose.onNodeWithContentDescription("推荐构图").performClick()
             compose.onNodeWithText("恢复").assertIsNotEnabled()
-            compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+            pressBack()
             val before = compose.runOnIdle { checkNotNull(composition.state.value.crop) }
             compose.onNodeWithTag("camera-crop").performTouchInput {
                 val start = Offset(width * before.right, height * (before.top + before.bottom) / 2f)
@@ -70,7 +71,7 @@ class CameraFrozenFramingTest {
             awaitScore(composition)
             compose.onNodeWithContentDescription("推荐构图").performClick()
             compose.onNodeWithText("恢复").assertIsEnabled()
-            compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+            pressBack()
             val crop = compose.runOnIdle { checkNotNull(composition.state.value.crop) }
             assertTrue(crop.width < before.width)
             assertEquals(frozen, compose.runOnIdle { composition.state.value.frozenPhoto })
