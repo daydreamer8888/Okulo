@@ -7,11 +7,11 @@ import java.io.Closeable
 interface CompositionAnalyzer : Closeable {
     fun analyze(
         bitmap: Bitmap,
-        mode: AnalysisMode,
+
         search: CropSearch,
         isCurrent: () -> Boolean,
         status: (AnalysisStage) -> Unit
     ): CompositionResult
 
-    fun evaluate(bitmap: Bitmap, mode: AnalysisMode, crop: CropBox, isCurrent: () -> Boolean): CompositionResult
+    fun evaluate(bitmap: Bitmap, crop: CropBox, isCurrent: () -> Boolean): CompositionResult
 }

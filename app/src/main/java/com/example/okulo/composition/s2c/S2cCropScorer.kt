@@ -5,7 +5,6 @@ import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.content.Context
 import android.graphics.Bitmap
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.CropScoringModel
 import java.nio.FloatBuffer
@@ -22,12 +21,12 @@ internal class S2cCropScorer(context: Context) : CropScoringModel {
 
     override fun score(
         bitmap: Bitmap,
-        mode: AnalysisMode,
+
         candidates: List<CropBox>,
         isCurrent: () -> Boolean
-    ): FloatArray = scoreCrops(prepare(bitmap, mode, isCurrent), candidates)
+    ): FloatArray = scoreCrops(prepare(bitmap, isCurrent), candidates)
 
-    override fun load(mode: AnalysisMode) {
+    override fun load() {
         if (scorer == null) scorer = session("s2c.onnx")
         if (detector == null) detector = ObjectDetector(environment, assets)
     }
@@ -38,14 +37,14 @@ internal class S2cCropScorer(context: Context) : CropScoringModel {
         environment.createSession(assets.file(name).absolutePath, options)
     }
 
-    private fun prepare(bitmap: Bitmap, mode: AnalysisMode, isCurrent: () -> Boolean): ScoringImage {
+    private fun prepare(bitmap: Bitmap, isCurrent: () -> Boolean): ScoringImage {
         val previous = cached
-        if (previous != null && previous.bitmap === bitmap && previous.mode == mode) return previous.image
+        if (previous != null && previous.bitmap === bitmap) return previous.image
         val inputs = imageTensors(bitmap)
         checkCurrent(isCurrent)
         val image = detectionInputs(checkNotNull(detector), inputs)
         checkCurrent(isCurrent)
-        cached = CachedPhoto(bitmap, mode, image)
+        cached = CachedPhoto(bitmap, image)
         return image
     }
 
@@ -96,7 +95,7 @@ internal class S2cCropScorer(context: Context) : CropScoringModel {
 }
 
 private data class ScoringImage(val values: FloatArray, val shape: LongArray, val objects: FloatArray)
-private data class CachedPhoto(val bitmap: Bitmap, val mode: AnalysisMode, val image: ScoringImage)
+private data class CachedPhoto(val bitmap: Bitmap, val image: ScoringImage)
 
 private fun detectionInputs(detector: ObjectDetector, inputs: ImageTensors): ScoringImage {
     val sx = inputs.normalizedShape[WIDTH_DIM].toDouble() / inputs.rawShape[WIDTH_DIM]

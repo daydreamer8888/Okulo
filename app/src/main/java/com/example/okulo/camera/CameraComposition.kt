@@ -1,7 +1,6 @@
 package com.example.okulo.camera
 
 import android.graphics.Bitmap
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropBox
@@ -40,7 +39,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
     /** Transfers ownership of the snapshot to this session. */
     fun recommend(
         snapshot: Bitmap,
-        mode: AnalysisMode,
+
         minimumArea: Float = DEFAULT_MINIMUM_CROP_AREA,
         frozenPhoto: FrozenCameraPhoto? = null
     ) {
@@ -57,7 +56,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         }) {
             val result = analyzer.analyze(
                 snapshot,
-                mode,
+
                 CropSearch(null, minimumArea),
                 { tasks.isCurrent(request) },
                 {}
@@ -76,14 +75,14 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
 
     fun recommendFrozen(
         capture: ((FrozenCameraPhoto?) -> Unit) -> Unit,
-        mode: AnalysisMode,
+
         minimumArea: Float
     ) {
         val current = heldPhoto
         if (current != null) {
             recommend(
                 checkNotNull(current.image.copy(Bitmap.Config.ARGB_8888, false)),
-                mode,
+
                 minimumArea,
                 current.retain()
             )
@@ -101,7 +100,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
                 freezing = false
                 mutableState.value = CameraCompositionState(error = "无法定格画面，请重试")
             } else {
-                recommend(checkNotNull(photo.image.copy(Bitmap.Config.ARGB_8888, false)), mode, minimumArea, photo)
+                recommend(checkNotNull(photo.image.copy(Bitmap.Config.ARGB_8888, false)), minimumArea, photo)
             }
         }
     }
@@ -113,7 +112,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         mutableState.value = current.copy(crop = crop, cropScore = null, busy = false, scoring = true, error = null)
     }
 
-    fun evaluateCrop(snapshot: Bitmap, mode: AnalysisMode) {
+    fun evaluateCrop(snapshot: Bitmap) {
         val current = state.value
         val crop = current.crop
         if (crop == null) {
@@ -127,7 +126,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         tasks.submit(request, { _ ->
             mutableState.value = state.value.copy(scoring = false, error = "评分失败，请重试")
         }) {
-            val result = analyzer.evaluate(snapshot, mode, crop) { tasks.isCurrent(request) }
+            val result = analyzer.evaluate(snapshot, crop) { tasks.isCurrent(request) }
             tasks.publish(request) {
                 mutableState.value = state.value.copy(
                     originalScore = result.originalScore, cropScore = result.cropScore, scoring = false

@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Looper
 import androidx.lifecycle.ViewModelStore
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.AnalysisStage
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CompositionResult
@@ -76,12 +75,12 @@ internal class TestAnalyzer : CompositionAnalyzer {
     val closed = CountDownLatch(1)
     var isCurrent: () -> Boolean = { false }
         private set
-    var analyze: (Bitmap, AnalysisMode) -> CompositionResult = { _, _ -> recommendation() }
+    var analyze: (Bitmap) -> CompositionResult = { _ -> recommendation() }
     var evaluate: (CropBox) -> CompositionResult = { crop -> recommendation().copy(crop = crop, cropScore = 4f) }
 
     override fun analyze(
         bitmap: Bitmap,
-        mode: AnalysisMode,
+
         search: CropSearch,
         isCurrent: () -> Boolean,
         status: (AnalysisStage) -> Unit
@@ -91,12 +90,12 @@ internal class TestAnalyzer : CompositionAnalyzer {
         requestedRatios.add(search.normalizedRatio)
         requestedMinimumAreas.add(search.minimumArea)
         status(AnalysisStage.Searching)
-        return analyze(bitmap, mode)
+        return analyze(bitmap)
     }
 
     override fun evaluate(
         bitmap: Bitmap,
-        mode: AnalysisMode,
+
         crop: CropBox,
         isCurrent: () -> Boolean
     ): CompositionResult {

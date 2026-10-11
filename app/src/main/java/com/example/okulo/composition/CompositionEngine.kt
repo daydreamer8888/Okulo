@@ -6,14 +6,14 @@ import java.util.concurrent.CancellationException
 internal class CompositionEngine(private val model: CropScoringModel) : CompositionAnalyzer {
     override fun analyze(
         bitmap: Bitmap,
-        mode: AnalysisMode,
+
         search: CropSearch,
         isCurrent: () -> Boolean,
         status: (AnalysisStage) -> Unit
     ): CompositionResult {
         val loadStart = System.nanoTime()
         status(AnalysisStage.Loading)
-        model.load(mode)
+        model.load()
         checkCurrent(isCurrent)
         val loadMillis = elapsed(loadStart)
         val started = System.nanoTime()
@@ -22,7 +22,7 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
             bitmap.width,
             bitmap.height,
             search,
-            { candidates -> score(bitmap, mode, candidates, isCurrent) },
+            { candidates -> score(bitmap, candidates, isCurrent) },
             { status(AnalysisStage.Refining) }
         )
         return CompositionResult(
@@ -37,25 +37,25 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
 
     override fun evaluate(
         bitmap: Bitmap,
-        mode: AnalysisMode,
+
         crop: CropBox,
         isCurrent: () -> Boolean
     ): CompositionResult {
         val started = System.nanoTime()
-        model.load(mode)
+        model.load()
         checkCurrent(isCurrent)
-        val scores = score(bitmap, mode, listOf(CropBox.FullFrame, crop), isCurrent)
+        val scores = score(bitmap, listOf(CropBox.FullFrame, crop), isCurrent)
         return CompositionResult(crop, scores[0], scores[1], 0, elapsed(started), 1)
     }
 
     private fun score(
         bitmap: Bitmap,
-        mode: AnalysisMode,
+
         candidates: List<CropBox>,
         isCurrent: () -> Boolean
     ): FloatArray {
         checkCurrent(isCurrent)
-        val scores = model.score(bitmap, mode, candidates, isCurrent)
+        val scores = model.score(bitmap, candidates, isCurrent)
         checkCurrent(isCurrent)
         check(scores.size == candidates.size && scores.all { it.isFinite() }) { "模型评分异常，请重试" }
         return scores

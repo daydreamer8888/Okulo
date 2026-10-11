@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.AnalysisStage
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CropAspect
@@ -57,22 +56,11 @@ class PhotoViewModel internal constructor(
     fun selectPhoto(uri: Uri) {
         selectedUri = uri
         val request = tasks.invalidate()
-        mutableState.value = PhotoState(mode = state.value.mode, busy = true, status = "正在读取照片…")
+        mutableState.value = PhotoState(busy = true, status = "正在读取照片…")
         tasks.submit(request, { "照片读取失败，请重新选择" }) {
             val bitmap = photoReader(getApplication<Application>().contentResolver, uri)
             tasks.publish(request) { it.copy(photo = bitmap, busy = false, status = "照片已就绪") }
         }
-    }
-
-    fun setMode(mode: AnalysisMode) {
-        if (state.value.mode == mode) return
-        tasks.invalidate()
-        val current = state.value
-        mutableState.value = PhotoState(
-            photo = current.photo, mode = mode, status = "照片已就绪", transform = current.transform,
-            aspect = current.aspect, manualCrop = current.displayedCrop, freeRatio = current.freeRatio
-        )
-        if (current.photo == null) selectedUri?.let(::selectPhoto)
     }
 
     fun setMinimumCropArea(area: Float) {
@@ -86,13 +74,13 @@ class PhotoViewModel internal constructor(
     fun analyze() {
         val current = state.value
         val photo = current.photo ?: return
-        val mode = current.mode
+
         val ratio = current.freeRatio ?: current.aspect.normalizedRatio(photo.width, photo.height)
         val search = CropSearch(ratio, minimumCropArea)
         val request = tasks.invalidate()
         mutableState.value = state.value.copy(busy = true, scoring = false, status = "正在准备分析…", error = null)
         tasks.submit(request, ::analysisFailureMessage) {
-            val result = engine.analyze(photo, mode, search, { tasks.isCurrent(request) }) { stage ->
+            val result = engine.analyze(photo, search, { tasks.isCurrent(request) }) { stage ->
                 tasks.publish(request) { it.copy(status = stage.photoStatus()) }
             }
             tasks.publish(request) {
@@ -121,7 +109,7 @@ class PhotoViewModel internal constructor(
             tasks.publish(request) {
                 PhotoState(
                     photo = edited,
-                    mode = current.mode,
+
                     manualCrop = step.apply(current.displayedCrop ?: CropBox.FullFrame),
                     aspect = when (operation) {
                         PhotoOperation.RotateClockwise -> current.aspect.rotated()
@@ -183,7 +171,7 @@ class PhotoViewModel internal constructor(
         val request = tasks.invalidate()
         mutableState.value = current.copy(busy = false, scoring = true, status = "正在评价裁剪…", error = null)
         tasks.submit(request, ::analysisFailureMessage) {
-            val result = engine.evaluate(photo, current.mode, crop) { tasks.isCurrent(request) }
+            val result = engine.evaluate(photo, crop) { tasks.isCurrent(request) }
             tasks.publish(request) {
                 it.copy(
                     manualScore = result.cropScore,

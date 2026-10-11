@@ -28,17 +28,16 @@ class CompositionEngineTest {
         try {
             createCompositionAnalyzer(context).use { engine ->
                 for (bitmap in listOf(plain, singleSubject)) {
-                    for (mode in AnalysisMode.entries) {
-                        val result = engine.analyze(bitmap, mode, CropSearch(null, 0.5f), { true }, {})
-                        assertTrue(result.originalScore.isFinite())
-                        assertTrue(result.cropScore.isFinite())
-                        assertTrue(result.crop.left >= 0f && result.crop.top >= 0f)
-                        assertTrue(result.crop.right <= 1f && result.crop.bottom <= 1f)
-                        assertTrue(result.crop.area > 0f)
-                        val manual = engine.evaluate(bitmap, mode, result.crop) { true }
-                        assertEquals(result.originalScore, manual.originalScore, 2e-5f)
-                        assertEquals(result.cropScore, manual.cropScore, 2e-5f)
-                    }
+                            val result = engine.analyze(bitmap, CropSearch(null, 0.5f), { true }, {})
+                    assertTrue(result.originalScore.isFinite())
+                    assertTrue(result.cropScore.isFinite())
+                    assertTrue(result.crop.left >= 0f && result.crop.top >= 0f)
+                    assertTrue(result.crop.right <= 1f && result.crop.bottom <= 1f)
+                    assertTrue(result.crop.area > 0f)
+                    val manual = engine.evaluate(bitmap, result.crop) { true }
+                    assertEquals(result.originalScore, manual.originalScore, 2e-5f)
+                    assertEquals(result.cropScore, manual.cropScore, 2e-5f)
+
                 }
             }
         } finally {
@@ -48,7 +47,7 @@ class CompositionEngineTest {
     }
 
     @Test
-    fun bothModesMatchDesktopScoresAndBestCropOnIdenticalInputs() {
+    fun detectorMatchesDesktopScoresAndBestCropOnIdenticalInputs() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val reference = instrumentation.context.assets.open("model-reference.json").use {
             JSONObject(it.bufferedReader().readText())
@@ -60,35 +59,33 @@ class CompositionEngineTest {
             fixturePixels(normalized, true), longArrayOf(1, 3, normalized.height.toLong(), normalized.width.toLong())
         )
         S2cCropScorer(instrumentation.targetContext).use { engine ->
-            for (mode in AnalysisMode.entries) {
-                engine.load(mode)
-                val scores = engine.scoreInputs(input, cropCandidates())
-                val expected = reference.getJSONObject("modes").getJSONObject(mode.name)
-                val values = expected.getJSONArray("scores")
-                assertEquals(values.length(), scores.size)
-                for (index in scores.indices) {
-                    assertTrue("${mode.name}: score $index", abs(scores[index] - values.getDouble(index)) < 2e-5)
-                }
-                assertEquals(expected.getInt("top_index"), (1 until scores.size).maxBy { scores[it] })
+            engine.load()
+            val scores = engine.scoreInputs(input, cropCandidates())
+            val expected = reference
+            val values = expected.getJSONArray("scores")
+            assertEquals(values.length(), scores.size)
+            for (index in scores.indices) {
+                assertTrue("score $index", abs(scores[index] - values.getDouble(index)) < 2e-5)
             }
+            assertEquals(expected.getInt("top_index"), (1 until scores.size).maxBy { scores[it] })
+
         }
     }
 
     @Test
-    fun manualScoringMatchesRecommendationWithCachedPhotoInBothModes() {
+    fun manualScoringMatchesRecommendationWithCachedPhoto() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val bitmap = instrumentation.context.assets.open("scene.png").use { BitmapFactory.decodeStream(it) }
         createCompositionAnalyzer(instrumentation.targetContext).use { engine ->
-            for (mode in AnalysisMode.entries) {
-                val recommendation = engine.analyze(bitmap, mode, CropSearch(1f, 0.5f), { true }, {})
-                val manual = engine.evaluate(bitmap, mode, recommendation.crop) { true }
-                assertEquals(recommendation.originalScore, manual.originalScore, 2e-5f)
-                assertEquals(recommendation.cropScore, manual.cropScore, 2e-5f)
-                assertEquals(recommendation.crop, manual.crop)
-                val changed = engine.evaluate(bitmap, mode, CropBox(0.2f, 0.2f, 0.6f, 0.6f)) { true }
-                assertTrue(changed.cropScore.isFinite())
-                android.util.Log.i("OkuloValidation", "${mode.name} manual score: ${manual.analysisMillis} ms")
-            }
+            val recommendation = engine.analyze(bitmap, CropSearch(1f, 0.5f), { true }, {})
+            val manual = engine.evaluate(bitmap, recommendation.crop) { true }
+            assertEquals(recommendation.originalScore, manual.originalScore, 2e-5f)
+            assertEquals(recommendation.cropScore, manual.cropScore, 2e-5f)
+            assertEquals(recommendation.crop, manual.crop)
+            val changed = engine.evaluate(bitmap, CropBox(0.2f, 0.2f, 0.6f, 0.6f)) { true }
+            assertTrue(changed.cropScore.isFinite())
+            android.util.Log.i("OkuloValidation", "Manual score: ${manual.analysisMillis} ms")
+
         }
         bitmap.recycle()
     }

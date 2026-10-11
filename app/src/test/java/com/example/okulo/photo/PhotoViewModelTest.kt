@@ -1,7 +1,6 @@
 package com.example.okulo.photo
 
 import android.net.Uri
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
 import com.example.okulo.image.PhotoOperation
@@ -33,7 +32,7 @@ class PhotoViewModelTest {
         fixture.await { !fixture.model.state.value.busy }
         assertEquals(0.2f, fixture.analyzer.requestedMinimumAreas.single(), 0f)
         val gate = fixture.gate()
-        fixture.analyzer.analyze = { _, _ ->
+        fixture.analyzer.analyze = { _ ->
             gate.block()
             recommendation().copy(cropScore = 99f)
         }
@@ -43,7 +42,7 @@ class PhotoViewModelTest {
         fixture.model.setMinimumCropArea(AppSettings(context).minimumCropArea)
         assertFalse(fixture.model.state.value.busy)
         gate.release()
-        fixture.analyzer.analyze = { _, _ -> recommendation().copy(cropScore = 4f) }
+        fixture.analyzer.analyze = { _ -> recommendation().copy(cropScore = 4f) }
         fixture.model.analyze()
         fixture.await { !fixture.model.state.value.busy }
         assertEquals(listOf(0.2f, 0.2f, 0.8f), fixture.analyzer.requestedMinimumAreas)
@@ -62,7 +61,7 @@ class PhotoViewModelTest {
         assertEquals(first?.crop, fixture.model.state.value.displayedCrop)
         assertNull(fixture.model.state.value.freeRatio)
         fixture.model.updateCrop(CropBox(0.1f, 0.2f, 0.9f, 0.6f))
-        fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = CropBox(0.1f, 0.2f, 0.9f, 0.6f)) }
+        fixture.analyzer.analyze = { _ -> recommendation().copy(crop = CropBox(0.1f, 0.2f, 0.9f, 0.6f)) }
         fixture.model.analyze()
         fixture.await { !fixture.model.state.value.busy }
         val latest = fixture.model.state.value.result
@@ -103,12 +102,11 @@ class PhotoViewModelTest {
     }
 
     @Test
-    fun chosenAspectSurvivesAnalysisModeAndRestoration() = PhotoTestHarness().use { fixture ->
+    fun chosenAspectSurvivesAnalysisAndRestoration() = PhotoTestHarness().use { fixture ->
         fixture.select()
         val wide = CropBox(0f, 0.125f, 1f, 0.875f)
-        fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = wide) }
+        fixture.analyzer.analyze = { _ -> recommendation().copy(crop = wide) }
         fixture.model.setAspect(CropAspect.Wide)
-        fixture.model.setMode(AnalysisMode.Standard)
         fixture.model.analyze()
         fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(CropAspect.Wide, fixture.model.state.value.aspect)
@@ -145,7 +143,7 @@ class PhotoViewModelTest {
         assertEquals(4f, fixture.model.state.value.displayedScore)
         assertEquals(2, fixture.analyzer.analysisCalls.get())
         assertEquals(recommendation(), fixture.model.state.value.result)
-        fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = CropBox(0f, 0.2f, 1f, 0.7f)) }
+        fixture.analyzer.analyze = { _ -> recommendation().copy(crop = CropBox(0f, 0.2f, 1f, 0.7f)) }
         fixture.model.analyze()
         fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(2f, checkNotNull(fixture.analyzer.requestedRatios.last()), 1e-6f)
@@ -166,8 +164,7 @@ class PhotoViewModelTest {
         fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         fixture.model.transformPhoto(PhotoOperation.FlipHorizontal)
         fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
-        fixture.model.setMode(AnalysisMode.Standard)
-        fixture.analyzer.analyze = { _, _ -> recommendation().copy(crop = CropBox(0.1f, 0.1f, 0.5f, 0.9f)) }
+        fixture.analyzer.analyze = { _ -> recommendation().copy(crop = CropBox(0.1f, 0.1f, 0.5f, 0.9f)) }
         fixture.model.analyze()
         fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals(CropAspect.Free, fixture.model.state.value.aspect)
@@ -183,7 +180,7 @@ class PhotoViewModelTest {
         val fresh = fixture.gate()
         val wide = CropBox(0f, 0.125f, 1f, 0.875f)
         var calls = 0
-        fixture.analyzer.analyze = { _, _ ->
+        fixture.analyzer.analyze = { _ ->
             if (calls++ == 0) {
                 old.block()
                 recommendation()
@@ -220,17 +217,6 @@ class PhotoViewModelTest {
     }
 
     @Test
-    fun newPhotosUseFastAnalysisUnlessTheUserChoosesStandard() = PhotoTestHarness().use { fixture ->
-        assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
-        fixture.select()
-        assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
-        fixture.model.setMode(AnalysisMode.Standard)
-        fixture.model.selectPhoto(Uri.parse("content://photos/two"))
-        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
-        assertEquals(AnalysisMode.Standard, fixture.model.state.value.mode)
-    }
-
-    @Test
     fun importRecommendationAndManualScoreRemainConsistent() = PhotoTestHarness().use { fixture ->
         val model = fixture.model
         model.analyze()
@@ -260,19 +246,18 @@ class PhotoViewModelTest {
     }
 
     @Test
-    fun switchingModeDuringInferenceRejectsOldScores() = PhotoTestHarness().use { fixture ->
-        fixture.model.setMode(AnalysisMode.Standard)
+    fun changingSearchAreaDuringInferenceRejectsOldScores() = PhotoTestHarness().use { fixture ->
         fixture.select()
         val old = fixture.gate()
         val fresh = fixture.gate()
-        fixture.analyzer.analyze = { _, mode ->
-            if (mode == AnalysisMode.Standard) old.block() else fresh.block()
+        fixture.analyzer.analyze = { _ ->
+            if (fixture.analyzer.analysisCalls.get() == 1) old.block() else fresh.block()
             recommendation()
         }
         fixture.model.analyze()
         old.awaitEntry()
-        fixture.model.setMode(AnalysisMode.Fast)
-        assertFalse("Previous mode must be cancelled before another analysis starts", fixture.analyzer.isCurrent())
+        fixture.model.setMinimumCropArea(0.4f)
+        assertFalse("Previous search must be cancelled before another analysis starts", fixture.analyzer.isCurrent())
         old.release()
         fixture.model.analyze()
         fresh.awaitEntry()
@@ -281,7 +266,6 @@ class PhotoViewModelTest {
         assertTrue(fixture.model.state.value.busy)
         fresh.release()
         fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
-        assertEquals(AnalysisMode.Fast, fixture.model.state.value.mode)
         assertEquals(recommendation(), fixture.model.state.value.result)
         assertEquals(2, fixture.analyzer.analysisCalls.get())
     }
@@ -335,7 +319,7 @@ class PhotoViewModelTest {
     fun cancelInvalidatesRunningAnalysisWithoutStartingAnotherRequest() = PhotoTestHarness().use { fixture ->
         fixture.select()
         val gate = fixture.gate()
-        fixture.analyzer.analyze = { _, _ ->
+        fixture.analyzer.analyze = { _ ->
             gate.block()
             recommendation()
         }
@@ -350,27 +334,6 @@ class PhotoViewModelTest {
     }
 
     @Test
-    fun modeChangeRestartsAnInFlightImport() = PhotoTestHarness().use { fixture ->
-        val gate = fixture.gate()
-        var reads = 0
-        fixture.reader = {
-            reads++
-            if (reads == 1) gate.block()
-            fixture.bitmap
-        }
-        fixture.model.selectPhoto(Uri.parse("content://photos/one"))
-        gate.awaitEntry()
-        fixture.model.setMode(AnalysisMode.Standard)
-        gate.release()
-        fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
-        assertEquals(2, reads)
-        assertEquals(AnalysisMode.Standard, fixture.model.state.value.mode)
-        assertSame(fixture.bitmap, fixture.model.state.value.photo)
-        fixture.model.setMode(AnalysisMode.Standard)
-        assertSame(fixture.bitmap, fixture.model.state.value.photo)
-    }
-
-    @Test
     fun retryImportAndManualScoringChooseTheFailedOperation() = PhotoTestHarness().use { fixture ->
         fixture.model.retry()
         fixture.reader = { throw IOException("read denied") }
@@ -379,11 +342,11 @@ class PhotoViewModelTest {
         fixture.reader = { fixture.bitmap }
         fixture.model.retry()
         fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
-        fixture.analyzer.analyze = { _, _ -> throw IOException("model missing") }
+        fixture.analyzer.analyze = { _ -> throw IOException("model missing") }
         fixture.model.analyze()
         fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         assertEquals("无法准备本地模型，请检查存储空间后重试", fixture.model.state.value.error)
-        fixture.analyzer.analyze = { _, _ -> recommendation() }
+        fixture.analyzer.analyze = { _ -> recommendation() }
         fixture.model.retry()
         fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
         fixture.model.updateCrop(CropBox(0.2f, 0.2f, 0.6f, 0.6f))
@@ -403,7 +366,7 @@ class PhotoViewModelTest {
     fun unexpectedFailuresHaveARecoverableMessage() = PhotoTestHarness().use { fixture ->
         fixture.select()
         for (failure in listOf(IllegalStateException(), IllegalArgumentException("invalid input"))) {
-            fixture.analyzer.analyze = { _, _ -> throw failure }
+            fixture.analyzer.analyze = { _ -> throw failure }
             fixture.model.analyze()
             fixture.await { !fixture.model.state.value.busy && !fixture.model.state.value.scoring }
             assertTrue(checkNotNull(fixture.model.state.value.error).contains("分析"))

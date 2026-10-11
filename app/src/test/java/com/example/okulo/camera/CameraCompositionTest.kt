@@ -2,7 +2,6 @@ package com.example.okulo.camera
 
 import android.graphics.Bitmap
 import android.os.Looper
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.photo.TestAnalyzer
 import com.example.okulo.photo.WorkGate
 import com.example.okulo.photo.recommendation
@@ -31,7 +30,7 @@ class CameraCompositionTest {
         val actions = CameraFrameActions(
             composition,
             { Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888) },
-            { AnalysisMode.Fast },
+
             { settings.minimumCropArea }
         )
         try {
@@ -50,19 +49,18 @@ class CameraCompositionTest {
     }
 
     @Test
-    fun recommendsFromTheCurrentFrameUsingTheSelectedModeWithoutAnAdoptStep() {
+    fun recommendsFromTheCurrentFrameWithoutAnAdoptStep() {
         val frame = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
         val analyzer = TestAnalyzer()
         val gate = WorkGate()
-        analyzer.analyze = { bitmap, mode ->
+        analyzer.analyze = { bitmap ->
             assertEquals(frame, bitmap)
-            assertEquals(AnalysisMode.Standard, mode)
             gate.block()
             recommendation()
         }
         val composition = CameraComposition(analyzer)
         try {
-            composition.recommend(frame, AnalysisMode.Standard)
+            composition.recommend(frame)
             gate.awaitEntry()
             assertTrue(composition.state.value.busy)
             assertEquals(null, composition.state.value.crop)
@@ -86,19 +84,19 @@ class CameraCompositionTest {
         val second = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
         val analyzer = TestAnalyzer()
         val gate = WorkGate()
-        analyzer.analyze = { bitmap, _ ->
+        analyzer.analyze = { bitmap ->
             if (bitmap == first) gate.block()
             recommendation().copy(cropScore = if (bitmap == first) 99f else 4f)
         }
         val composition = CameraComposition(analyzer)
         try {
-            composition.recommend(first, AnalysisMode.Fast)
+            composition.recommend(first)
             gate.awaitEntry()
             composition.dismiss()
             assertFalse(composition.state.value.active)
             assertFalse(analyzer.isCurrent())
             assertFalse(first.isRecycled)
-            composition.recommend(second, AnalysisMode.Fast)
+            composition.recommend(second)
             gate.release()
             await { composition.state.value.cropScore == 4f }
             assertEquals(2, analyzer.analysisCalls.get())
@@ -125,12 +123,12 @@ class CameraCompositionTest {
         }
         val composition = CameraComposition(analyzer)
         try {
-            composition.recommend(source, AnalysisMode.Fast)
+            composition.recommend(source)
             await { !composition.state.value.busy }
             val resized = recommendation().crop.copy(right = 0.7f)
             composition.updateCrop(resized)
             assertTrue(composition.state.value.canRestore)
-            composition.evaluateCrop(scoringFrame, AnalysisMode.Fast)
+            composition.evaluateCrop(scoringFrame)
             gate.awaitEntry()
             assertTrue(composition.state.value.scoring)
             assertFalse(composition.state.value.busy)
@@ -158,13 +156,13 @@ class CameraCompositionTest {
         val gate = WorkGate()
         val composition = CameraComposition(analyzer)
         try {
-            composition.recommend(Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888), AnalysisMode.Fast)
+            composition.recommend(Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888))
             await { !composition.state.value.busy }
-            analyzer.analyze = { _, _ ->
+            analyzer.analyze = { _ ->
                 gate.block()
                 recommendation()
             }
-            composition.recommend(Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888), AnalysisMode.Fast)
+            composition.recommend(Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888))
             gate.awaitEntry()
             composition.invalidateScene()
             assertFalse(composition.state.value.active)
@@ -188,7 +186,7 @@ class CameraCompositionTest {
         val shifted = IntArray(64) { if (it % 8 < 5) 30 else 210 }
         val newScene = IntArray(64) { if (it / 8 < 4) 30 else 210 }
         try {
-            composition.recommend(Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888), AnalysisMode.Fast)
+            composition.recommend(Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888))
             await { !composition.state.value.busy }
             composition.observeScene(baseline)
             composition.observeScene(shifted)

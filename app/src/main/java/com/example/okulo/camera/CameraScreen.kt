@@ -29,7 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.core.content.ContextCompat
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CropBox
 import com.example.okulo.composition.DEFAULT_MINIMUM_CROP_AREA
 import com.example.okulo.ui.crop.CropActions
@@ -41,7 +40,6 @@ internal fun CameraScreen(
     onImportPhoto: () -> Unit,
     modifier: Modifier = Modifier,
     onSettings: () -> Unit = {},
-    analysisMode: AnalysisMode = AnalysisMode.Fast,
     showScores: Boolean = false,
     keepOriginal: Boolean = true,
     minimumCropArea: Float = DEFAULT_MINIMUM_CROP_AREA,
@@ -62,7 +60,7 @@ internal fun CameraScreen(
     val frameActions = CameraFrameActions(
         composition,
         { frameSource?.invoke() },
-        { analysisMode },
+
         { minimumCropArea },
         frozenCapture = if (freezeComposition) capture::freeze else null
     )

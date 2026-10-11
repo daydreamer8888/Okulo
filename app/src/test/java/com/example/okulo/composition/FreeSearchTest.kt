@@ -20,11 +20,11 @@ class FreeSearchTest {
         val winner = CropBox(0f, 0f, 0.83666003f, 0.83666003f)
         val requests = mutableListOf<List<CropBox>>()
         val model = object : CropScoringModel {
-            override fun load(mode: AnalysisMode) = Unit
+            override fun load() = Unit
             override fun close() = Unit
             override fun score(
                 bitmap: Bitmap,
-                mode: AnalysisMode,
+
                 candidates: List<CropBox>,
                 isCurrent: () -> Boolean
             ): FloatArray {
@@ -34,7 +34,7 @@ class FreeSearchTest {
         }
         try {
             CompositionEngine(model).use { engine ->
-                val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.2f), { true }, {})
+                val result = engine.analyze(photo, CropSearch(null, 0.2f), { true }, {})
                 assertEquals(winner, result.crop)
                 assertEquals(42f, result.cropScore, 0f)
                 assertTrue(requests.first().contains(winner))
@@ -54,11 +54,11 @@ class FreeSearchTest {
             for (winner in listOf(CropBox.FullFrame, CropBox(0f, 0f, 0.70710677f, 0.70710677f))) {
                 var calls = 0
                 val model = object : CropScoringModel {
-                    override fun load(mode: AnalysisMode) = Unit
+                    override fun load() = Unit
                     override fun close() = Unit
                     override fun score(
                         bitmap: Bitmap,
-                        mode: AnalysisMode,
+
                         candidates: List<CropBox>,
                         isCurrent: () -> Boolean
                     ): FloatArray {
@@ -67,7 +67,7 @@ class FreeSearchTest {
                     }
                 }
                 CompositionEngine(model).use { engine ->
-                    val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.5f), { true }, {})
+                    val result = engine.analyze(photo, CropSearch(null, 0.5f), { true }, {})
                     assertEquals(2, calls)
                     assertEquals(winner, result.crop)
                     assertEquals(42f, result.cropScore, 0f)
@@ -85,11 +85,11 @@ class FreeSearchTest {
         var calls = 0
         var cancelled = false
         val model = object : CropScoringModel {
-            override fun load(mode: AnalysisMode) = Unit
+            override fun load() = Unit
             override fun close() = Unit
             override fun score(
                 bitmap: Bitmap,
-                mode: AnalysisMode,
+
                 candidates: List<CropBox>,
                 isCurrent: () -> Boolean
             ): FloatArray {
@@ -100,7 +100,7 @@ class FreeSearchTest {
         try {
             CompositionEngine(model).use { engine ->
                 try {
-                    engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.5f), { current }) { status ->
+                    engine.analyze(photo, CropSearch(null, 0.5f), { current }) { status ->
                         if (status == AnalysisStage.Refining) current = false
                     }
                 } catch (_: CancellationException) {
@@ -120,11 +120,11 @@ class FreeSearchTest {
         val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
         val requests = mutableListOf<List<CropBox>>()
         val model = object : CropScoringModel {
-            override fun load(mode: AnalysisMode) = Unit
+            override fun load() = Unit
             override fun close() = Unit
             override fun score(
                 bitmap: Bitmap,
-                mode: AnalysisMode,
+
                 candidates: List<CropBox>,
                 isCurrent: () -> Boolean
             ): FloatArray {
@@ -134,7 +134,7 @@ class FreeSearchTest {
         }
         try {
             CompositionEngine(model).use { engine ->
-                val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.2f), { true }, {})
+                val result = engine.analyze(photo, CropSearch(null, 0.2f), { true }, {})
                 assertEquals(2, requests.size)
                 val coarse = requests[0]
                 val fine = requests[1]

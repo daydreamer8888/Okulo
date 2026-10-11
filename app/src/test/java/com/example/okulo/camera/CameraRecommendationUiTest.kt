@@ -19,7 +19,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.photo.TestAnalyzer
 import com.example.okulo.photo.WorkGate
 import com.example.okulo.photo.recommendation
@@ -111,7 +110,7 @@ class CameraRecommendationUiTest {
     fun recommendationOverlaysTheContinuingPreviewAndScoresAfterDragging() {
         val analyzer = TestAnalyzer()
         val gate = WorkGate()
-        analyzer.analyze = { _, _ ->
+        analyzer.analyze = { _ ->
             gate.block()
             recommendation()
         }
@@ -127,7 +126,7 @@ class CameraRecommendationUiTest {
                         capture = CaptureUiState(ready = true),
                         composition = state,
                         compositionActions = CameraCompositionActions(
-                            { session.recommend(frame(), AnalysisMode.Fast) },
+                            { session.recommend(frame()) },
                             session::restore,
                             session::dismiss
                         ),
@@ -135,7 +134,7 @@ class CameraRecommendationUiTest {
                     ) {
                         CameraViewfinder(
                             state.crop,
-                            CropActions(session::updateCrop, { session.evaluateCrop(frame(), AnalysisMode.Fast) })
+                            CropActions(session::updateCrop, { session.evaluateCrop(frame()) })
                         ) {
                             Box(Modifier.fillMaxSize().testTag("live-preview")) { Text(preview.value) }
                         }

@@ -17,9 +17,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.ViewModelProvider
-import com.example.okulo.composition.AnalysisMode
-import com.example.okulo.photo.PhotoViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -89,10 +86,6 @@ class MainActivityTest {
         compose.onNodeWithText("裁剪面积提醒").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithContentDescription("导入照片").performClick()
-        compose.runOnIdle {
-            val model = ViewModelProvider(compose.activity)[PhotoViewModel::class.java]
-            assertEquals(AnalysisMode.Fast, model.state.value.mode)
-        }
         compose.activityRule.scenario.recreate()
         compose.onNodeWithContentDescription("设置").performClick()
         compose.onNodeWithText("显示评分").performScrollTo().assertIsOn()

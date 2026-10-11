@@ -23,7 +23,6 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.concurrent.futures.CallbackToFutureAdapter
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.photo.TestAnalyzer
 import com.example.okulo.photo.WorkGate
 import com.example.okulo.photo.recommendation
@@ -129,7 +128,7 @@ class CameraZoomUiTest {
         val first = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
         val pending = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)
         try {
-            session.recommend(first, AnalysisMode.Fast)
+            session.recommend(first)
             await { !session.state.value.busy }
             compose.setContent {
                 val state = session.state.collectAsState().value
@@ -142,11 +141,11 @@ class CameraZoomUiTest {
                 }
             }
             compose.onNodeWithTag("camera-crop").assertExists()
-            analyzer.analyze = { _, _ ->
+            analyzer.analyze = { _ ->
                 gate.block()
                 recommendation()
             }
-            compose.runOnIdle { session.recommend(pending, AnalysisMode.Fast) }
+            compose.runOnIdle { session.recommend(pending) }
             gate.awaitEntry()
             compose.onNodeWithTag("zoom-viewfinder").performTouchInput {
                 down(0, Offset(width * 0.35f, height * 0.5f))

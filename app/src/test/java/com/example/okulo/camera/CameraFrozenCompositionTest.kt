@@ -3,7 +3,6 @@ package com.example.okulo.camera
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Looper
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropBox
@@ -27,11 +26,11 @@ class CameraFrozenCompositionTest {
     @Test
     fun recommendationsAndDragScoresStayOnTheFrozenPhotoUntilItIsClosed() {
         val engine = TestAnalyzer()
-        engine.analyze = { image, _ -> recommendation().copy(originalScore = redScore(image)) }
+        engine.analyze = { image -> recommendation().copy(originalScore = redScore(image)) }
         val analyzer = object : CompositionAnalyzer by engine {
             override fun evaluate(
                 bitmap: Bitmap,
-                mode: AnalysisMode,
+
                 crop: CropBox,
                 isCurrent: () -> Boolean
             ): CompositionResult = recommendation().copy(crop = crop, cropScore = redScore(bitmap))
@@ -41,7 +40,7 @@ class CameraFrozenCompositionTest {
         val actions = CameraFrameActions(
             composition,
             { image(Color.BLUE) },
-            { AnalysisMode.Fast },
+
             frozenCapture = { ready -> ready(photo(sceneColor)) }
         )
         try {
@@ -82,7 +81,7 @@ class CameraFrozenCompositionTest {
         val actions = CameraFrameActions(
             composition,
             { image(Color.BLUE) },
-            { AnalysisMode.Fast },
+
             frozenCapture = { ready = it }
         )
         try {
@@ -110,7 +109,7 @@ class CameraFrozenCompositionTest {
         CameraFrameActions(
             composition,
             { image(Color.BLUE) },
-            { AnalysisMode.Fast },
+
             frozenCapture = { it(still) }
         ).recommend()
         await { !composition.state.value.busy }

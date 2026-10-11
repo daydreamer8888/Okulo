@@ -3,7 +3,6 @@ package com.example.okulo.composition.s2c
 import android.content.ContextWrapper
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionAnalyzer
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
@@ -51,29 +50,43 @@ class S2cInferenceTest {
         val reference = resource("model-reference.json").bufferedReader().use { JSONObject(it.readText()) }
         val input = referenceInput()
         S2cCropScorer(context).use { model ->
-            for (mode in AnalysisMode.entries) {
-                model.load(mode)
-                val actual = model.scoreInputs(input, cropCandidates())
-                val expected = reference.getJSONObject("modes").getJSONObject(mode.name)
-                assertReferenceScores(actual, expected)
-            }
+            model.load()
+            model.load()
+            val actual = model.scoreInputs(input, cropCandidates())
+            val expected = reference
+            assertReferenceScores(actual, expected)
         }
     }
 
     @Test
-    fun cachedManualScoreMatchesFreshInferenceAfterChangingModesAndPhotos() {
+    fun cachedManualScoreMatchesFreshInferenceAfterChangingPhotos() {
         val first = resource("scene.png").use { BitmapFactory.decodeStream(it) }
         val second = Bitmap.createScaledBitmap(first, 250, 204, true)
         try {
             createCompositionAnalyzer(context).use { analyzer ->
-                for (mode in listOf(AnalysisMode.Fast, AnalysisMode.Fast, AnalysisMode.Standard, AnalysisMode.Fast)) {
-                    compareManualAndFresh(analyzer, first, mode)
-                }
-                compareManualAndFresh(analyzer, second, AnalysisMode.Fast)
+                compareManualAndFresh(analyzer, first)
+                compareManualAndFresh(analyzer, second)
             }
         } finally {
             first.recycle()
             second.recycle()
+        }
+    }
+
+    @Test
+    fun blankPhotoUsesGlobalContextAndMatchesOfficialReference() {
+        val photo = Bitmap.createBitmap(160, 128, Bitmap.Config.ARGB_8888)
+        photo.eraseColor(0xff000000.toInt())
+        try {
+            S2cCropScorer(context).use { model ->
+                model.load()
+                val scores = model.scoreInputs(imageTensors(photo), cropCandidates())
+                assertEquals(0.19272313f, scores[0], 2e-5f)
+                assertEquals(222, (1 until scores.size).maxBy { scores[it] })
+                assertTrue(scores.all { it.isFinite() })
+            }
+        } finally {
+            photo.recycle()
         }
     }
 
@@ -122,10 +135,10 @@ class S2cInferenceTest {
 
     private fun assertAspectRecommendation(analyzer: CompositionAnalyzer, photo: Bitmap, aspect: CropAspect) {
         val ratio = aspect.normalizedRatio(photo.width, photo.height)
-        val result = analyzer.analyze(photo, AnalysisMode.Fast, CropSearch(ratio, 0.5f), { true }, {})
+        val result = analyzer.analyze(photo, CropSearch(ratio, 0.5f), { true }, {})
         if (ratio != null) assertEquals(ratio, result.crop.width / result.crop.height, 1e-5f)
         assertTrue(result.cropScore.isFinite())
-        val evaluated = analyzer.evaluate(photo, AnalysisMode.Fast, result.crop) { true }
+        val evaluated = analyzer.evaluate(photo, result.crop) { true }
         assertEquals(result.cropScore, evaluated.cropScore, 2e-5f)
         assertEquals(result.originalScore, evaluated.originalScore, 2e-5f)
     }
@@ -155,14 +168,14 @@ class S2cInferenceTest {
         assertEquals(expected.getInt("top_index"), (1 until actual.size).maxBy { actual[it] })
     }
 
-    private fun compareManualAndFresh(analyzer: CompositionAnalyzer, photo: Bitmap, mode: AnalysisMode) {
-        val recommendation = analyzer.analyze(photo, mode, CropSearch(1f, 0.5f), { true }, {})
-        val manual = analyzer.evaluate(photo, mode, recommendation.crop) { true }
+    private fun compareManualAndFresh(analyzer: CompositionAnalyzer, photo: Bitmap) {
+        val recommendation = analyzer.analyze(photo, CropSearch(1f, 0.5f), { true }, {})
+        val manual = analyzer.evaluate(photo, recommendation.crop) { true }
         assertEquals(recommendation.cropScore, manual.cropScore, 2e-5f)
         val adjusted = CropBox(0.2f, 0.2f, 0.6f, 0.6f)
-        val cached = analyzer.evaluate(photo, mode, adjusted) { true }
+        val cached = analyzer.evaluate(photo, adjusted) { true }
         createCompositionAnalyzer(context).use { fresh ->
-            val independent = fresh.evaluate(photo, mode, adjusted) { true }
+            val independent = fresh.evaluate(photo, adjusted) { true }
             assertEquals(independent.originalScore, cached.originalScore, 2e-5f)
             assertEquals(independent.cropScore, cached.cropScore, 2e-5f)
             assertTrue(abs(cached.cropScore - manual.cropScore) > 1e-4f)

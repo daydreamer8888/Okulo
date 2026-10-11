@@ -29,7 +29,9 @@ class FreezeCameraSettingsTest {
         compose.setContent {
             OkuloTheme {
                 SettingsScreen(
-                    false, {}, {},
+                    false,
+                    {},
+                    {},
                     keepOriginal = settings.value.keepCaptureOriginal,
                     onKeepOriginal = settings.value::setCaptureOriginal,
                     freezeComposition = settings.value.freezeComposition,

@@ -10,7 +10,6 @@ import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
-import com.example.okulo.composition.AnalysisMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -20,7 +19,7 @@ import java.io.File
 
 class PhotoFlowTest {
     @Test
-    fun photoImportAnalysisModeSwitchAndReplacementRejectStaleResults() {
+    fun photoImportAndReplacementRejectStaleResults() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val application = instrumentation.targetContext.applicationContext as Application
         val store = ViewModelStore()
@@ -45,7 +44,6 @@ class PhotoFlowTest {
             waitUntil { !model.state.value.busy }
             assertNotNull(model.state.value.photo)
             instrumentation.runOnMainSync {
-                model.setMode(AnalysisMode.Fast)
                 model.setAspect(CropAspect.Original)
                 model.analyze()
             }
@@ -74,15 +72,6 @@ class PhotoFlowTest {
             assertNull(model.state.value.manualCrop)
             assertNull(model.state.value.manualScore)
             assertEquals(model.state.value.result?.crop, model.state.value.displayedCrop)
-            instrumentation.runOnMainSync { model.analyze() }
-            waitUntil { model.state.value.status == "正在分析照片…" }
-            instrumentation.runOnMainSync { model.setMode(AnalysisMode.Standard) }
-            Thread.sleep(2000)
-            assertEquals(AnalysisMode.Standard, model.state.value.mode)
-            assertNull(model.state.value.result)
-            instrumentation.runOnMainSync { model.analyze() }
-            waitUntil { !model.state.value.busy }
-            assertNotNull(model.state.value.result)
             instrumentation.runOnMainSync { model.analyze() }
             waitUntil { model.state.value.status == "正在分析照片…" }
             instrumentation.runOnMainSync { model.selectPhoto(Uri.fromFile(rotated)) }

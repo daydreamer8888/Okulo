@@ -21,15 +21,14 @@ class CompositionEngineContractTest {
             val invalid = listOf(0f, -1f, Float.NaN, Float.POSITIVE_INFINITY)
             for (ratio in invalid) {
                 assertThrows(IllegalArgumentException::class.java) {
-                    engine.analyze(photo, AnalysisMode.Fast, CropSearch(ratio, 0.2f), { true }, {})
+                    engine.analyze(photo, CropSearch(ratio, 0.2f), { true }, {})
                 }
             }
             for (area in invalid + 1.1f) {
                 assertThrows(IllegalArgumentException::class.java) {
-                    engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, area), { true }, {})
+                    engine.analyze(photo, CropSearch(null, area), { true }, {})
                 }
             }
-            assertTrue(model.modes.isEmpty())
             assertTrue(model.requests.isEmpty())
         }
     }
@@ -56,7 +55,7 @@ class CompositionEngineContractTest {
             }.toFloatArray()
         }
         CompositionEngine(model).use { engine ->
-            val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(null, 0.5f), { true }, {})
+            val result = engine.analyze(photo, CropSearch(null, 0.5f), { true }, {})
             assertEquals(1f, result.crop.width * 400 / (result.crop.height * 300), 1e-5f)
             assertEquals(8f, result.cropScore, 0f)
             assertTrue(result.candidateCount <= 600)
@@ -77,7 +76,7 @@ class CompositionEngineContractTest {
             }.toFloatArray()
         }
         CompositionEngine(model).use { engine ->
-            val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(4f / 3f, 0.5f), { true }, {})
+            val result = engine.analyze(photo, CropSearch(4f / 3f, 0.5f), { true }, {})
             assertEquals(0f, result.crop.left, 1e-6f)
             assertEquals(0.25f, result.crop.top, 1e-6f)
             assertEquals(1f, result.crop.right, 1e-6f)
@@ -97,15 +96,14 @@ class CompositionEngineContractTest {
         val photo = Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888)
         try {
             CompositionEngine(model).use { engine ->
-                val result = engine.analyze(photo, AnalysisMode.Fast, CropSearch(1f, 0.5f), { true }, {})
+                val result = engine.analyze(photo, CropSearch(1f, 0.5f), { true }, {})
                 assertEquals(cropCandidates()[1], result.crop)
                 assertEquals(10f, result.originalScore, 0f)
                 assertEquals(5f, result.cropScore, 0f)
                 assertEquals(250, result.candidateCount)
-                val manual = engine.evaluate(photo, AnalysisMode.Standard, result.crop) { true }
+                val manual = engine.evaluate(photo, result.crop) { true }
                 assertEquals(result.cropScore, manual.cropScore, 0f)
                 assertEquals(listOf(CropBox.FullFrame, result.crop), model.requests.last())
-                assertEquals(listOf(AnalysisMode.Fast, AnalysisMode.Standard), model.modes)
             }
             assertTrue(model.closed)
         } finally {
@@ -116,14 +114,14 @@ class CompositionEngineContractTest {
     @Test(expected = IllegalStateException::class)
     fun rejectsModelScoresWithWrongCount() = withPhoto { photo ->
         CompositionEngine(RecordingModel { floatArrayOf(1f) }).use { engine ->
-            engine.analyze(photo, AnalysisMode.Fast, CropSearch(1f, 0.5f), { true }, {})
+            engine.analyze(photo, CropSearch(1f, 0.5f), { true }, {})
         }
     }
 
     @Test(expected = IllegalStateException::class)
     fun rejectsNonFiniteModelScores() = withPhoto { photo ->
         CompositionEngine(RecordingModel { boxes -> FloatArray(boxes.size) { Float.NaN } }).use { engine ->
-            engine.analyze(photo, AnalysisMode.Fast, CropSearch(1f, 0.5f), { true }, {})
+            engine.analyze(photo, CropSearch(1f, 0.5f), { true }, {})
         }
     }
 
@@ -135,7 +133,7 @@ class CompositionEngineContractTest {
             FloatArray(boxes.size)
         }
         CompositionEngine(model).use { engine ->
-            engine.analyze(photo, AnalysisMode.Fast, CropSearch(1f, 0.5f), { current }, {})
+            engine.analyze(photo, CropSearch(1f, 0.5f), { current }, {})
         }
     }
 
@@ -144,7 +142,7 @@ class CompositionEngineContractTest {
         val minimum = search.minimumArea
         val model = RecordingModel { boxes -> boxes.map { -it.area }.toFloatArray() }
         CompositionEngine(model).use { engine ->
-            val result = engine.analyze(photo, AnalysisMode.Fast, search, { true }, {})
+            val result = engine.analyze(photo, search, { true }, {})
             assertEquals(minimum, result.crop.area, 1e-5f)
             assertEquals(-1f, result.originalScore, 0f)
             assertEligibleCrops(model.requests.flatten(), ratio, minimum)
@@ -177,17 +175,14 @@ private class RecordingModel(
         FloatArray(boxes.size) { index -> if (index == 0) 10f else if (index == 1) 5f else 1f }
     }
 ) : CropScoringModel {
-    val modes = mutableListOf<AnalysisMode>()
     val requests = mutableListOf<List<CropBox>>()
     var closed = false
 
-    override fun load(mode: AnalysisMode) {
-        modes.add(mode)
-    }
+    override fun load() = Unit
 
     override fun score(
         bitmap: Bitmap,
-        mode: AnalysisMode,
+
         candidates: List<CropBox>,
         isCurrent: () -> Boolean
     ): FloatArray {

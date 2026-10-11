@@ -1,7 +1,6 @@
 package com.example.okulo.photo
 
 import android.graphics.Bitmap
-import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.CompositionResult
 import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.CropBox
@@ -9,7 +8,7 @@ import com.example.okulo.image.PhotoTransform
 
 internal data class PhotoState(
     val photo: Bitmap? = null,
-    val mode: AnalysisMode = AnalysisMode.Fast,
+
     val result: CompositionResult? = null,
     val busy: Boolean = false,
     val scoring: Boolean = false,
