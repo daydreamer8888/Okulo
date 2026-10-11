@@ -45,7 +45,9 @@ internal fun SettingsScreen(
     keepOriginal: Boolean = true,
     onKeepOriginal: (Boolean) -> Unit = {},
     cropWarningPercent: Int = DEFAULT_CROP_WARNING_PERCENT,
-    onCropWarning: (Int) -> Unit = {}
+    onCropWarning: (Int) -> Unit = {},
+    freezeComposition: Boolean = false,
+    onFreezeComposition: (Boolean) -> Unit = {}
 ) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         TopAppBar(
@@ -58,8 +60,15 @@ internal fun SettingsScreen(
             SettingsGroup("拍摄") {
                 ListItem(
                     colors = settingsItemColors(),
+                    headlineContent = { Text("构图时定格画面") },
+                    trailingContent = { Switch(checked = freezeComposition, onCheckedChange = null) },
+                    modifier = Modifier.toggleable(
+                        freezeComposition, role = Role.Switch, onValueChange = onFreezeComposition
+                    )
+                )
+                ListItem(
+                    colors = settingsItemColors(),
                     headlineContent = { Text("同时保存原图") },
-                    supportingContent = { Text("使用推荐构图拍照时") },
                     trailingContent = { Switch(checked = keepOriginal, onCheckedChange = null) },
                     modifier = Modifier.toggleable(keepOriginal, role = Role.Switch, onValueChange = onKeepOriginal)
                 )

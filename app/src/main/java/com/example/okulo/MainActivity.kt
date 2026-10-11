@@ -157,6 +157,8 @@ private fun AppPageContent(
             settings::selectAnalysisMode,
             keepOriginal = settings.keepCaptureOriginal,
             onKeepOriginal = settings::setCaptureOriginal,
+            freezeComposition = settings.freezeComposition,
+            onFreezeComposition = settings::updateFreezeComposition,
             cropWarningPercent = settings.cropWarningPercent,
             onCropWarning = settings::updateCropWarningPercent,
             appearance = {
