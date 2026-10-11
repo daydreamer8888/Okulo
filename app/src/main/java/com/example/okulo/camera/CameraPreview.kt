@@ -31,7 +31,8 @@ internal fun CameraPreview(
     capture: CameraCapture,
     onFrameSource: ((() -> Bitmap?)?) -> Unit = {},
     onScene: (IntArray) -> Unit = {},
-    zoom: CameraZoom? = null
+    zoom: CameraZoom? = null,
+    meteringEnabled: Boolean = true
 ) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
@@ -47,11 +48,12 @@ internal fun CameraPreview(
     var stream by remember { mutableStateOf(PreviewView.StreamState.IDLE) }
     var error by remember { mutableStateOf<String?>(null) }
     val sceneObserver by rememberUpdatedState(onScene)
+    val metering = rememberCameraMetering(capture)
     ObserveCameraZoom(controller, zoom)
+    ObserveCameraMetering(controller, metering, meteringEnabled && stream == PreviewView.StreamState.STREAMING)
     DisposableEffect(controller, owner) {
         var active = true
-        val scenes = CameraSceneStream(controller) { sceneObserver(it) }
-        scenes.start()
+        val scenes = CameraSceneStream(controller) { sceneObserver(it) }.apply { start() }
         onFrameSource { if (stream == PreviewView.StreamState.STREAMING) preview.bitmap else null }
         val observer = Observer<PreviewView.StreamState> {
             stream = it
@@ -93,6 +95,7 @@ internal fun CameraPreview(
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
         CameraPreviewNotice(error, stream)
+        CameraMeteringControls(metering.state, metering::requestExposure)
     }
 }
 

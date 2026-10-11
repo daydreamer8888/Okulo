@@ -167,7 +167,9 @@ private fun CameraLiveView(
                 capture,
                 onFrameSource = onFrameSource,
                 onScene = composition::observeScene,
-                zoom = zoom
+                zoom = zoom,
+                meteringEnabled = !framing.selectingSubject && !framing.busy &&
+                    framing.crop == null && framing.frozenPhoto == null
             )
         }
     }

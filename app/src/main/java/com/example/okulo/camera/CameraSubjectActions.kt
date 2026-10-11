@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,7 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.okulo.R
 import com.example.okulo.composition.CropBox
 import com.example.okulo.ui.ActionIconButton
 
@@ -32,7 +35,7 @@ internal data class CameraSubjectActions(
 @Composable
 internal fun CameraSubjectButton(state: CameraCompositionState, ready: Boolean, actions: CameraSubjectActions) {
     var expanded by remember { mutableStateOf(false) }
-    LaunchedEffect(state.selectingSubject, state.retainedRegion) { expanded = false }
+    LaunchedEffect(state, ready) { expanded = false }
     Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
         ActionIconButton(
             subjectIcon,
@@ -48,14 +51,22 @@ internal fun CameraSubjectButton(state: CameraCompositionState, ready: Boolean, 
             selected = state.retainedRegion != null || state.selectingSubject
         )
         DropdownMenu(expanded, { expanded = false }, modifier = Modifier.width(128.dp)) {
-            DropdownMenuItem(text = { Text("重新框选") }, onClick = {
-                expanded = false
-                actions.start()
-            })
-            DropdownMenuItem(text = { Text("清除") }, onClick = {
-                expanded = false
-                actions.clear()
-            })
+            DropdownMenuItem(
+                text = { Text("重新框选") },
+                leadingIcon = { Icon(subjectIcon, contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    actions.start()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("清除") },
+                leadingIcon = { Icon(painterResource(R.drawable.ic_close), contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    actions.clear()
+                }
+            )
         }
     }
 }

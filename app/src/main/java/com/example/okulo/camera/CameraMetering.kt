@@ -4,9 +4,16 @@ import androidx.camera.core.CameraControl
 import androidx.camera.core.ExposureState
 import androidx.camera.view.CameraController
 import androidx.camera.view.TapToFocusInfo
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.common.util.concurrent.ListenableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executor
@@ -84,5 +91,33 @@ internal class CameraMetering(
     fun reset() {
         request++
         state = CameraMeteringState(revision = state.revision + 1)
+    }
+}
+
+@Composable
+internal fun rememberCameraMetering(capture: CameraCapture): CameraMetering {
+    val context = LocalContext.current
+    val controller = capture.controller
+    return remember(controller) {
+        CameraMetering(
+            { controller.cameraInfo?.exposureState },
+            { checkNotNull(controller.cameraControl).setExposureCompensationIndex(it) },
+            ContextCompat.getMainExecutor(context),
+            { capture.reportMessage("曝光调整失败，请重试") }
+        )
+    }
+}
+
+@Composable
+internal fun ObserveCameraMetering(controller: CameraController, metering: CameraMetering, enabled: Boolean) {
+    val owner = LocalLifecycleOwner.current
+    DisposableEffect(controller, metering, enabled, owner) {
+        controller.isTapToFocusEnabled = enabled
+        val observer = Observer<TapToFocusInfo> { if (enabled) metering.updateFocus(it) }
+        if (enabled) controller.tapToFocusInfoState.observe(owner, observer)
+        onDispose {
+            controller.tapToFocusInfoState.removeObserver(observer)
+            metering.reset()
+        }
     }
 }
