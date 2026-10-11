@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.core.content.ContextCompat
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.photo.CropActions
+import com.example.okulo.settings.DEFAULT_MINIMUM_CROP_AREA
 
 @Composable
 internal fun CameraScreen(
@@ -41,7 +42,8 @@ internal fun CameraScreen(
     onSettings: () -> Unit = {},
     analysisMode: AnalysisMode = AnalysisMode.Fast,
     showScores: Boolean = false,
-    keepOriginal: Boolean = true
+    keepOriginal: Boolean = true,
+    minimumCropArea: Float = DEFAULT_MINIMUM_CROP_AREA
 ) {
     val context = LocalContext.current
     val framing by composition.state.collectAsState()
@@ -55,7 +57,12 @@ internal fun CameraScreen(
         )
     }
     var frameSource by remember { mutableStateOf<(() -> Bitmap?)?>(null) }
-    val frameActions = CameraFrameActions(composition, { frameSource?.invoke() }, { analysisMode })
+    val frameActions = CameraFrameActions(
+        composition,
+        { frameSource?.invoke() },
+        { analysisMode },
+        { minimumCropArea }
+    )
     val permission = rememberCameraPermission()
     val storage = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         if (it) capture.takePhoto(framing.crop, keepOriginal) else capture.reportMessage("保存权限未开启，请允许后重试。")

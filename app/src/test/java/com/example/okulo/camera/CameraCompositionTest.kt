@@ -6,12 +6,14 @@ import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.photo.TestAnalyzer
 import com.example.okulo.photo.WorkGate
 import com.example.okulo.photo.recommendation
+import com.example.okulo.settings.AppSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
@@ -19,6 +21,34 @@ import java.util.concurrent.TimeUnit
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class CameraCompositionTest {
+    @Test
+    fun frameRecommendationsUseTheCurrentSavedAreaThreshold() {
+        val context = RuntimeEnvironment.getApplication()
+        context.getSharedPreferences("okulo_settings", 0).edit().clear().commit()
+        var settings = AppSettings(context)
+        val analyzer = TestAnalyzer()
+        val composition = CameraComposition(analyzer)
+        val actions = CameraFrameActions(
+            composition,
+            { Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888) },
+            { AnalysisMode.Fast },
+            { settings.minimumCropArea }
+        )
+        try {
+            actions.recommend()
+            await { !composition.state.value.busy }
+            assertEquals(0.2f, analyzer.requestedMinimumAreas.single(), 0f)
+            settings.updateCropWarningPercent(80)
+            settings = AppSettings(context)
+            actions.recommend()
+            await { !composition.state.value.busy }
+            assertEquals(listOf(0.2f, 0.8f), analyzer.requestedMinimumAreas)
+        } finally {
+            composition.close()
+            assertTrue(analyzer.closed.await(10, TimeUnit.SECONDS))
+        }
+    }
+
     @Test
     fun recommendsFromTheCurrentFrameUsingTheSelectedModeWithoutAnAdoptStep() {
         val frame = Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888)

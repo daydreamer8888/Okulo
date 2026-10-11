@@ -11,6 +11,8 @@ internal class AppSettings(context: Context) {
     var cropWarningPercent by mutableStateOf(preferences.getInt("crop_warning_percent", DEFAULT_CROP_WARNING_PERCENT))
         private set
 
+    val minimumCropArea: Float get() = cropWarningPercent / PERCENT_SCALE
+
     fun updateCropWarningPercent(percent: Int) {
         require(
             percent in CROP_WARNING_MIN_PERCENT..CROP_WARNING_MAX_PERCENT && percent % CROP_WARNING_STEP_PERCENT == 0
@@ -76,3 +78,6 @@ internal const val DEFAULT_CROP_WARNING_PERCENT = 20
 internal const val CROP_WARNING_MIN_PERCENT = 10
 internal const val CROP_WARNING_MAX_PERCENT = 90
 internal const val CROP_WARNING_STEP_PERCENT = 10
+
+private const val PERCENT_SCALE = 100f
+internal const val DEFAULT_MINIMUM_CROP_AREA = DEFAULT_CROP_WARNING_PERCENT / PERCENT_SCALE
