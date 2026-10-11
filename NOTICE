@@ -1,0 +1,14 @@
+Okulo
+Copyright (C) 2026 Okulo contributors
+
+The application code is licensed under GNU AGPL version 3.
+See LICENSE for the full license text.
+
+YOLO26n model
+Copyright Ultralytics
+Licensed under GNU AGPL version 3.
+Source: https://github.com/ultralytics/ultralytics
+Original weights: https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26n.pt
+
+Third-party code, models and other assets retain their own licenses.
+See docs/model-assets.md for model sources and redistribution status.
