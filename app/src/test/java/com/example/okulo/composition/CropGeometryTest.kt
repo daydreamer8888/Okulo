@@ -9,7 +9,7 @@ class CropGeometryTest {
     @Test
     fun freeSearchBalancesEveryAspectAcrossPositionsAndSizesWithinFourHundredCrops() {
         for ((width, height) in listOf(400 to 300, 300 to 400, 400 to 273)) {
-            val boxes = freeCropCandidates(width, height)
+            val boxes = freeCropCandidates(width, height, 0.2f)
             assertEquals(CropBox.FullFrame, boxes.first())
             assertEquals(boxes.size, boxes.distinct().size)
             assertTrue(boxes.size <= 401)
@@ -39,7 +39,7 @@ class CropGeometryTest {
         for (box in boxes.drop(1)) {
             assertEquals(16f / 9f, box.width * 900 / (box.height * 1600), 1e-5f)
             assertTrue(box.left >= 0f && box.top >= 0f && box.right <= 1f && box.bottom <= 1f)
-            assertTrue(box.area >= 0.158203125f - 1e-6f)
+            assertEquals(0.31640625f, box.area, 1e-6f)
             assertTrue(box.area <= 0.31640625f + 1e-6f)
         }
         assertEquals(cropCandidates(), cropCandidates(1f))

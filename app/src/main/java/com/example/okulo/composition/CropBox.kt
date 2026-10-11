@@ -33,23 +33,41 @@ fun cropCandidates(): List<CropBox> = buildList {
 }
 
 /** The first entry is the source-score baseline, followed by target-aspect candidates. */
-fun cropCandidates(normalizedRatio: Float): List<CropBox> {
+fun cropCandidates(normalizedRatio: Float, minimumArea: Float = MIN_AREA.toFloat()): List<CropBox> {
     require(normalizedRatio.isFinite() && normalizedRatio > 0f)
-    if (normalizedRatio == 1f) return cropCandidates()
-    val areas = (0..AREA_LEVELS).map { 1.0 - it * AREA_STEP }
+    require(minimumArea > 0f && minimumArea <= 1f)
+    if (normalizedRatio == 1f && minimumArea == MIN_AREA.toFloat()) return cropCandidates()
+    val maximumArea = minOf(normalizedRatio.toDouble(), 1.0 / normalizedRatio)
+    val areas = if (normalizedRatio == 1f) {
+        (0 until AREA_LEVELS).map { minimumArea + (1.0 - minimumArea) * it / AREA_LEVELS }
+    } else {
+        areaLevels(maximumArea, minimumArea.toDouble(), AREA_LEVELS)
+    }
     return listOf(CropBox.FullFrame) + aspectGrid(normalizedRatio, GRID_POINTS, areas)
 }
 
 /** Balance aspect coverage within four hundred unique coarse-search crops. */
-fun freeCropCandidates(width: Int, height: Int): List<CropBox> {
+fun freeCropCandidates(width: Int, height: Int, minimumArea: Float = MIN_AREA.toFloat()): List<CropBox> {
     require(width > 0 && height > 0)
-    val ratios = CropAspect.entries.mapNotNull { it.normalizedRatio(width, height) }.distinct()
+    require(minimumArea > 0f && minimumArea <= 1f)
+    val ratios = CropAspect.entries.mapNotNull { it.normalizedRatio(width, height) }.distinct().filter {
+        minOf(it, 1f / it) >= minimumArea
+    }
     val levels = (FREE_COARSE_BUDGET / ratios.size - FREE_GRID_POINTS) /
         (FREE_GRID_POINTS * FREE_GRID_POINTS) + 1
-    val areas = (0 until levels).map { 1.0 - it * MIN_AREA / (levels - 1) }
-    val candidates = ratios.flatMap { aspectGrid(it, FREE_GRID_POINTS, areas) }.distinct()
+    val candidates = ratios.flatMap { ratio ->
+        val maximumArea = minOf(ratio.toDouble(), 1.0 / ratio)
+        aspectGrid(ratio, FREE_GRID_POINTS, areaLevels(maximumArea, minimumArea.toDouble(), levels))
+    }.distinct()
     return listOf(CropBox.FullFrame) + candidates.filterNot { it == CropBox.FullFrame }
 }
+
+private fun areaLevels(maximum: Double, minimum: Double, count: Int): List<Double> =
+    if (minimum >= maximum) {
+        listOf(maximum)
+    } else {
+        (0 until count).map { maximum - (maximum - minimum) * it / (count - 1) }
+    }
 
 private const val FREE_GRID_POINTS = 3
 private const val FREE_COARSE_BUDGET = 400
@@ -58,8 +76,9 @@ private fun aspectGrid(ratio: Float, points: Int, areas: List<Double>): List<Cro
     val maximumWidth = minOf(1.0, ratio.toDouble())
     val maximumHeight = minOf(1.0, 1.0 / ratio)
     for (area in areas) {
-        val width = maximumWidth * sqrt(area)
-        val height = maximumHeight * sqrt(area)
+        val scale = sqrt(area / (maximumWidth * maximumHeight))
+        val width = maximumWidth * scale
+        val height = maximumHeight * scale
         repeat(points) { column ->
             repeat(points) { row ->
                 val left = (1.0 - width) * column / (points - 1)

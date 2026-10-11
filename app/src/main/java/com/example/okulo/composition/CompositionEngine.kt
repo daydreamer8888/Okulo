@@ -7,10 +7,12 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
     override fun analyze(
         bitmap: Bitmap,
         mode: AnalysisMode,
-        normalizedRatio: Float?,
+        search: CropSearch,
         isCurrent: () -> Boolean,
         status: (String) -> Unit
     ): CompositionResult {
+        val normalizedRatio = search.normalizedRatio
+        val minimumArea = search.minimumArea
         val loadStart = System.nanoTime()
         status("正在准备模型…")
         model.load(mode)
@@ -18,10 +20,11 @@ internal class CompositionEngine(private val model: CropScoringModel) : Composit
         val loadMillis = elapsed(loadStart)
         val started = System.nanoTime()
         status("正在分析照片…")
-        var candidates = normalizedRatio?.let(::cropCandidates) ?: freeCropCandidates(bitmap.width, bitmap.height)
+        var candidates = normalizedRatio?.let { cropCandidates(it, minimumArea) }
+            ?: freeCropCandidates(bitmap.width, bitmap.height, minimumArea)
         val coarseScores = score(bitmap, mode, candidates, isCurrent)
         val refinement = if (normalizedRatio == null) {
-            refineFreeCrops(bitmap.width, bitmap.height, candidates, coarseScores)
+            refineFreeCrops(bitmap.width, bitmap.height, candidates, coarseScores, minimumArea)
         } else {
             emptyList()
         }
