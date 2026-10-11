@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import com.example.okulo.composition.CropBox
 import com.example.okulo.image.CropExporter
+import com.example.okulo.image.CropWriter
 import com.example.okulo.image.PhotoTransform
 import java.io.Closeable
 import java.io.IOException
@@ -23,6 +24,7 @@ import java.util.concurrent.Executors
 
 internal class CameraCapture(
     private val context: Context,
+    private val writer: CropWriter = CropExporter(context),
     private val shoot: ((ImageCapture.OutputFileOptions, ImageCapture.OnImageSavedCallback) -> Unit)? = null
 ) : Closeable {
     private val exports = Executors.newSingleThreadExecutor()
@@ -93,7 +95,7 @@ internal class CameraCapture(
     private fun exportCrop(original: Uri, crop: CropBox, output: CaptureOutput) {
         exports.execute {
             try {
-                val cropped = CropExporter(context).save(original, PhotoTransform(), crop)
+                val cropped = writer.save(original, PhotoTransform(), crop)
                 main.post { complete(cropped) }
             } catch (failure: Exception) {
                 Log.e("OkuloCamera", "Capture crop export failed", failure)

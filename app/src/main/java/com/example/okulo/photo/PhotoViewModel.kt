@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.okulo.composition.AnalysisMode
@@ -17,60 +16,42 @@ import com.example.okulo.composition.DEFAULT_MINIMUM_CROP_AREA
 import com.example.okulo.composition.createCompositionAnalyzer
 import com.example.okulo.composition.fitCropAspect
 import com.example.okulo.image.CropExporter
+import com.example.okulo.image.CropWriter
 import com.example.okulo.image.PhotoOperation
 import com.example.okulo.image.PhotoTransform
 import com.example.okulo.image.readPhoto
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.math.abs
 
 @Suppress("TooManyFunctions") // Public operations share one photo and request lifecycle.
 class PhotoViewModel internal constructor(
     application: Application,
     private val engine: CompositionAnalyzer,
+    writer: CropWriter = CropExporter(application),
     private val photoReader: (ContentResolver, Uri) -> Bitmap
 ) : AndroidViewModel(application) {
-    constructor(application: Application) : this(application, createCompositionAnalyzer(application), ::readPhoto)
+    constructor(application: Application) : this(
+        application,
+        createCompositionAnalyzer(application),
+        photoReader = ::readPhoto
+    )
 
     private val mutableState = MutableStateFlow(PhotoState())
     internal val state = mutableState.asStateFlow()
     private val tasks = PhotoWorkQueue(mutableState, engine::close)
     private var selectedUri: Uri? = null
     private var minimumCropArea = DEFAULT_MINIMUM_CROP_AREA
-    private val mutableSaving = MutableStateFlow(false)
-    internal val saving = mutableSaving.asStateFlow()
-    private val saveMessages = Channel<String>(Channel.BUFFERED)
-    internal val saveEvents = saveMessages.receiveAsFlow()
+    private val saves = PhotoSaveController(viewModelScope, writer)
+    internal val saving = saves.saving
+    internal val saveEvents = saves.events
 
-    @Suppress("TooGenericExceptionCaught") // Storage errors become actionable save feedback.
     fun saveCrop() {
         val current = state.value
         val source = selectedUri
         val crop = current.displayedCrop
-        if (source == null || crop == null) return
-        if (mutableSaving.value || current.busy) return
-        mutableSaving.value = true
-        viewModelScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    CropExporter(getApplication<Application>()).save(source, current.transform, crop)
-                }
-                saveMessages.send("已保存到相册")
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (failure: Exception) {
-                Log.e("OkuloExport", "Crop save failed", failure)
-                saveMessages.send("保存失败，请重试")
-            } finally {
-                mutableSaving.value = false
-            }
-        }
+        if (source == null || crop == null || current.busy) return
+        saves.save(source, current.transform, crop)
     }
 
     fun selectPhoto(uri: Uri) {

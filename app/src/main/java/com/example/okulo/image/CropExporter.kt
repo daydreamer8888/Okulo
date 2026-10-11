@@ -13,11 +13,11 @@ import java.io.IOException
 import java.util.UUID
 
 /** Export original pixels using the same orientation and normalized crop as the editor. */
-internal class CropExporter(context: Context) {
+internal class CropExporter(context: Context) : CropWriter {
     private val resolver = context.applicationContext.contentResolver
 
     @Suppress("TooGenericExceptionCaught") // Roll back a gallery row for storage and encoding failures.
-    fun save(source: Uri, transform: PhotoTransform, crop: CropBox): Uri {
+    override fun save(source: Uri, transform: PhotoTransform, crop: CropBox): Uri {
         val original = readFullPhoto(resolver, source)
         var edited: Bitmap? = null
         var output: Bitmap? = null
