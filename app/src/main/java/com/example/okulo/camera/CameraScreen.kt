@@ -31,7 +31,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.core.content.ContextCompat
 import com.example.okulo.composition.AnalysisMode
 import com.example.okulo.composition.DEFAULT_MINIMUM_CROP_AREA
-import com.example.okulo.photo.CropActions
+import com.example.okulo.ui.crop.CropActions
 
 @Composable
 internal fun CameraScreen(

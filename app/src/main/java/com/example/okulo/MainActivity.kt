@@ -33,7 +33,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.okulo.camera.CameraScreen
 import com.example.okulo.camera.CameraSession
 import com.example.okulo.camera.CameraSessionLifetime
-import com.example.okulo.photo.CropActions
 import com.example.okulo.photo.PhotoScreen
 import com.example.okulo.photo.PhotoViewModel
 import com.example.okulo.settings.AppSettings
@@ -42,6 +41,7 @@ import com.example.okulo.settings.AppearanceSettings
 import com.example.okulo.settings.SettingsScreen
 import com.example.okulo.ui.PAGE_TRANSITION_MILLIS
 import com.example.okulo.ui.PageTransition
+import com.example.okulo.ui.crop.CropActions
 import com.example.okulo.ui.theme.OkuloTheme
 import android.graphics.Color as AndroidColor
 

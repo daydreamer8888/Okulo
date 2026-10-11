@@ -32,6 +32,7 @@ import com.example.okulo.composition.CropAspect
 import com.example.okulo.composition.DEFAULT_CROP_AREA_PERCENT
 import com.example.okulo.image.PhotoOperation
 import com.example.okulo.ui.FeedbackSnackbar
+import com.example.okulo.ui.crop.CropActions
 import com.example.okulo.ui.rememberFeedbackMessage
 import kotlinx.coroutines.flow.Flow
 
