@@ -19,6 +19,7 @@ import com.example.okulo.image.PhotoOperation
 import com.example.okulo.image.PhotoTransform
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,10 +57,35 @@ class CropExporterTest {
         assertEquals(2400, output.height)
         assertTrue(Color.blue(output.getPixel(500, 600)) > 200)
         assertTrue(Color.red(output.getPixel(500, 1800)) > 200)
+        assertEquals("Pictures/Okulo", gallery.values.getAsString(MediaStore.Images.Media.RELATIVE_PATH))
+        assertTrue(gallery.values.getAsString(MediaStore.Images.Media.DISPLAY_NAME).startsWith("Okulo_crop_"))
         assertEquals("image/jpeg", gallery.values.getAsString(MediaStore.Images.Media.MIME_TYPE))
         assertEquals(0, gallery.values.getAsInteger(MediaStore.Images.Media.IS_PENDING))
         assertArrayEquals(original, source.readBytes())
         output.recycle()
+    }
+
+    @Test
+    @Config(sdk = [28])
+    @Suppress("DEPRECATION") // Verify the gallery contract used on Android 8 and 9.
+    fun legacyExportUsesAFileLocationWithoutPendingPublicationFields() {
+        val context = RuntimeEnvironment.getApplication()
+        val source = File(context.cacheDir, "legacy-crop-source.png")
+        val bitmap = Bitmap.createBitmap(20, 10, Bitmap.Config.ARGB_8888)
+        source.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        bitmap.recycle()
+        val gallery = ExportGallery(File(context.cacheDir, "legacy-crop-output.jpg"))
+        gallery.attachInfo(context, ProviderInfo().apply { authority = MediaStore.AUTHORITY })
+        ShadowContentResolver.registerProviderInternal(MediaStore.AUTHORITY, gallery)
+        CropExporter(context).save(Uri.fromFile(source), PhotoTransform(), CropBox.FullFrame)
+        val destination = File(gallery.values.getAsString(MediaStore.Images.Media.DATA))
+        assertEquals("Okulo", destination.parentFile?.name)
+        assertEquals(gallery.values.getAsString(MediaStore.Images.Media.DISPLAY_NAME), destination.name)
+        assertTrue(destination.name.startsWith("Okulo_crop_") && destination.name.endsWith(".jpg"))
+        assertEquals("image/jpeg", gallery.values.getAsString(MediaStore.Images.Media.MIME_TYPE))
+        assertFalse(gallery.values.containsKey(MediaStore.Images.Media.IS_PENDING))
+        assertFalse(gallery.values.containsKey(MediaStore.Images.Media.RELATIVE_PATH))
+        assertTrue(gallery.file.exists())
     }
 
     @Test
