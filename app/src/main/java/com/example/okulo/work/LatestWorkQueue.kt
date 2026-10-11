@@ -1,9 +1,8 @@
-package com.example.okulo.composition
+package com.example.okulo.work
 
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.Closeable
 import java.util.concurrent.CancellationException
 import java.util.concurrent.Future
@@ -11,11 +10,8 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-/** Serialize inference and resource release. Only the current request may publish state. */
-internal class AnalysisWorkQueue<S>(
-    private val state: MutableStateFlow<S>,
-    private val release: () -> Unit
-) : Closeable {
+/** Serialize work and resource release. Only the current request may publish a result or failure. */
+internal class LatestWorkQueue(private val release: () -> Unit) : Closeable {
     private val epoch = java.util.concurrent.atomic.AtomicLong()
     private val main = Handler(Looper.getMainLooper())
     private val worker = ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, LinkedBlockingQueue())
@@ -31,23 +27,23 @@ internal class AnalysisWorkQueue<S>(
     fun isCurrent(request: Long): Boolean = request == epoch.get()
 
     @Suppress("TooGenericExceptionCaught") // Report file/native failures at the asynchronous UI boundary.
-    fun submit(request: Long, failureState: (S, Exception) -> S, work: () -> Unit) {
+    fun submit(request: Long, onFailure: (Exception) -> Unit, work: () -> Unit) {
         task = worker.submit {
             try {
                 work()
             } catch (_: CancellationException) {
                 // The replacement request owns the screen.
             } catch (failure: Exception) {
-                Log.e("OkuloAnalysis", "Analysis task failed", failure)
+                Log.e("OkuloWork", "Background task failed", failure)
                 publish(request) {
-                    failureState(it, failure)
+                    onFailure(failure)
                 }
             }
         }
     }
 
-    fun publish(request: Long, update: (S) -> S) {
-        main.post { if (isCurrent(request)) state.value = update(state.value) }
+    fun publish(request: Long, update: () -> Unit) {
+        main.post { if (isCurrent(request)) update() }
     }
 
     fun releaseAfterWork(release: () -> Unit) { worker.execute(release) }
