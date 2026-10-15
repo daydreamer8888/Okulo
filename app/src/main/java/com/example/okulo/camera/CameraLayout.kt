@@ -17,11 +17,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -63,6 +67,9 @@ internal fun CameraLayout(
                         enabled = !capture.saving
                     )
                 }
+                if (composition.frozenPhoto != null) {
+                    Text("已定格", style = MaterialTheme.typography.labelMedium)
+                }
                 Spacer(Modifier.weight(1f))
                 ActionIconButton(R.drawable.ic_photo, "导入照片", onImportPhoto)
                 ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
@@ -87,7 +94,13 @@ internal fun CameraLayout(
                     ) {
                         SavedPhotoButton(capture.savedPhoto, onViewPhoto)
                     }
-                    Box(Modifier.align(Alignment.Center)) { CaptureButton(capture, onCapture) }
+                    Box(Modifier.align(Alignment.Center)) {
+                        CaptureButton(
+                            capture.copy(ready = capture.ready && !(composition.frozenPhoto != null && composition.busy)),
+                            onCapture,
+                            frozen = composition.frozenPhoto != null
+                        )
+                    }
                     Box(
                         Modifier.align(Alignment.CenterEnd).width(recentPhotoWidth),
                         contentAlignment = Alignment.Center
@@ -101,12 +114,12 @@ internal fun CameraLayout(
 }
 
 @Composable
-private fun CaptureButton(capture: CaptureUiState, onCapture: () -> Unit) {
+private fun CaptureButton(capture: CaptureUiState, onCapture: () -> Unit, frozen: Boolean) {
     IconButton(
         onClick = onCapture,
         enabled = capture.canCapture,
         modifier = Modifier.size(88.dp).border(3.dp, Color.White, CircleShape)
-            .semantics { contentDescription = "拍照" }
+            .semantics { contentDescription = if (frozen) "保存" else "拍照" }
     ) {
         if (capture.saving) {
             CircularProgressIndicator(
@@ -114,6 +127,8 @@ private fun CaptureButton(capture: CaptureUiState, onCapture: () -> Unit) {
                 color = Color.White,
                 strokeWidth = 3.dp
             )
+        } else if (frozen) {
+            Icon(painterResource(R.drawable.ic_save), null, Modifier.size(32.dp), tint = Color.White)
         } else {
             Box(
                 Modifier.size(68.dp).background(

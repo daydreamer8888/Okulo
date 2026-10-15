@@ -70,7 +70,7 @@ class CameraFrozenFramingTest {
             assertTrue(crop.width < before.width)
             assertEquals(frozen, compose.runOnIdle { composition.state.value.frozenPhoto })
             assertEquals(1, shots)
-            compose.onNodeWithContentDescription("拍照").performClick()
+            compose.onNodeWithContentDescription("保存").performClick()
             compose.waitUntil(30_000) { compose.runOnIdle { !capture.state.saving && capture.state.savedPhoto != null } }
             assertEquals(1, shots)
             val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
