@@ -142,8 +142,8 @@ private fun PhotoBottomTools(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilledTonalButton(onClick = onPick) { Text("换一张照片") }
-                PhotoAspectControls(state, onAspect)
+                FilledTonalButton(onClick = onPick, enabled = !saving) { Text("换一张照片") }
+                PhotoAspectControls(state, onAspect, enabled = !saving)
             }
         }
         PhotoActionRow(state, actions, saving)

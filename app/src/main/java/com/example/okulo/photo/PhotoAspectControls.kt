@@ -32,11 +32,11 @@ import com.example.okulo.composition.CropAspect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun PhotoAspectControls(state: PhotoState, onAspect: (CropAspect) -> Unit) {
+internal fun PhotoAspectControls(state: PhotoState, onAspect: (CropAspect) -> Unit, enabled: Boolean = true) {
     var expanded by remember { mutableStateOf(false) }
     FilledTonalButton(
         onClick = { expanded = true },
-        enabled = !state.busy,
+        enabled = enabled && !state.busy,
         modifier = Modifier.semantics { contentDescription = "裁剪比例" }
     ) {
         Text(state.aspect.title)
@@ -52,7 +52,7 @@ internal fun PhotoAspectControls(state: PhotoState, onAspect: (CropAspect) -> Un
                     ListItem(
                         headlineContent = { Text(aspect.title) },
                         trailingContent = { RadioButton(selected, onClick = null) },
-                        modifier = Modifier.selectable(selected, enabled = !state.busy, role = Role.RadioButton) {
+                        modifier = Modifier.selectable(selected, enabled = enabled && !state.busy, role = Role.RadioButton) {
                             expanded = false
                             onAspect(aspect)
                         }

@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -14,7 +17,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.okulo.R
 import com.example.okulo.composition.CropAspect
@@ -35,13 +42,7 @@ internal fun PhotoActionRow(state: PhotoState, actions: PhotoEditActions, saving
     val hasCrop = state.displayedCrop != null
     Row(Modifier.fillMaxWidth().height(56.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         PhotoAnalysisAction(state, actions, saving)
-        ActionIconButton(
-            R.drawable.ic_save,
-            "保存",
-            actions.save,
-            enabled = hasCrop && !state.busy && !saving,
-            style = if (hasCrop) ActionIconStyle.Filled else ActionIconStyle.Tonal
-        )
+        PhotoSaveButton(hasCrop, !state.busy, saving, actions.save)
         ActionIconButton(
             R.drawable.ic_restore,
             "恢复",
@@ -51,6 +52,27 @@ internal fun PhotoActionRow(state: PhotoState, actions: PhotoEditActions, saving
         )
         Spacer(Modifier.weight(1f))
         PhotoTransformMenu(state.photo != null && !state.busy && !saving, actions.transform)
+    }
+}
+
+@Composable
+private fun PhotoSaveButton(hasCrop: Boolean, enabled: Boolean, saving: Boolean, onSave: () -> Unit) {
+    Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+        ActionIconButton(
+            R.drawable.ic_save,
+            "保存",
+            onSave,
+            enabled = hasCrop && enabled && !saving,
+            iconModifier = if (saving) Modifier.alpha(0f) else Modifier,
+            style = if (hasCrop) ActionIconStyle.Filled else ActionIconStyle.Tonal
+        )
+        if (saving) {
+            CircularProgressIndicator(
+                Modifier.size(24.dp).semantics { contentDescription = "正在保存" },
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 2.dp
+            )
+        }
     }
 }
 

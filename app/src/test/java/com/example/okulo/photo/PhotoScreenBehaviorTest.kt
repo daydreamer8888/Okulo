@@ -493,10 +493,23 @@ class PhotoScreenBehaviorTest {
         }
         compose.onNodeWithContentDescription("保存").assertDoesNotExist()
         compose.runOnIdle { state.value = PhotoState(photo = image(), result = recommendation()) }
-        compose.onNodeWithContentDescription("保存").performClick()
-        compose.onNodeWithContentDescription("保存").assertIsNotEnabled()
+        val save = compose.onNodeWithContentDescription("保存")
+        val button = save.fetchSemanticsNode().boundsInRoot
+        val image = compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot
+        save.performClick().assertIsNotEnabled()
+        val progress = compose.onNodeWithContentDescription("正在保存", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue(progress.left >= button.left && progress.right <= button.right)
+        assertTrue(progress.top >= button.top && progress.bottom <= button.bottom)
+        assertEquals(button, save.fetchSemanticsNode().boundsInRoot)
+        assertEquals(image, compose.onNodeWithTag("crop-editor").fetchSemanticsNode().boundsInRoot)
+        compose.onNodeWithText("换一张照片").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("裁剪比例").assertIsNotEnabled()
         assertEquals(1, saves)
         compose.runOnIdle { saving.value = false }
+        compose.onNodeWithContentDescription("正在保存", useUnmergedTree = true).assertDoesNotExist()
+        compose.onNodeWithText("换一张照片").assertIsEnabled()
+        compose.onNodeWithContentDescription("裁剪比例").assertIsEnabled()
         compose.onNodeWithContentDescription("保存").performClick()
         assertEquals(2, saves)
     }
