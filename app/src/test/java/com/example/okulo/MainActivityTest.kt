@@ -116,15 +116,16 @@ class MainActivityTest {
     @Test
     fun appearanceIsFirstAndThemeChoiceAppliesImmediatelyAndSurvivesRecreation() {
         compose.onNodeWithContentDescription("设置").performClick()
-        val appearance = compose.onNodeWithText("外观").fetchSemanticsNode().boundsInRoot
-        val analysis = compose.onNodeWithText("分析").fetchSemanticsNode().boundsInRoot
-        assertTrue(appearance.bottom < analysis.top)
-        val appearanceCard = compose.onNodeWithTag("settings-group-外观").fetchSemanticsNode().boundsInRoot
-        val captureCard = compose.onNodeWithTag("settings-group-拍摄").fetchSemanticsNode().boundsInRoot
-        val analysisCard = compose.onNodeWithTag("settings-group-分析").fetchSemanticsNode().boundsInRoot
-        assertTrue(appearance.bottom < appearanceCard.top)
-        assertTrue(appearanceCard.bottom < captureCard.top)
-        assertTrue(captureCard.bottom < analysis.top && analysis.bottom < analysisCard.top)
+        val appearance = compose.onNodeWithText("外观").fetchSemanticsNode()
+        val analysis = compose.onNodeWithText("分析").fetchSemanticsNode()
+        assertTrue(appearance.positionInRoot.y + appearance.size.height < analysis.positionInRoot.y)
+        val appearanceCard = compose.onNodeWithTag("settings-group-外观").fetchSemanticsNode()
+        val captureCard = compose.onNodeWithTag("settings-group-拍摄").fetchSemanticsNode()
+        val analysisCard = compose.onNodeWithTag("settings-group-分析").fetchSemanticsNode()
+        assertTrue(appearance.positionInRoot.y + appearance.size.height < appearanceCard.positionInRoot.y)
+        assertTrue(appearanceCard.positionInRoot.y + appearanceCard.size.height < captureCard.positionInRoot.y)
+        assertTrue(captureCard.positionInRoot.y + captureCard.size.height < analysis.positionInRoot.y)
+        assertTrue(analysis.positionInRoot.y + analysis.size.height < analysisCard.positionInRoot.y)
         compose.onNodeWithText("跟随系统").assertExists()
         compose.onNodeWithText("主题").performClick()
         compose.onNode(hasText("跟随系统") and hasAnyAncestor(isDialog())).assertIsSelected()
@@ -149,9 +150,9 @@ class MainActivityTest {
     fun dynamicColorIsOptInUsesTheSystemPaletteAndSurvivesRecreation() {
         compose.onNodeWithContentDescription("设置").performClick()
         compose.onNodeWithText("动态配色").assertIsOff()
-        compose.onNodeWithText("显示评分").performClick()
+        compose.onNodeWithText("显示评分").performScrollTo().performClick()
         val systemPrimary = compose.activity.getColor(android.R.color.system_accent1_600)
-        compose.onNodeWithText("动态配色").performClick().assertIsOn()
+        compose.onNodeWithText("动态配色").performScrollTo().performClick().assertIsOn()
         assertTrue(renderContains(systemPrimary))
         compose.activityRule.scenario.recreate()
         compose.onNodeWithText("动态配色").assertIsOn().performClick().assertIsOff()
@@ -174,13 +175,13 @@ class MainActivityTest {
     fun modelScoresAreOptInAndTheChoiceSurvivesRecreation() {
         compose.onNodeWithContentDescription("设置").performClick()
         compose.onNodeWithText("仅用于比较同一张照片的不同裁剪").assertExists()
-        compose.onNodeWithText("显示评分").assertIsOff().performClick().assertIsOn()
+        compose.onNodeWithText("显示评分").performScrollTo().assertIsOff().performClick().assertIsOn()
         compose.onNodeWithContentDescription("返回").performClick()
         importPhotoFromCamera()
         compose.onNodeWithContentDescription("设置").performClick()
         compose.onNodeWithText("显示评分").assertIsOn()
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("显示评分").assertIsOn().performClick().assertIsOff()
+        compose.onNodeWithText("显示评分").performScrollTo().assertIsOn().performClick().assertIsOff()
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithText("换一张照片").assertExists()
     }
