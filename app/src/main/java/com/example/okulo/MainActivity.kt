@@ -6,6 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.animateColorAsState
@@ -74,7 +77,8 @@ class MainActivity : ComponentActivity() {
 private fun OkuloApp(viewModel: PhotoViewModel, onCameraPage: (Boolean) -> Unit, onTheme: (Boolean) -> Unit) {
     val context = LocalContext.current
     val camera = remember { CameraSession(context.applicationContext) }
-    CameraSessionLifetime(camera)
+    var choosingPhoto by rememberSaveable { mutableStateOf(false) }
+    CameraSessionLifetime(camera, keepComposition = { choosingPhoto })
     val settings = remember { AppSettings(context.applicationContext) }
     LaunchedEffect(settings.cropWarningPercent, settings.freezeComposition) {
         viewModel.setMinimumCropArea(settings.minimumCropArea)
@@ -82,6 +86,14 @@ private fun OkuloApp(viewModel: PhotoViewModel, onCameraPage: (Boolean) -> Unit,
     }
     var page by rememberSaveable { mutableStateOf(AppPage.Camera) }
     var settingsOrigin by rememberSaveable { mutableStateOf(AppPage.Camera) }
+    val picker = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        choosingPhoto = false
+        if (uri != null) {
+            camera.composition.invalidateScene()
+            viewModel.selectPhoto(uri)
+            page = AppPage.Photo
+        }
+    }
     val navigation = AppNavigation(
         page,
         back = { page = if (page == AppPage.Settings) settingsOrigin else AppPage.Camera },
@@ -92,8 +104,8 @@ private fun OkuloApp(viewModel: PhotoViewModel, onCameraPage: (Boolean) -> Unit,
             }
         },
         analyze = {
-            camera.composition.invalidateScene()
-            page = AppPage.Photo
+            choosingPhoto = true
+            picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
         }
     )
     BackHandler(enabled = page != AppPage.Camera, onBack = navigation.back)

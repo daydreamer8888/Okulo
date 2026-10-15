@@ -1,6 +1,9 @@
 package com.example.okulo
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
+import java.io.File
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -42,10 +45,10 @@ class MainActivityTest {
         assertOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
         compose.onNodeWithContentDescription("返回").performClick()
         assertOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
-        compose.onNodeWithContentDescription("导入照片").performClick()
+        importPhotoFromCamera()
         assertOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
         compose.activityRule.scenario.recreate()
-        compose.onNodeWithText("选择照片").assertExists()
+        compose.onNodeWithText("换一张照片").assertExists()
         assertOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
         compose.onNodeWithContentDescription("返回拍摄").performClick()
         assertOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
@@ -86,7 +89,7 @@ class MainActivityTest {
         compose.onNodeWithText("显示评分").performScrollTo().assertIsOff().performClick().assertIsOn()
         compose.onNodeWithText("裁剪面积提醒").assertExists()
         compose.onNodeWithContentDescription("返回").performClick()
-        compose.onNodeWithContentDescription("导入照片").performClick()
+        importPhotoFromCamera()
         compose.activityRule.scenario.recreate()
         compose.onNodeWithContentDescription("设置").performClick()
         compose.onNodeWithText("显示评分").performScrollTo().assertIsOn()
@@ -156,39 +159,60 @@ class MainActivityTest {
         compose.onNodeWithText("仅用于比较同一张照片的不同裁剪").assertExists()
         compose.onNodeWithText("显示评分").assertIsOff().performClick().assertIsOn()
         compose.onNodeWithContentDescription("返回").performClick()
-        compose.onNodeWithContentDescription("导入照片").performClick()
+        importPhotoFromCamera()
         compose.onNodeWithContentDescription("设置").performClick()
         compose.onNodeWithText("显示评分").assertIsOn()
         compose.activityRule.scenario.recreate()
         compose.onNodeWithText("显示评分").assertIsOn().performClick().assertIsOff()
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
-        compose.onNodeWithText("选择照片").assertExists()
+        compose.onNodeWithText("换一张照片").assertExists()
     }
 
     @Test
     fun analysisToolbarAndSystemBackBothReturnToTheCamera() {
-        compose.onNodeWithContentDescription("导入照片").performClick()
-        compose.onNodeWithText("选择照片").assertExists()
+        importPhotoFromCamera()
+        compose.onNodeWithText("换一张照片").assertExists()
         compose.onNodeWithContentDescription("返回拍摄").performClick()
         compose.onNodeWithContentDescription("导入照片").assertExists()
-        compose.onNodeWithContentDescription("导入照片").performClick()
+        importPhotoFromCamera()
         compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithContentDescription("导入照片").assertExists()
-        compose.onNodeWithText("选择照片").assertDoesNotExist()
+        compose.onNodeWithText("换一张照片").assertDoesNotExist()
     }
 
     @Test
-    fun launchAndCancelledPhotoSelectionKeepEditingActionsHidden() {
+    fun cameraImportOpensPickerAndCancellationKeepsTheCameraVisible() {
         compose.onNodeWithContentDescription("导入照片").performClick()
-        compose.onNodeWithText("选择照片").assertExists()
-        compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
-        compose.onNodeWithText("选择照片").performClick()
         val request = shadowOf(compose.activity).nextStartedActivityForResult
         assertNotNull(request)
         assertEquals("image/*", request.intent.type)
         compose.runOnIdle { shadowOf(compose.activity).receiveResult(request.intent, Activity.RESULT_CANCELED, null) }
+        compose.onNodeWithContentDescription("导入照片").assertExists()
+        compose.onNodeWithContentDescription("返回拍摄").assertDoesNotExist()
         compose.onNodeWithContentDescription("分析构图").assertDoesNotExist()
-        compose.onNodeWithText("选择照片").assertExists()
+        assertOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+    }
+
+    private fun importPhotoFromCamera() {
+        compose.onNodeWithContentDescription("导入照片").performClick()
+        val request = shadowOf(compose.activity).nextStartedActivityForResult
+        assertNotNull(request)
+        val file = File.createTempFile("import-photo-", ".jpg", compose.activity.cacheDir)
+        try {
+            val bitmap = Bitmap.createBitmap(48, 36, Bitmap.Config.ARGB_8888)
+            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it) }
+            bitmap.recycle()
+            compose.runOnIdle {
+                shadowOf(compose.activity).receiveResult(
+                    request.intent, Activity.RESULT_OK, Intent().setData(Uri.fromFile(file))
+                )
+            }
+            compose.waitUntil(10_000) {
+                compose.onAllNodes(hasText("换一张照片")).fetchSemanticsNodes().isNotEmpty()
+            }
+        } finally {
+            file.delete()
+        }
     }
 
     private fun assertOrientation(expected: Int) {
