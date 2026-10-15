@@ -32,10 +32,10 @@ internal fun CameraPreview(
     onFrameSource: ((() -> Bitmap?)?) -> Unit = {},
     onScene: (IntArray) -> Unit = {},
     zoom: CameraZoom? = null,
-    meteringEnabled: Boolean = true
+    meteringEnabled: Boolean = true,
+    showLevel: Boolean = false
 ) {
     val context = LocalContext.current
-    val owner = LocalLifecycleOwner.current
     val controller = capture.controller
     val preview = remember(controller) {
         PreviewView(context).apply {
@@ -45,18 +45,45 @@ internal fun CameraPreview(
             this.controller = controller
         }
     }
-    var stream by remember { mutableStateOf(PreviewView.StreamState.IDLE) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val sceneObserver by rememberUpdatedState(onScene)
+    val status = BindCameraPreview(capture, preview, onFrameSource, onScene)
     val metering = rememberCameraMetering(capture)
     ObserveCameraZoom(controller, zoom)
-    ObserveCameraMetering(controller, metering, meteringEnabled && stream == PreviewView.StreamState.STREAMING)
+    ObserveCameraMetering(
+        controller,
+        metering,
+        meteringEnabled && status.stream == PreviewView.StreamState.STREAMING
+    )
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
+        CameraPreviewNotice(status.error, status.stream)
+        CameraLevel(showLevel && status.stream == PreviewView.StreamState.STREAMING)
+        CameraMeteringControls(metering.state, metering::requestExposure)
+    }
+}
+
+private class CameraPreviewStatus {
+    var stream by mutableStateOf(PreviewView.StreamState.IDLE)
+    var error by mutableStateOf<String?>(null)
+}
+
+@Composable
+private fun BindCameraPreview(
+    capture: CameraCapture,
+    preview: PreviewView,
+    onFrameSource: ((() -> Bitmap?)?) -> Unit,
+    onScene: (IntArray) -> Unit
+): CameraPreviewStatus {
+    val context = LocalContext.current
+    val owner = LocalLifecycleOwner.current
+    val controller = capture.controller
+    val status = remember(controller) { CameraPreviewStatus() }
+    val sceneObserver by rememberUpdatedState(onScene)
     DisposableEffect(controller, owner) {
         var active = true
         val scenes = CameraSceneStream(controller) { sceneObserver(it) }.apply { start() }
-        onFrameSource { if (stream == PreviewView.StreamState.STREAMING) preview.bitmap else null }
+        onFrameSource { if (status.stream == PreviewView.StreamState.STREAMING) preview.bitmap else null }
         val observer = Observer<PreviewView.StreamState> {
-            stream = it
+            status.stream = it
             capture.previewReady(it == PreviewView.StreamState.STREAMING)
         }
         preview.previewStreamState.observe(owner, observer)
@@ -65,7 +92,7 @@ internal fun CameraPreview(
             controller.unbind()
             preview.controller = null
             Log.e("OkuloCamera", "Camera initialization failed", failure)
-            error = "相机启动失败，请重新进入拍摄页。"
+            status.error = "相机启动失败，请重新进入拍摄页。"
         }
         initialization.addListener(
             {
@@ -92,11 +119,7 @@ internal fun CameraPreview(
             preview.controller = null
         }
     }
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
-        CameraPreviewNotice(error, stream)
-        CameraMeteringControls(metering.state, metering::requestExposure)
-    }
+    return status
 }
 
 @Composable

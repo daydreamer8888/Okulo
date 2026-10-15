@@ -167,6 +167,7 @@ private fun AppPageContent(
             keepOriginal = settings.keepCaptureOriginal,
             minimumCropArea = settings.minimumCropArea,
             freezeComposition = settings.freezeComposition,
+            showLevel = settings.showLevel,
             onImportPhoto = navigation.importPhoto,
             onSettings = navigation.settings,
             modifier = Modifier.fillMaxSize()

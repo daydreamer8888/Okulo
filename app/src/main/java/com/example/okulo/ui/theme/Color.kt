@@ -88,3 +88,5 @@ internal val MonochromeDark = darkColorScheme(
 
 internal val WarningLight = Color(0xFF715500)
 internal val WarningDark = Color(0xFFEDCE76)
+
+internal val LevelAlignedDark = Color(0xFFB4D6BC)

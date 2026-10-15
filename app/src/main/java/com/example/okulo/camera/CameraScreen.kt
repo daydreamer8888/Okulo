@@ -42,7 +42,8 @@ internal fun CameraScreen(
     showScores: Boolean = false,
     keepOriginal: Boolean = true,
     minimumCropArea: Float = DEFAULT_MINIMUM_CROP_AREA,
-    freezeComposition: Boolean = false
+    freezeComposition: Boolean = false,
+    showLevel: Boolean = false
 ) {
     val context = LocalContext.current
     val framing by composition.state.collectAsState()
@@ -96,7 +97,7 @@ internal fun CameraScreen(
         onViewPhoto = { openCapturedPhoto(context, capture.state.savedPhoto) }
     ) {
         if (permission.granted) {
-            CameraLiveView(capture, composition, zoom, frameActions) { frameSource = it }
+            CameraLiveView(capture, composition, zoom, frameActions, showLevel) { frameSource = it }
         } else {
             CameraPermissionNotice(permission.denied, permission.request)
         }
@@ -140,6 +141,7 @@ private fun CameraLiveView(
     composition: CameraComposition,
     zoom: CameraZoom,
     frameActions: CameraFrameActions,
+    showLevel: Boolean = false,
     onFrameSource: ((() -> Bitmap?)?) -> Unit
 ) {
     val framing by composition.state.collectAsState()
@@ -168,6 +170,7 @@ private fun CameraLiveView(
                 onFrameSource = onFrameSource,
                 onScene = composition::observeScene,
                 zoom = zoom,
+                showLevel = showLevel && framing.frozenPhoto == null && framing.crop == null,
                 meteringEnabled = !framing.busy &&
                     framing.crop == null && framing.frozenPhoto == null
             )
