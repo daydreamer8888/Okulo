@@ -22,8 +22,6 @@ internal fun CameraViewfinder(
     gestureModifier: Modifier = Modifier,
     controls: @Composable BoxScope.() -> Unit = {},
     frozenPhoto: FrozenCameraPhoto? = null,
-    subjectState: CameraCompositionState = CameraCompositionState(),
-    subjectActions: CameraSubjectActions = CameraSubjectActions(),
     preview: @Composable () -> Unit
 ) {
     Box(Modifier.fillMaxSize()) {
@@ -37,10 +35,9 @@ internal fun CameraViewfinder(
                     modifier = Modifier.fillMaxSize().pointerInput(frozenPhoto) { detectTapGestures {} }
                 )
             }
-            if (crop != null && !subjectState.selectingSubject) {
+            if (crop != null) {
                 CropFrame(crop, actions, Modifier.fillMaxSize().testTag("camera-crop"))
             }
-            CameraSubjectOverlay(subjectState, subjectActions)
         }
         controls()
     }

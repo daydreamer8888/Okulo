@@ -42,7 +42,6 @@ internal fun CameraLayout(
     composition: CameraCompositionState = CameraCompositionState(),
     compositionActions: CameraCompositionActions = CameraCompositionActions(),
     showScores: Boolean = false,
-    subjectActions: CameraSubjectActions = CameraSubjectActions(),
     recommendationEnabled: Boolean = capture.ready,
     viewfinder: @Composable () -> Unit
 ) {
@@ -81,11 +80,10 @@ internal fun CameraLayout(
                         SavedPhotoButton(capture.savedPhoto, onViewPhoto)
                     }
                     Box(Modifier.align(Alignment.Center)) { CaptureButton(capture, onCapture) }
-                    Row(
-                        Modifier.align(Alignment.CenterEnd).padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        Modifier.align(Alignment.CenterEnd).width(recentPhotoWidth),
+                        contentAlignment = Alignment.Center
                     ) {
-                        CameraSubjectButton(composition, recommendationEnabled, subjectActions)
                         CameraRecommendButton(composition, recommendationEnabled, compositionActions)
                     }
                 }

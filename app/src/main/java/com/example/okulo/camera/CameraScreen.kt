@@ -79,12 +79,6 @@ internal fun CameraScreen(
             composition::dismissError
         ),
         showScores = showScores,
-        subjectActions = CameraSubjectActions(
-            frameActions::selectSubject,
-            composition::cancelSubjectSelection,
-            composition::commitSubject,
-            composition::clearSubject
-        ),
         recommendationEnabled = capture.state.ready && !zoom.changing &&
             !capture.state.saving && !capture.state.preparing,
         onMessageDismissed = capture::dismissMessage,
@@ -154,14 +148,8 @@ private fun CameraLiveView(
                     enabled = capture.state.ready && canZoom
                 )
             },
-            frozenPhoto = framing.frozenPhoto,
-            subjectState = framing,
-            subjectActions = CameraSubjectActions(
-                frameActions::selectSubject,
-                composition::cancelSubjectSelection,
-                composition::commitSubject,
-                composition::clearSubject
-            )
+            frozenPhoto = framing.frozenPhoto
+
         ) {
             CameraPreview(
                 capture,

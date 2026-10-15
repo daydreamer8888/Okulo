@@ -1,5 +1,11 @@
 package com.example.okulo.camera
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -22,6 +28,27 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CameraNavigationUiTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun cameraActionsMirrorTheRecentPhotoAroundTheShutterWithoutSubjectSelection() {
+        compose.setContent {
+            OkuloTheme {
+                Box(Modifier.size(320.dp, 600.dp).testTag("camera-layout")) {
+                    CameraLayout({}, capture = CaptureUiState(ready = true)) {}
+                }
+            }
+        }
+        compose.onNodeWithContentDescription("框选主体").assertDoesNotExist()
+        val screen = compose.onNodeWithTag("camera-layout").fetchSemanticsNode().boundsInRoot
+        val recent = compose.onNodeWithContentDescription("查看最新照片").fetchSemanticsNode().boundsInRoot
+        val shutter = compose.onNodeWithContentDescription("拍照").fetchSemanticsNode().boundsInRoot
+        val recommend = compose.onNodeWithContentDescription("推荐构图").fetchSemanticsNode().boundsInRoot
+        assertEquals(screen.center.x, shutter.center.x, 1f)
+        assertEquals((screen.left + shutter.left) / 2f, recent.center.x, 1f)
+        assertEquals(shutter.center.x - recent.center.x, recommend.center.x - shutter.center.x, 1f)
+        assertEquals(recent.center.y, recommend.center.y, 1f)
+        assertTrue(recent.right <= shutter.left && shutter.right <= recommend.left)
+    }
 
     @Test
     fun photoImportAndSettingsShareATrailingToolbarGroup() {
