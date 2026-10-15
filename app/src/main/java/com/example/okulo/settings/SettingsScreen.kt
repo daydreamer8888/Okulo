@@ -31,7 +31,11 @@ internal fun SettingsScreen(
     cropWarningPercent: Int = DEFAULT_CROP_WARNING_PERCENT,
     onCropWarning: (Int) -> Unit = {},
     freezeComposition: Boolean = false,
-    onFreezeComposition: (Boolean) -> Unit = {}
+    onFreezeComposition: (Boolean) -> Unit = {},
+    showLevel: Boolean = false,
+    onShowLevel: (Boolean) -> Unit = {},
+    showHighlights: Boolean = false,
+    onShowHighlights: (Boolean) -> Unit = {}
 ) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         TopAppBar(
@@ -42,6 +46,8 @@ internal fun SettingsScreen(
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             appearance()
             SettingsGroup("拍摄") {
+                ShootingAidSetting("水平仪", showLevel, onShowLevel)
+                ShootingAidSetting("过曝提示", showHighlights, onShowHighlights)
                 ListItem(
                     colors = settingsItemColors(),
                     headlineContent = { Text("推荐构图时定格画面") },
@@ -82,4 +88,14 @@ private fun AnalysisSettings(
         )
         cropWarning()
     }
+}
+
+@Composable
+private fun ShootingAidSetting(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    ListItem(
+        colors = settingsItemColors(),
+        headlineContent = { Text(label) },
+        trailingContent = { Switch(checked = checked, onCheckedChange = null) },
+        modifier = Modifier.toggleable(checked, role = Role.Switch, onValueChange = onChange)
+    )
 }

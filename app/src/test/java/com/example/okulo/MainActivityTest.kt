@@ -55,6 +55,23 @@ class MainActivityTest {
     }
 
     @Test
+    fun shootingAidsStartOffAndPersistIndependentlyAcrossRecreation() {
+        compose.onNodeWithContentDescription("设置").performClick()
+        val level = compose.onNodeWithText("水平仪")
+        val highlights = compose.onNodeWithText("过曝提示")
+        level.performScrollTo().assertIsOff().performClick().assertIsOn()
+        highlights.performScrollTo().assertIsOff().performClick().assertIsOn()
+        compose.activityRule.scenario.recreate()
+        level.performScrollTo().assertIsOn().performClick().assertIsOff()
+        highlights.performScrollTo().assertIsOn()
+        compose.onNodeWithText("同时保存原图").performScrollTo().assertIsOn()
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithContentDescription("设置").performClick()
+        level.performScrollTo().assertIsOff()
+        highlights.performScrollTo().assertIsOn()
+    }
+
+    @Test
     fun capturePreferencesPersistIndependentlyAcrossRecreation() {
         compose.onNodeWithContentDescription("设置").performClick()
         compose.onNodeWithText("推荐构图时定格画面").assertIsOn().performClick().assertIsOff()

@@ -179,6 +179,10 @@ private fun AppPageContent(
             onKeepOriginal = settings::setCaptureOriginal,
             freezeComposition = settings.freezeComposition,
             onFreezeComposition = settings::updateFreezeComposition,
+            showLevel = settings.showLevel,
+            onShowLevel = settings::updateShowLevel,
+            showHighlights = settings.showHighlights,
+            onShowHighlights = settings::updateShowHighlights,
             cropWarningPercent = settings.cropWarningPercent,
             onCropWarning = settings::updateCropWarningPercent,
             appearance = {

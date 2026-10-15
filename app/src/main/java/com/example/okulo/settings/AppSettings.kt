@@ -21,6 +21,22 @@ internal class AppSettings(context: Context) {
         cropWarningPercent = percent
     }
 
+    var showLevel by mutableStateOf(preferences.getBoolean("show_level", false))
+        private set
+
+    fun updateShowLevel(enabled: Boolean) {
+        preferences.edit().putBoolean("show_level", enabled).apply()
+        showLevel = enabled
+    }
+
+    var showHighlights by mutableStateOf(preferences.getBoolean("show_highlights", false))
+        private set
+
+    fun updateShowHighlights(enabled: Boolean) {
+        preferences.edit().putBoolean("show_highlights", enabled).apply()
+        showHighlights = enabled
+    }
+
     var freezeComposition by mutableStateOf(preferences.getBoolean("freeze_composition", true))
         private set
 
