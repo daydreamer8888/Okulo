@@ -52,7 +52,11 @@ internal fun PhotoAspectControls(state: PhotoState, onAspect: (CropAspect) -> Un
                     ListItem(
                         headlineContent = { Text(aspect.title) },
                         trailingContent = { RadioButton(selected, onClick = null) },
-                        modifier = Modifier.selectable(selected, enabled = enabled && !state.busy, role = Role.RadioButton) {
+                        modifier = Modifier.selectable(
+                            selected,
+                            enabled = enabled && !state.busy,
+                            role = Role.RadioButton
+                        ) {
                             expanded = false
                             onAspect(aspect)
                         }

@@ -12,10 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.example.okulo.photo.recommendation
 import com.example.okulo.ui.crop.CropActions
@@ -50,9 +50,13 @@ class CameraFrozenUiTest {
             compose.setContent {
                 OkuloTheme(darkTheme = true) {
                     CameraLayout(
-                        {}, capture = capture.value, composition = state.value,
+                        {},
+                        capture = capture.value,
+                        composition = state.value,
                         onCapture = { capture.value = capture.value.copy(saving = true) },
-                        compositionActions = CameraCompositionActions(dismiss = { state.value = CameraCompositionState() })
+                        compositionActions = CameraCompositionActions(
+                            dismiss = { state.value = CameraCompositionState() }
+                        )
                     ) {
                         CameraViewfinder(state.value.crop, CropActions(), frozenPhoto = state.value.frozenPhoto) {
                             Text("实时取景")

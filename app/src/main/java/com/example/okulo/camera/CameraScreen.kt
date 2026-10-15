@@ -75,8 +75,11 @@ internal fun CameraScreen(
         onSettings = onSettings,
         modifier = modifier,
         capture = capture.state.copy(
-            ready = if (framing.frozenPhoto != null) !framing.busy else
+            ready = if (framing.frozenPhoto != null) {
+                !framing.busy
+            } else {
                 capture.state.ready && !(freezeComposition && framing.busy)
+            }
         ),
         composition = framing,
         compositionActions = CameraCompositionActions(

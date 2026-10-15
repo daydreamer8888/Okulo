@@ -61,7 +61,10 @@ class CameraFrozenWorkflowTest {
         }
         CameraCapture(context, writer).use { capture ->
             try {
-                composition.recommend(checkNotNull(photo.image.copy(Bitmap.Config.ARGB_8888, false)), frozenPhoto = photo)
+                composition.recommend(
+                    checkNotNull(photo.image.copy(Bitmap.Config.ARGB_8888, false)),
+                    frozenPhoto = photo
+                )
                 await { !composition.state.value.busy }
                 compose.setContent {
                     OkuloTheme(darkTheme = true) {
@@ -84,10 +87,7 @@ class CameraFrozenWorkflowTest {
                 compose.onNodeWithText("已定格").assertDoesNotExist()
                 compose.onNodeWithContentDescription("返回取景").assertDoesNotExist()
                 compose.onNodeWithContentDescription("拍照").assertExists()
-                compose.waitUntil(10_000) {
-                    compose.onAllNodes(hasContentDescription("查看最新照片") and isEnabled())
-                        .fetchSemanticsNodes().isNotEmpty()
-                }
+                awaitRecentPhoto()
                 assertFalse(composition.state.value.active)
                 assertEquals(2, writes.get())
                 await { !file.exists() && photo.image.isRecycled }
@@ -132,6 +132,13 @@ class CameraFrozenWorkflowTest {
                 composition.close()
                 assertTrue(engine.closed.await(10, TimeUnit.SECONDS))
             }
+        }
+    }
+
+    private fun awaitRecentPhoto() {
+        compose.waitUntil(10_000) {
+            compose.onAllNodes(hasContentDescription("查看最新照片") and isEnabled())
+                .fetchSemanticsNodes().isNotEmpty()
         }
     }
 

@@ -5,11 +5,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -103,12 +103,11 @@ private fun OkuloApp(viewModel: PhotoViewModel, onCameraPage: (Boolean) -> Unit,
                 page = AppPage.Settings
             }
         },
-        analyze = {
+        importPhoto = {
             choosingPhoto = true
             picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
         }
     )
-    BackHandler(enabled = page != AppPage.Camera, onBack = navigation.back)
     val systemDark = isSystemInDarkTheme()
     val selectedDark = when (settings.theme) {
         AppTheme.System -> systemDark
@@ -126,15 +125,27 @@ private fun OkuloApp(viewModel: PhotoViewModel, onCameraPage: (Boolean) -> Unit,
         label = "page-background"
     )
     Box(Modifier.fillMaxSize().background(background)) {
-        PageTransition(page, Modifier.fillMaxSize()) { visible ->
-            OkuloTheme(
-                darkTheme = visible == AppPage.Camera || selectedDark,
-                dynamicColor = settings.dynamicColor && visible != AppPage.Camera
-            ) {
-                Scaffold(Modifier.fillMaxSize(), containerColor = MaterialTheme.colorScheme.background) { padding ->
-                    Column(Modifier.fillMaxSize().padding(padding)) {
-                        AppPageContent(viewModel, settings, camera, navigation.copy(page = visible))
-                    }
+        AppPages(viewModel, settings, camera, navigation, selectedDark)
+    }
+    BackHandler(enabled = page != AppPage.Camera, onBack = navigation.back)
+}
+
+@Composable
+private fun AppPages(
+    viewModel: PhotoViewModel,
+    settings: AppSettings,
+    camera: CameraSession,
+    navigation: AppNavigation,
+    selectedDark: Boolean
+) {
+    PageTransition(navigation.page, Modifier.fillMaxSize()) { visible ->
+        OkuloTheme(
+            darkTheme = visible == AppPage.Camera || selectedDark,
+            dynamicColor = settings.dynamicColor && visible != AppPage.Camera
+        ) {
+            Scaffold(Modifier.fillMaxSize(), containerColor = MaterialTheme.colorScheme.background) { padding ->
+                Column(Modifier.fillMaxSize().padding(padding)) {
+                    AppPageContent(viewModel, settings, camera, navigation.copy(page = visible))
                 }
             }
         }
@@ -156,7 +167,7 @@ private fun AppPageContent(
             keepOriginal = settings.keepCaptureOriginal,
             minimumCropArea = settings.minimumCropArea,
             freezeComposition = settings.freezeComposition,
-            onImportPhoto = navigation.analyze,
+            onImportPhoto = navigation.importPhoto,
             onSettings = navigation.settings,
             modifier = Modifier.fillMaxSize()
         )
@@ -193,7 +204,7 @@ private data class AppNavigation(
     val page: AppPage,
     val back: () -> Unit,
     val settings: () -> Unit,
-    val analyze: () -> Unit
+    val importPhoto: () -> Unit
 )
 
 @Composable

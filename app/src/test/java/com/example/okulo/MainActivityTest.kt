@@ -2,11 +2,10 @@ package com.example.okulo
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
-import java.io.File
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.net.Uri
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
@@ -30,6 +29,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
@@ -204,7 +204,9 @@ class MainActivityTest {
             bitmap.recycle()
             compose.runOnIdle {
                 shadowOf(compose.activity).receiveResult(
-                    request.intent, Activity.RESULT_OK, Intent().setData(Uri.fromFile(file))
+                    request.intent,
+                    Activity.RESULT_OK,
+                    Intent().setData(Uri.fromFile(file))
                 )
             }
             compose.waitUntil(10_000) {

@@ -18,9 +18,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,26 +54,7 @@ internal fun CameraLayout(
         val previewWidth = minOf(maxWidth, (maxHeight - 264.dp).coerceAtLeast(0.dp) * ratio)
         val recentPhotoWidth = (maxWidth - 88.dp) / 2
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(
-                Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (composition.active) {
-                    ActionIconButton(
-                        if (composition.busy) R.drawable.ic_close else R.drawable.ic_arrow_back,
-                        if (composition.busy) "取消推荐" else "返回取景",
-                        compositionActions.dismiss,
-                        enabled = !capture.saving
-                    )
-                }
-                if (composition.frozenPhoto != null) {
-                    Text("已定格", style = MaterialTheme.typography.labelMedium)
-                }
-                Spacer(Modifier.weight(1f))
-                ActionIconButton(R.drawable.ic_photo, "导入照片", onImportPhoto)
-                ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
-            }
+            CameraToolbar(composition, compositionActions, capture.saving, onImportPhoto, onSettings)
             Box(Modifier.width(previewWidth).aspectRatio(ratio)) { viewfinder() }
             CameraCompositionTools(composition, showScores)
             Column(
@@ -96,7 +77,9 @@ internal fun CameraLayout(
                     }
                     Box(Modifier.align(Alignment.Center)) {
                         CaptureButton(
-                            capture.copy(ready = capture.ready && !(composition.frozenPhoto != null && composition.busy)),
+                            capture.copy(
+                                ready = capture.ready && !(composition.frozenPhoto != null && composition.busy)
+                            ),
                             onCapture,
                             frozen = composition.frozenPhoto != null
                         )
@@ -110,6 +93,36 @@ internal fun CameraLayout(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CameraToolbar(
+    state: CameraCompositionState,
+    actions: CameraCompositionActions,
+    saving: Boolean,
+    onImportPhoto: () -> Unit,
+    onSettings: () -> Unit
+) {
+    Row(
+        Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (state.active) {
+            ActionIconButton(
+                if (state.busy) R.drawable.ic_close else R.drawable.ic_arrow_back,
+                if (state.busy) "取消推荐" else "返回取景",
+                actions.dismiss,
+                enabled = !saving
+            )
+        }
+        if (state.frozenPhoto != null) {
+            Text("已定格", style = MaterialTheme.typography.labelMedium)
+        }
+        Spacer(Modifier.weight(1f))
+        ActionIconButton(R.drawable.ic_photo, "导入照片", onImportPhoto)
+        ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
     }
 }
 
