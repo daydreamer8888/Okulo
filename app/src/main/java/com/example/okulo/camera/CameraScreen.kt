@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +46,9 @@ internal fun CameraScreen(
 ) {
     val context = LocalContext.current
     val framing by composition.state.collectAsState()
+    BackHandler(enabled = framing.active) {
+        if (!capture.state.saving) composition.dismiss()
+    }
     val zoom = remember(capture, composition) {
         CameraZoom(
             capture.controller::setZoomRatio,
@@ -144,16 +148,17 @@ private fun CameraLiveView(
             CropActions(composition::updateCrop, frameActions::score),
             gestureModifier = Modifier.cameraPinchZoom(zoom, canZoom),
             controls = {
-                CameraZoomControls(
-                    zoom.state,
-                    zoom::requestRatio,
-                    zoom::requestLinear,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    enabled = capture.state.ready && canZoom
-                )
+                if (framing.frozenPhoto == null) {
+                    CameraZoomControls(
+                        zoom.state,
+                        zoom::requestRatio,
+                        zoom::requestLinear,
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        enabled = capture.state.ready && canZoom
+                    )
+                }
             },
             frozenPhoto = framing.frozenPhoto
-
         ) {
             CameraPreview(
                 capture,

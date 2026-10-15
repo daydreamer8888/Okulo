@@ -3,6 +3,9 @@ package com.example.okulo.camera
 import android.graphics.Bitmap
 import android.os.Looper
 import androidx.camera.core.ZoomState
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -45,6 +48,26 @@ import java.util.concurrent.TimeUnit
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CameraZoomUiTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun systemBackClosesZoomBeforeLeavingTheCamera() {
+        lateinit var back: OnBackPressedDispatcher
+        var exits = 0
+        compose.setContent {
+            back = checkNotNull(LocalOnBackPressedDispatcherOwner.current).onBackPressedDispatcher
+            BackHandler { exits++ }
+            OkuloTheme {
+                CameraZoomControls(DeviceZoom(1f, 8f, 1f, 0f), {}, {})
+            }
+        }
+        compose.onNodeWithContentDescription("变焦，当前 1×").performClick()
+        compose.onNodeWithTag("zoom-panel").assertExists()
+        compose.runOnIdle { back.onBackPressed() }
+        compose.onNodeWithTag("zoom-panel").assertDoesNotExist()
+        assertEquals(0, exits)
+        compose.runOnIdle { back.onBackPressed() }
+        assertEquals(1, exits)
+    }
 
     @Test
     fun compactSliderUsesDeviceStateWithoutMovingThePreviewOrShutter() {

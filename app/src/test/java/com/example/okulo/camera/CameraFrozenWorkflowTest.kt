@@ -3,6 +3,9 @@ package com.example.okulo.camera
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Looper
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
@@ -91,6 +94,41 @@ class CameraFrozenWorkflowTest {
             } finally {
                 gate.release()
                 exported.delete()
+                composition.close()
+                assertTrue(engine.closed.await(10, TimeUnit.SECONDS))
+            }
+        }
+    }
+
+    @Test
+    fun systemBackCancelsPendingCaptureBeforeLeavingTheCamera() {
+        val context = RuntimeEnvironment.getApplication()
+        val engine = TestAnalyzer()
+        val composition = CameraComposition(engine)
+        var captured: ((FrozenCameraPhoto?) -> Unit)? = null
+        var exits = 0
+        lateinit var back: OnBackPressedDispatcher
+        CameraCapture(context).use { capture ->
+            try {
+                composition.recommendFrozen({ captured = it }, 0.2f)
+                compose.setContent {
+                    back = checkNotNull(LocalOnBackPressedDispatcherOwner.current).onBackPressedDispatcher
+                    BackHandler { exits++ }
+                    OkuloTheme { CameraScreen(capture, composition, {}, freezeComposition = true) }
+                }
+                compose.onNodeWithContentDescription("取消推荐").assertExists()
+                compose.runOnIdle { back.onBackPressed() }
+                assertFalse(composition.state.value.active)
+                assertEquals(0, exits)
+                val file = File.createTempFile("late-frozen-", ".jpg", context.cacheDir)
+                val late = FrozenCameraPhoto(Bitmap.createBitmap(12, 16, Bitmap.Config.ARGB_8888), file)
+                compose.runOnIdle { checkNotNull(captured)(late) }
+                assertTrue(late.image.isRecycled)
+                assertFalse(file.exists())
+                assertEquals(0, engine.analysisCalls.get())
+                compose.runOnIdle { back.onBackPressed() }
+                assertEquals(1, exits)
+            } finally {
                 composition.close()
                 assertTrue(engine.closed.await(10, TimeUnit.SECONDS))
             }

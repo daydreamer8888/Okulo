@@ -1,6 +1,7 @@
 package com.example.okulo.camera
 
 import androidx.camera.core.ZoomState
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -45,6 +46,7 @@ internal fun CameraZoomControls(
 ) {
     if (state == null || state.minZoomRatio >= state.maxZoomRatio) return
     var expanded by remember { mutableStateOf(false) }
+    BackHandler(enabled = expanded) { expanded = false }
     val interactions = remember { MutableInteractionSource() }
     val dragged by interactions.collectIsDraggedAsState()
     val focused by interactions.collectIsFocusedAsState()
