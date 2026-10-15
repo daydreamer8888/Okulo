@@ -8,7 +8,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -16,7 +15,6 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
-import androidx.test.espresso.Espresso.pressBack
 import androidx.test.filters.SdkSuppress
 import androidx.test.rule.GrantPermissionRule
 import com.example.okulo.composition.createCompositionAnalyzer
@@ -60,18 +58,14 @@ class CameraFrozenFramingTest {
             val frozen = compose.runOnIdle { checkNotNull(composition.state.value.frozenPhoto) }
             val source = File(checkNotNull(frozen.uri.path))
             compose.onNodeWithContentDescription("定格画面").assertExists()
-            compose.onNodeWithContentDescription("推荐构图").performClick()
-            compose.onNodeWithText("恢复").assertIsNotEnabled()
-            pressBack()
+            compose.onNodeWithContentDescription("恢复").assertIsNotEnabled()
             val before = compose.runOnIdle { checkNotNull(composition.state.value.crop) }
             compose.onNodeWithTag("camera-crop").performTouchInput {
                 val start = Offset(width * before.right, height * (before.top + before.bottom) / 2f)
                 swipe(start, start - Offset(width * 0.08f, 0f), durationMillis = 300)
             }
             awaitScore(composition)
-            compose.onNodeWithContentDescription("推荐构图").performClick()
-            compose.onNodeWithText("恢复").assertIsEnabled()
-            pressBack()
+            compose.onNodeWithContentDescription("恢复").assertIsEnabled()
             val crop = compose.runOnIdle { checkNotNull(composition.state.value.crop) }
             assertTrue(crop.width < before.width)
             assertEquals(frozen, compose.runOnIdle { composition.state.value.frozenPhoto })
@@ -93,8 +87,7 @@ class CameraFrozenFramingTest {
                     image.recycle()
                 }
             }
-            compose.onNodeWithContentDescription("推荐构图").performClick()
-            compose.onNodeWithText("关闭").performClick()
+            compose.onNodeWithContentDescription("返回取景").performClick()
             compose.onNodeWithContentDescription("定格画面").assertDoesNotExist()
             compose.waitUntil(10_000) { !source.exists() }
         } finally {

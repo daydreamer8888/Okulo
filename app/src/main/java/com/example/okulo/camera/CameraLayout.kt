@@ -55,6 +55,14 @@ internal fun CameraLayout(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (composition.active) {
+                    ActionIconButton(
+                        if (composition.busy) R.drawable.ic_close else R.drawable.ic_arrow_back,
+                        if (composition.busy) "取消推荐" else "返回取景",
+                        compositionActions.dismiss,
+                        enabled = !capture.saving
+                    )
+                }
                 Spacer(Modifier.weight(1f))
                 ActionIconButton(R.drawable.ic_photo, "导入照片", onImportPhoto)
                 ActionIconButton(R.drawable.ic_settings, "设置", onSettings)
@@ -84,7 +92,7 @@ internal fun CameraLayout(
                         Modifier.align(Alignment.CenterEnd).width(recentPhotoWidth),
                         contentAlignment = Alignment.Center
                     ) {
-                        CameraRecommendButton(composition, recommendationEnabled, compositionActions)
+                        CameraRecommendButton(composition, recommendationEnabled, compositionActions, capture.saving)
                     }
                 }
             }

@@ -12,7 +12,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -21,7 +20,6 @@ import androidx.compose.ui.test.swipe
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.Espresso.pressBack
 import androidx.test.espresso.matcher.ViewMatchers.withContentDescription
 import androidx.test.filters.SdkSuppress
 import androidx.test.rule.GrantPermissionRule
@@ -74,16 +72,11 @@ class CameraFramingTest {
             compose.onNodeWithTag("camera-crop").assertExists()
             compose.onNodeWithTag("composition-scores").assertExists()
             assertPreviewStreaming()
-            compose.onNodeWithContentDescription("推荐构图").performClick()
-            compose.onNodeWithText("恢复").assertIsNotEnabled()
-            pressBack()
+            compose.onNodeWithContentDescription("恢复").assertIsNotEnabled()
             resizeRightEdge(composition)
             awaitScore(composition)
-            compose.onNodeWithContentDescription("推荐构图").performClick()
-            compose.onNodeWithText("恢复").assertIsEnabled().performClick()
-            compose.onNodeWithContentDescription("推荐构图").performClick()
-            compose.onNodeWithText("恢复").assertIsNotEnabled()
-            pressBack()
+            compose.onNodeWithContentDescription("恢复").assertIsEnabled().performClick()
+            compose.onNodeWithContentDescription("恢复").assertIsNotEnabled()
             compose.runOnIdle {
                 assertEquals(composition.state.value.recommendation!!.crop, composition.state.value.crop)
             }
@@ -104,8 +97,7 @@ class CameraFramingTest {
             val savedArea = cropSize.first.toDouble() * cropSize.second / (sourceSize.first.toDouble() * sourceSize.second)
             assertEquals("Saved crop must match edited framing", area.toDouble(), savedArea, 0.02)
             assertPreviewStreaming()
-            compose.onNodeWithContentDescription("推荐构图").performClick()
-            compose.onNodeWithText("关闭").performClick()
+            compose.onNodeWithContentDescription("返回取景").performClick()
             compose.onNodeWithTag("camera-crop").assertDoesNotExist()
             assertPreviewStreaming()
         } finally {

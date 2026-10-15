@@ -3,23 +3,11 @@ package com.example.okulo.camera
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -36,11 +24,14 @@ internal data class CameraCompositionActions(
 )
 
 @Composable
-internal fun CameraCompositionTools(
-    state: CameraCompositionState,
-    showScores: Boolean
-) {
+internal fun CameraCompositionTools(state: CameraCompositionState, showScores: Boolean) {
     Box(Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
+        if (state.busy) {
+            LinearProgressIndicator(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp).align(Alignment.TopCenter)
+                    .semantics { contentDescription = "正在推荐构图" }
+            )
+        }
         CompositionScoreCard(
             state.originalScore,
             if (state.busy) state.cropScore ?: state.recommendation?.cropScore else state.cropScore,
@@ -54,50 +45,15 @@ internal fun CameraCompositionTools(
 internal fun CameraRecommendButton(
     state: CameraCompositionState,
     ready: Boolean,
-    actions: CameraCompositionActions
+    actions: CameraCompositionActions,
+    saving: Boolean = false
 ) {
-    val recommending = state.busy
-    var expanded by remember { mutableStateOf(false) }
-    LaunchedEffect(state.active, recommending) { if (!state.active || recommending) expanded = false }
-    Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-        ActionIconButton(
-            R.drawable.ic_analyze,
-            if (recommending) "取消推荐" else "推荐构图",
-            {
-                when {
-                    recommending -> actions.dismiss()
-                    state.crop != null -> expanded = true
-                    else -> actions.recommend()
-                }
-            },
-            enabled = ready || recommending,
-            iconModifier = if (recommending) Modifier.alpha(0f) else Modifier,
-            style = ActionIconStyle.Tonal
-        )
-        if (recommending) {
-            CircularProgressIndicator(
-                Modifier.size(24.dp).semantics { contentDescription = "正在推荐构图" },
-                strokeWidth = 2.dp
-            )
-        }
-        DropdownMenu(expanded, { expanded = false }, modifier = Modifier.widthIn(min = 128.dp)) {
-            DropdownMenuItem(
-                text = { Text("恢复") },
-                leadingIcon = { Icon(painterResource(R.drawable.ic_restore), contentDescription = null) },
-                enabled = state.canRestore,
-                onClick = {
-                    expanded = false
-                    actions.restore()
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("关闭") },
-                leadingIcon = { Icon(painterResource(R.drawable.ic_close), contentDescription = null) },
-                onClick = {
-                    expanded = false
-                    actions.dismiss()
-                }
-            )
-        }
-    }
+    val hasCrop = state.crop != null
+    ActionIconButton(
+        if (hasCrop) R.drawable.ic_restore else R.drawable.ic_analyze,
+        if (hasCrop) "恢复" else "推荐构图",
+        if (hasCrop) actions.restore else actions.recommend,
+        enabled = !state.busy && !saving && if (hasCrop) state.canRestore else ready,
+        style = ActionIconStyle.Tonal
+    )
 }
