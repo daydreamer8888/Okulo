@@ -63,7 +63,9 @@ internal fun CameraScreen(
         frozenCapture = if (freezeComposition) capture::freeze else null
     )
     val permission = rememberCameraPermission()
-    val onCapture = rememberCameraShutter(capture, framing, keepOriginal)
+    val onCapture = rememberCameraShutter(capture, framing, keepOriginal) { saved ->
+        if (composition.state.value.frozenPhoto === saved) composition.dismiss()
+    }
     CameraLayout(
         onImportPhoto = onImportPhoto,
         onSettings = onSettings,
@@ -98,13 +100,14 @@ internal fun CameraScreen(
 private fun rememberCameraShutter(
     capture: CameraCapture,
     framing: CameraCompositionState,
-    keepOriginal: Boolean
+    keepOriginal: Boolean,
+    onSaved: (FrozenCameraPhoto) -> Unit
 ): () -> Unit {
     val context = LocalContext.current
     val takePhoto = {
         val photo = framing.frozenPhoto
         if (photo != null) {
-            capture.saveFrozen(photo, framing.crop ?: CropBox.FullFrame, keepOriginal)
+            capture.saveFrozen(photo, framing.crop ?: CropBox.FullFrame, keepOriginal) { onSaved(photo) }
         } else {
             capture.takePhoto(framing.crop, keepOriginal)
         }

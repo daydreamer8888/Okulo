@@ -116,7 +116,12 @@ internal class CameraCapture(
     }
 
     @Suppress("TooGenericExceptionCaught") // Preserve an exported original if the crop export fails.
-    fun saveFrozen(photo: FrozenCameraPhoto, crop: CropBox, keepOriginal: Boolean) {
+    fun saveFrozen(
+        photo: FrozenCameraPhoto,
+        crop: CropBox,
+        keepOriginal: Boolean,
+        onSaved: () -> Unit = {}
+    ) {
         if (closed || state.saving || state.preparing) return
         val source = photo.retain()
         state = state.copy(saving = true, message = null)
@@ -125,7 +130,10 @@ internal class CameraCapture(
             try {
                 if (keepOriginal) original = saveOriginalPhoto(context.contentResolver, source.uri)
                 val cropped = writer.save(source.uri, PhotoTransform(), crop)
-                main.post { complete(cropped) }
+                main.post {
+                    complete(cropped)
+                    if (!closed) onSaved()
+                }
             } catch (failure: Exception) {
                 val retained = original
                 main.post {

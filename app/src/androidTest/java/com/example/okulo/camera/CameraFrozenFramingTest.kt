@@ -70,14 +70,14 @@ class CameraFrozenFramingTest {
             assertTrue(crop.width < before.width)
             assertEquals(frozen, compose.runOnIdle { composition.state.value.frozenPhoto })
             assertEquals(1, shots)
-            compose.onNodeWithContentDescription("保存").performClick()
-            compose.waitUntil(30_000) { compose.runOnIdle { !capture.state.saving && capture.state.savedPhoto != null } }
-            assertEquals(1, shots)
             val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(source.path, options)
             val rotated = ExifInterface(source).rotationDegrees % 180 != 0
             val sourceWidth = if (rotated) options.outHeight else options.outWidth
             val sourceHeight = if (rotated) options.outWidth else options.outHeight
+            compose.onNodeWithContentDescription("保存").performClick()
+            compose.waitUntil(30_000) { compose.runOnIdle { !capture.state.saving && capture.state.savedPhoto != null } }
+            assertEquals(1, shots)
             context.contentResolver.openInputStream(capture.state.savedPhoto!!)!!.use {
                 val image = checkNotNull(BitmapFactory.decodeStream(it))
                 try {
@@ -87,8 +87,9 @@ class CameraFrozenFramingTest {
                     image.recycle()
                 }
             }
-            compose.onNodeWithContentDescription("返回取景").performClick()
             compose.onNodeWithContentDescription("定格画面").assertDoesNotExist()
+            compose.onNodeWithContentDescription("返回取景").assertDoesNotExist()
+            compose.onNodeWithContentDescription("拍照").assertExists()
             compose.waitUntil(10_000) { !source.exists() }
         } finally {
             compose.runOnIdle {
