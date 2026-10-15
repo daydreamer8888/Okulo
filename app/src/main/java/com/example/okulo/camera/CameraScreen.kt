@@ -69,7 +69,7 @@ internal fun CameraScreen(
         onSettings = onSettings,
         modifier = modifier,
         capture = capture.state.copy(
-            ready = capture.state.ready && !framing.selectingSubject && !(freezeComposition && framing.busy)
+            ready = capture.state.ready && !(freezeComposition && framing.busy)
         ),
         composition = framing,
         compositionActions = CameraCompositionActions(
@@ -133,7 +133,7 @@ private fun CameraLiveView(
 ) {
     val framing by composition.state.collectAsState()
     val canZoom = !capture.state.saving && !capture.state.preparing &&
-        framing.frozenPhoto == null && !framing.selectingSubject
+        framing.frozenPhoto == null
     Box(Modifier.fillMaxSize().semantics { contentDescription = "取景区域" }) {
         CameraViewfinder(
             framing.crop,
@@ -156,7 +156,7 @@ private fun CameraLiveView(
                 onFrameSource = onFrameSource,
                 onScene = composition::observeScene,
                 zoom = zoom,
-                meteringEnabled = !framing.selectingSubject && !framing.busy &&
+                meteringEnabled = !framing.busy &&
                     framing.crop == null && framing.frozenPhoto == null
             )
         }

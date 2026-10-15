@@ -19,13 +19,11 @@ internal data class CameraCompositionState(
     val busy: Boolean = false,
     val scoring: Boolean = false,
     val error: String? = null,
-    val frozenPhoto: FrozenCameraPhoto? = null,
-    val retainedRegion: CropBox? = null,
-    val selectingSubject: Boolean = false
+    val frozenPhoto: FrozenCameraPhoto? = null
 ) {
     val canRestore: Boolean get() = recommendation != null && crop != recommendation.crop
     val active: Boolean
-        get() = busy || crop != null || frozenPhoto != null || retainedRegion != null || selectingSubject
+        get() = busy || crop != null || frozenPhoto != null
 }
 
 /** Owns recommendation snapshots and optional stills throughout crop editing. */
@@ -36,7 +34,6 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
     private val tasks = LatestWorkQueue(analyzer::close)
     private var frame: Bitmap? = null
     private var heldPhoto: FrozenCameraPhoto? = null
-    private var selectionBackup: CameraCompositionState? = null
     private var freezing = false
     private val scene = CameraSceneGuard()
 
@@ -47,7 +44,6 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         minimumArea: Float = DEFAULT_MINIMUM_CROP_AREA,
         frozenPhoto: FrozenCameraPhoto? = null
     ) {
-        val subject = state.value.retainedRegion
         freezing = false
         scene.reset()
         val request = tasks.invalidate()
@@ -62,7 +58,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
             val result = analyzer.analyze(
                 snapshot,
 
-                CropSearch(null, minimumArea, subject),
+                CropSearch(null, minimumArea),
                 { tasks.isCurrent(request) },
                 {}
             )
@@ -72,8 +68,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
                     crop = result.crop,
                     originalScore = result.originalScore,
                     cropScore = result.cropScore,
-                    frozenPhoto = frozenPhoto,
-                    retainedRegion = subject
+                    frozenPhoto = frozenPhoto
                 )
             }
         }
@@ -110,53 +105,6 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
                 recommend(checkNotNull(photo.image.copy(Bitmap.Config.ARGB_8888, false)), minimumArea, photo)
             }
         }
-    }
-
-    fun beginSubjectSelection(capture: (((FrozenCameraPhoto?) -> Unit) -> Unit)? = null) {
-        if (state.value.busy || state.value.selectingSubject || state.value.crop != null) return
-        selectionBackup = state.value.copy(scoring = false)
-        val request = tasks.invalidate()
-        mutableState.value = state.value.copy(selectingSubject = true, scoring = false, error = null)
-        if (heldPhoto != null || capture == null) return
-        freezing = true
-        mutableState.value = state.value.copy(busy = true)
-        capture { photo ->
-            if (!tasks.isCurrent(request)) {
-                photo?.close()
-            } else if (photo == null) {
-                cancelSubjectSelection()
-                mutableState.value = state.value.copy(error = "无法定格画面，请重试")
-            } else {
-                freezing = false
-                heldPhoto = photo
-                mutableState.value = state.value.copy(frozenPhoto = photo, busy = false)
-            }
-        }
-    }
-
-    fun commitSubject(region: CropBox) {
-        if (!state.value.selectingSubject || state.value.busy) return
-        CropSearch(null, DEFAULT_MINIMUM_CROP_AREA, region)
-        tasks.invalidate()
-        releaseFrame()
-        selectionBackup = null
-        scene.reset()
-        mutableState.value = CameraCompositionState(frozenPhoto = heldPhoto, retainedRegion = region)
-    }
-
-    fun cancelSubjectSelection() {
-        val previous = selectionBackup ?: return
-        tasks.invalidate()
-        freezing = false
-        if (heldPhoto != previous.frozenPhoto) releaseFrozenPhoto()
-        selectionBackup = null
-        mutableState.value = previous
-    }
-
-    fun clearSubject() {
-        if (state.value.crop != null) return
-        cancelSubjectSelection()
-        invalidateScene()
     }
 
     fun updateCrop(crop: CropBox) {
@@ -205,19 +153,7 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
         mutableState.value = state.value.copy(busy = false, scoring = false, error = "取景尚未就绪，请重试")
     }
 
-    fun dismiss() {
-        selectionBackup = null
-        val current = state.value
-        tasks.invalidate()
-        releaseFrame()
-        freezing = false
-        mutableState.value = if (current.busy && (current.crop != null || current.retainedRegion != null)) {
-            current.copy(busy = false, scoring = false, error = null)
-        } else {
-            releaseFrozenPhoto()
-            CameraCompositionState()
-        }
-    }
+    fun dismiss() = invalidateScene()
 
     fun observeScene(samples: IntArray) {
         if (freezing || heldPhoto != null) return
@@ -225,7 +161,6 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
     }
 
     fun invalidateScene() {
-        selectionBackup = null
         freezing = false
         scene.reset()
         tasks.invalidate()
@@ -245,7 +180,6 @@ internal class CameraComposition(private val analyzer: CompositionAnalyzer) : Cl
     }
 
     override fun close() {
-        selectionBackup = null
         freezing = false
         tasks.invalidate()
         releaseFrame()

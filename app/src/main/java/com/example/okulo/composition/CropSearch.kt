@@ -3,11 +3,8 @@ package com.example.okulo.composition
 /** Normalized crop width/height, or null for free search. Area is relative to the full source image. */
 data class CropSearch(
     val normalizedRatio: Float?,
-    val minimumArea: Float,
-    val retainedRegion: CropBox? = null
+    val minimumArea: Float
 ) {
-    internal val requiredBounds = retainedRegion?.let(::subjectBounds)
-
     init {
         require(normalizedRatio == null || normalizedRatio.isFinite() && normalizedRatio > 0f)
         require(minimumArea.isFinite() && minimumArea > 0f && minimumArea <= 1f)

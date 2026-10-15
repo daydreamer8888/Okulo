@@ -47,25 +47,6 @@ class CompositionEngineContractTest {
     }
 
     @Test
-    fun recommendationsRetainTheSubjectWithMarginButManualCropsRemainUnrestricted() = withPhoto { photo ->
-        for (ratio in listOf(1f, null)) {
-            val model = RecordingModel { boxes -> boxes.map { -it.area }.toFloatArray() }
-            CompositionEngine(model).use { engine ->
-                val region = CropBox(0.25f, 0.25f, 0.75f, 0.75f)
-                val result = engine.analyze(photo, CropSearch(ratio, 0.2f, region), { true }, {})
-                for (box in model.requests.flatten()) {
-                    assertTrue("Subject margin cut by $box", box.left <= 0.2f && box.top <= 0.2f)
-                    assertTrue("Subject margin cut by $box", box.right >= 0.8f && box.bottom >= 0.8f)
-                }
-                assertTrue(result.crop.area >= 0.36f)
-                val manual = CropBox(0f, 0f, 0.3f, 0.3f)
-                engine.evaluate(photo, manual) { true }
-                assertEquals(manual, model.requests.last().last())
-            }
-        }
-    }
-
-    @Test
     fun freeSearchCanSelectACropWithADifferentAspectFromTheSource() {
         val photo = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
         val model = RecordingModel { boxes ->

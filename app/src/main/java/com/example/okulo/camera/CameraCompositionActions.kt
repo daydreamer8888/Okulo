@@ -56,7 +56,7 @@ internal fun CameraRecommendButton(
     ready: Boolean,
     actions: CameraCompositionActions
 ) {
-    val recommending = state.busy && !state.selectingSubject
+    val recommending = state.busy
     var expanded by remember { mutableStateOf(false) }
     LaunchedEffect(state.active, recommending) { if (!state.active || recommending) expanded = false }
     Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
@@ -70,7 +70,7 @@ internal fun CameraRecommendButton(
                     else -> actions.recommend()
                 }
             },
-            enabled = !state.selectingSubject && (ready || recommending),
+            enabled = ready || recommending,
             iconModifier = if (recommending) Modifier.alpha(0f) else Modifier,
             style = ActionIconStyle.Tonal
         )
