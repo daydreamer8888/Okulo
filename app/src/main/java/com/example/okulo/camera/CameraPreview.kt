@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,7 +34,8 @@ internal fun CameraPreview(
     onScene: (IntArray) -> Unit = {},
     zoom: CameraZoom? = null,
     meteringEnabled: Boolean = true,
-    showLevel: Boolean = false
+    showLevel: Boolean = false,
+    showHighlights: Boolean = false
 ) {
     val context = LocalContext.current
     val controller = capture.controller
@@ -45,7 +47,22 @@ internal fun CameraPreview(
             this.controller = controller
         }
     }
-    val status = BindCameraPreview(capture, preview, onFrameSource, onScene)
+    val owner = LocalLifecycleOwner.current
+    val status = remember(controller) { CameraPreviewStatus() }
+    val sceneObserver by rememberUpdatedState(onScene)
+    val highlightsEnabled by rememberUpdatedState(showHighlights)
+    val scenes = remember(controller, owner) {
+        CameraSceneStream(
+            controller,
+            highlightsEnabled = { highlightsEnabled },
+            onHighlights = { status.highlights = it },
+            onScene = { sceneObserver(it) }
+        )
+    }
+    BindCameraPreview(capture, preview, scenes, status, onFrameSource)
+    LaunchedEffect(showHighlights, status.stream) {
+        if (!showHighlights || status.stream != PreviewView.StreamState.STREAMING) status.highlights = null
+    }
     val metering = rememberCameraMetering(capture)
     ObserveCameraZoom(controller, zoom)
     ObserveCameraMetering(
@@ -56,6 +73,9 @@ internal fun CameraPreview(
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
         CameraPreviewNotice(status.error, status.stream)
+        if (showHighlights && status.stream == PreviewView.StreamState.STREAMING) {
+            CameraHighlightOverlay(status.highlights)
+        }
         CameraLevel(showLevel && status.stream == PreviewView.StreamState.STREAMING)
         CameraMeteringControls(metering.state, metering::requestExposure)
     }
@@ -64,23 +84,23 @@ internal fun CameraPreview(
 private class CameraPreviewStatus {
     var stream by mutableStateOf(PreviewView.StreamState.IDLE)
     var error by mutableStateOf<String?>(null)
+    var highlights by mutableStateOf<HighlightRegions?>(null)
 }
 
 @Composable
 private fun BindCameraPreview(
     capture: CameraCapture,
     preview: PreviewView,
-    onFrameSource: ((() -> Bitmap?)?) -> Unit,
-    onScene: (IntArray) -> Unit
-): CameraPreviewStatus {
+    scenes: CameraSceneStream,
+    status: CameraPreviewStatus,
+    onFrameSource: ((() -> Bitmap?)?) -> Unit
+) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val controller = capture.controller
-    val status = remember(controller) { CameraPreviewStatus() }
-    val sceneObserver by rememberUpdatedState(onScene)
     DisposableEffect(controller, owner) {
         var active = true
-        val scenes = CameraSceneStream(controller) { sceneObserver(it) }.apply { start() }
+        scenes.start()
         onFrameSource { if (status.stream == PreviewView.StreamState.STREAMING) preview.bitmap else null }
         val observer = Observer<PreviewView.StreamState> {
             status.stream = it
@@ -119,7 +139,6 @@ private fun BindCameraPreview(
             preview.controller = null
         }
     }
-    return status
 }
 
 @Composable

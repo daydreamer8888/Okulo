@@ -43,7 +43,8 @@ internal fun CameraScreen(
     keepOriginal: Boolean = true,
     minimumCropArea: Float = DEFAULT_MINIMUM_CROP_AREA,
     freezeComposition: Boolean = false,
-    showLevel: Boolean = false
+    showLevel: Boolean = false,
+    showHighlights: Boolean = false
 ) {
     val context = LocalContext.current
     val framing by composition.state.collectAsState()
@@ -75,13 +76,7 @@ internal fun CameraScreen(
         onImportPhoto = onImportPhoto,
         onSettings = onSettings,
         modifier = modifier,
-        capture = capture.state.copy(
-            ready = if (framing.frozenPhoto != null) {
-                !framing.busy
-            } else {
-                capture.state.ready && !(freezeComposition && framing.busy)
-            }
-        ),
+        capture = capture.state.withFraming(framing, freezeComposition),
         composition = framing,
         compositionActions = CameraCompositionActions(
             frameActions::recommend,
@@ -97,11 +92,22 @@ internal fun CameraScreen(
         onViewPhoto = { openCapturedPhoto(context, capture.state.savedPhoto) }
     ) {
         if (permission.granted) {
-            CameraLiveView(capture, composition, zoom, frameActions, showLevel) { frameSource = it }
+            CameraLiveView(capture, composition, zoom, frameActions, showLevel, showHighlights) { source ->
+                frameSource = source
+            }
         } else {
             CameraPermissionNotice(permission.denied, permission.request)
         }
     }
+}
+
+private fun CaptureUiState.withFraming(framing: CameraCompositionState, freezeComposition: Boolean): CaptureUiState {
+    val canUseShutter = if (framing.frozenPhoto != null) {
+        !framing.busy
+    } else {
+        ready && !(freezeComposition && framing.busy)
+    }
+    return copy(ready = canUseShutter)
 }
 
 @Composable
@@ -142,6 +148,7 @@ private fun CameraLiveView(
     zoom: CameraZoom,
     frameActions: CameraFrameActions,
     showLevel: Boolean = false,
+    showHighlights: Boolean = false,
     onFrameSource: ((() -> Bitmap?)?) -> Unit
 ) {
     val framing by composition.state.collectAsState()
@@ -171,6 +178,7 @@ private fun CameraLiveView(
                 onScene = composition::observeScene,
                 zoom = zoom,
                 showLevel = showLevel && framing.frozenPhoto == null && framing.crop == null,
+                showHighlights = showHighlights && framing.frozenPhoto == null && framing.crop == null,
                 meteringEnabled = !framing.busy &&
                     framing.crop == null && framing.frozenPhoto == null
             )
