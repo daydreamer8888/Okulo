@@ -51,7 +51,7 @@ private const val THUMBNAIL_SIZE = 128
 private const val LEGACY_SAMPLE_SIZE = 16
 
 @Composable
-internal fun SavedPhotoButton(uri: Uri?, onClick: () -> Unit) {
+internal fun SavedPhotoButton(uri: Uri?, allowEmpty: Boolean = false, onClick: () -> Unit) {
     val resolver = LocalContext.current.contentResolver
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var revision by remember { mutableIntStateOf(0) }
@@ -69,7 +69,7 @@ internal fun SavedPhotoButton(uri: Uri?, onClick: () -> Unit) {
     val bitmap = photo.bitmap
     IconButton(
         onClick = onClick,
-        enabled = photo.available,
+        enabled = photo.available || allowEmpty,
         modifier = Modifier.size(56.dp).semantics { contentDescription = "查看最新照片" }
     ) {
         val shape = CircleShape

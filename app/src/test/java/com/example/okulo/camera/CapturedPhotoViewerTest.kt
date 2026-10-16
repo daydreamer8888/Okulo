@@ -31,7 +31,7 @@ class CapturedPhotoViewerTest {
             intent.action
         )
         assertEquals(photo, intent.data)
-        assertEquals("image/jpeg", intent.type)
+        assertEquals("image/*", intent.type)
         assertTrue(intent.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
     }
 
@@ -49,7 +49,7 @@ class CapturedPhotoViewerTest {
         )
         val fallback = context.attempts.last()
         assertEquals(photo, fallback.data)
-        assertEquals("image/jpeg", fallback.type)
+        assertEquals("image/*", fallback.type)
         assertTrue(fallback.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
     }
 

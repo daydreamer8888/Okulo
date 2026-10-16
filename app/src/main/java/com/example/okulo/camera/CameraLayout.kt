@@ -47,7 +47,7 @@ internal fun CameraLayout(
     compositionActions: CameraCompositionActions = CameraCompositionActions(),
     showScores: Boolean = false,
     recommendationEnabled: Boolean = capture.ready,
-    recentPhoto: @Composable () -> Unit = { SavedPhotoButton(capture.savedPhoto, onViewPhoto) },
+    recentPhoto: @Composable () -> Unit = { SavedPhotoButton(capture.savedPhoto, onClick = onViewPhoto) },
     viewfinder: @Composable () -> Unit
 ) {
     BoxWithConstraints(modifier.fillMaxSize().background(Color.Black)) {

@@ -1,5 +1,6 @@
 package com.example.okulo.camera
 
+import android.Manifest
 import android.content.ContentProvider
 import android.content.ContentUris
 import android.content.ContentValues
@@ -22,6 +23,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
@@ -37,6 +39,7 @@ class CameraGalleryUiTest {
 
     @Test
     fun cameraAlbumRefreshesAcrossLaunchDeletionAndReturningFromAnotherCamera() {
+        shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(Manifest.permission.READ_EXTERNAL_STORAGE)
         val gallery = CameraAlbumProvider()
         gallery.attachInfo(compose.activity, ProviderInfo().apply { authority = MediaStore.AUTHORITY })
         ShadowContentResolver.registerProviderInternal(MediaStore.AUTHORITY, gallery)
@@ -79,6 +82,8 @@ class CameraGalleryUiTest {
 internal class CameraAlbumProvider : ContentProvider(), AutoCloseable {
     private val database = SQLiteDatabase.create(null)
     private val files = mutableMapOf<Long, File>()
+    var visibleIds: Set<Long>? = null
+    var mimeType = "image/jpeg"
 
     override fun onCreate(): Boolean {
         database.execSQL(
@@ -126,10 +131,12 @@ internal class CameraAlbumProvider : ContentProvider(), AutoCloseable {
         sortOrder: String?
     ): Cursor {
         val isItem = uri.lastPathSegment?.toLongOrNull() != null
+        val access = visibleIds?.let { if (it.isEmpty()) "0" else "_id IN (${it.joinToString(",")})" }
+        val conditions = listOfNotNull(if (isItem) "_id = ?" else selection, access)
         return database.query(
             "images",
             projection,
-            if (isItem) "_id = ?" else selection,
+            conditions.joinToString(" AND ").ifEmpty { null },
             if (isItem) arrayOf(uri.lastPathSegment) else args,
             null,
             null,
@@ -137,11 +144,15 @@ internal class CameraAlbumProvider : ContentProvider(), AutoCloseable {
         )
     }
 
-    override fun getType(uri: Uri) = "image/jpeg"
-    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor = ParcelFileDescriptor.open(
-        files[ContentUris.parseId(uri)] ?: throw FileNotFoundException(),
-        ParcelFileDescriptor.MODE_READ_ONLY
-    )
+    override fun getType(uri: Uri) = mimeType
+    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
+        val id = ContentUris.parseId(uri)
+        if (visibleIds?.contains(id) == false) throw FileNotFoundException()
+        return ParcelFileDescriptor.open(
+            files[id] ?: throw FileNotFoundException(),
+            ParcelFileDescriptor.MODE_READ_ONLY
+        )
+    }
     override fun insert(uri: Uri, values: ContentValues?): Uri? = error("Read-only fixture")
     override fun update(uri: Uri, values: ContentValues?, selection: String?, args: Array<out String>?): Int =
         error("Read-only fixture")

@@ -10,6 +10,13 @@ import android.widget.Toast
 
 internal fun openCapturedPhoto(context: Context, uri: Uri?) {
     if (uri == null) return
+    val mediaType = try {
+        context.contentResolver.getType(uri) ?: "image/*"
+    } catch (_: SecurityException) {
+        "image/*"
+    } catch (_: IllegalArgumentException) {
+        "image/*"
+    }
     val actions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         listOf(MediaStore.ACTION_REVIEW, Intent.ACTION_VIEW)
     } else {
@@ -18,7 +25,7 @@ internal fun openCapturedPhoto(context: Context, uri: Uri?) {
     for (action in actions) {
         try {
             context.startActivity(
-                Intent(action).setDataAndType(uri, "image/jpeg")
+                Intent(action).setDataAndType(uri, mediaType)
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             )
             return

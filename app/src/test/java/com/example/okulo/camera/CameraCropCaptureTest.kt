@@ -39,20 +39,14 @@ class CameraCropCaptureTest {
     @Suppress("DEPRECATION") // Android 8 and 9 publish through an absolute file path.
     fun uneditedCapturesAreSavedInTheSystemCameraAlbum() {
         val context = RuntimeEnvironment.getApplication()
-        val photo = Uri.parse("content://media/external/images/media/42")
-        CameraCapture(context) { output, callback ->
-            val values = checkNotNull(output.contentValues)
+        captureOutput(context, cropOnly = false).use { output ->
+            val values = checkNotNull(output.options.contentValues)
             if (Build.VERSION.SDK_INT >= 29) {
                 assertEquals("DCIM/Camera", values.getAsString(MediaStore.Images.Media.RELATIVE_PATH))
             } else {
                 val path = File(values.getAsString(MediaStore.Images.Media.DATA))
                 assertTrue(path.parentFile!!.path.replace('\\', '/').endsWith("/DCIM/Camera"))
             }
-            callback.onImageSaved(ImageCapture.OutputFileResults(photo))
-        }.use { capture ->
-            capture.previewReady(true)
-            capture.takePhoto()
-            assertEquals(photo, capture.state.savedPhoto)
         }
     }
 

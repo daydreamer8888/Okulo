@@ -45,10 +45,17 @@ internal fun CameraGalleryButton(savedPhoto: Uri?) {
     val photo by produceState(savedPhoto, savedPhoto, revision) {
         value = withContext(Dispatchers.IO) { latestCameraPhoto(resolver) ?: savedPhoto }
     }
-    SavedPhotoButton(photo) {
+    val viewLatest: () -> Unit = {
         scope.launch {
             val latest = withContext(Dispatchers.IO) { latestCameraPhoto(resolver) ?: savedPhoto }
             openCapturedPhoto(context, latest)
         }
+    }
+    val access = rememberGalleryPhotoAccess {
+        revision++
+        viewLatest()
+    }
+    SavedPhotoButton(photo, allowEmpty = access.canRequest) {
+        if (access.canRequest) access.request() else viewLatest()
     }
 }
