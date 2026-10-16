@@ -1,6 +1,11 @@
 package com.example.okulo.photo
 
+import android.app.Activity
+import android.app.Instrumentation
+import android.content.Intent
 import android.net.Uri
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -33,12 +38,22 @@ class AspectRecommendationTest {
         instrumentation.context.assets.open("scene.png").use { input ->
             source.outputStream().use { input.copyTo(it) }
         }
+        val pickerIntent = PickVisualMedia().createIntent(
+            compose.activity,
+            PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+        )
+        val monitor = object : Instrumentation.ActivityMonitor() {
+            override fun onStartActivity(intent: Intent): Instrumentation.ActivityResult? {
+                if (intent.action != pickerIntent.action) return null
+                return Instrumentation.ActivityResult(Activity.RESULT_OK, Intent().setData(Uri.fromFile(source)))
+            }
+        }
+        instrumentation.addMonitor(monitor)
         lateinit var model: PhotoViewModel
         try {
             compose.onNodeWithContentDescription("导入照片").performClick()
             compose.runOnIdle {
                 model = ViewModelProvider(compose.activity)[PhotoViewModel::class.java]
-                model.selectPhoto(Uri.fromFile(source))
             }
             awaitIdle(model)
             compose.onNodeWithContentDescription("裁剪比例").assertIsDisplayed().performClick()
@@ -95,12 +110,15 @@ class AspectRecommendationTest {
             assertEquals(manual.width / manual.height, recommended.crop.width / recommended.crop.height, 1e-5f)
             assertTrue(recommended.cropScore.isFinite())
         } finally {
+            instrumentation.removeMonitor(monitor)
             source.delete()
         }
     }
 
     private fun awaitIdle(model: PhotoViewModel) {
-        compose.waitUntil(45_000) { !model.state.value.busy && !model.state.value.scoring }
+        compose.waitUntil(45_000) {
+            model.state.value.photo != null && !model.state.value.busy && !model.state.value.scoring
+        }
         compose.waitForIdle()
         assertNull(model.state.value.error)
     }

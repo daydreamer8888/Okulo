@@ -44,11 +44,11 @@ class CameraPreviewTest {
             assertTrue("Camera preview must contain an image", pixels.any { it != pixels[0] })
             frame.recycle()
         }
-        compose.onNodeWithContentDescription("导入照片").performClick()
+        compose.onNodeWithContentDescription("设置").performClick()
         compose.waitUntil(10_000) {
             compose.runOnIdle { preview.previewStreamState.value == PreviewView.StreamState.IDLE }
         }
-        compose.onNodeWithContentDescription("返回拍摄").performClick()
+        compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithText("开启相机").assertDoesNotExist()
         onView(withContentDescription("后置主摄实时预览")).check { view, error ->
             if (error != null) throw error
