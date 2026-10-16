@@ -10,7 +10,10 @@ import com.example.okulo.composition.CropBox
 import java.io.IOException
 
 /** Export original pixels using the same orientation and normalized crop as the editor. */
-internal class CropExporter(context: Context) : CropWriter {
+internal class CropExporter(
+    context: Context,
+    private val album: GalleryAlbum = GalleryAlbum.Edits
+) : CropWriter {
     private val resolver = context.applicationContext.contentResolver
 
     @Suppress("TooGenericExceptionCaught") // Roll back a gallery row for storage and encoding failures.
@@ -24,7 +27,7 @@ internal class CropExporter(context: Context) : CropWriter {
             output = cropPreview(edited, crop)
             val uri = resolver.insert(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                galleryPhotoValues("Okulo_crop", pending = true)
+                galleryPhotoValues("Okulo_crop", pending = true, album = album)
             )
                 ?: throw IOException("无法创建相册照片")
             destination = uri

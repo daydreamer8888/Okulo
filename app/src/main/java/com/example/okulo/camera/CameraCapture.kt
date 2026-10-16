@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import com.example.okulo.composition.CropBox
 import com.example.okulo.image.CropExporter
 import com.example.okulo.image.CropWriter
+import com.example.okulo.image.GalleryAlbum
 import com.example.okulo.image.PhotoTransform
 import com.example.okulo.image.readPhoto
 import com.example.okulo.image.saveOriginalPhoto
@@ -27,7 +28,7 @@ import java.util.concurrent.Executors
 @Suppress("TooManyFunctions") // Capture and frozen export share the shutter state and camera lifetime.
 internal class CameraCapture(
     private val context: Context,
-    private val writer: CropWriter = CropExporter(context),
+    private val writer: CropWriter = CropExporter(context, GalleryAlbum.Camera),
     private val shoot: ((ImageCapture.OutputFileOptions, ImageCapture.OnImageSavedCallback) -> Unit)? = null
 ) : Closeable {
     private val exports = Executors.newSingleThreadExecutor()

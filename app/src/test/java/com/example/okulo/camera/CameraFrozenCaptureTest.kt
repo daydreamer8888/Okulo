@@ -67,6 +67,7 @@ class CameraFrozenCaptureTest {
             await { !capture.state.saving }
             assertEquals(1, shots)
             assertEquals(1, gallery.insertions)
+            assertEquals("DCIM/Camera", gallery.values.getAsString(MediaStore.Images.Media.RELATIVE_PATH))
             val exported = context.contentResolver.openInputStream(capture.state.savedPhoto!!).use {
                 BitmapFactory.decodeStream(it)
             }
@@ -98,6 +99,7 @@ class CameraFrozenCaptureTest {
             assertEquals("裁剪保存失败，原图已保留", capture.state.message)
             assertTrue(capture.state.savedPhoto != null)
             assertEquals(1, gallery.insertions)
+            assertEquals("DCIM/Camera", gallery.values.getAsString(MediaStore.Images.Media.RELATIVE_PATH))
             assertArrayEquals(bytes, gallery.file.readBytes())
             await { !source.exists() }
         }

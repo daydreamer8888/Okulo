@@ -12,7 +12,7 @@ import java.io.IOException
 internal fun saveOriginalPhoto(resolver: ContentResolver, source: Uri): Uri {
     val destination = resolver.insert(
         MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-        galleryPhotoValues("Okulo", pending = true)
+        galleryPhotoValues("Okulo", pending = true, album = GalleryAlbum.Camera)
     ) ?: throw IOException("无法创建相册照片")
     try {
         copyOriginalPhoto(resolver, source, destination)

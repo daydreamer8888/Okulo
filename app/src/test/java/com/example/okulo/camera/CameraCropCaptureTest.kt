@@ -8,6 +8,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.net.Uri
+import android.os.Build
 import android.os.Looper
 import android.provider.MediaStore
 import androidx.camera.core.ImageCapture
@@ -32,6 +33,29 @@ import java.util.concurrent.TimeUnit
 @Config(sdk = [29])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CameraCropCaptureTest {
+    @Test
+    @Config(sdk = [28, 29])
+    @SuppressLint("RestrictedApi") // Inspect the public CameraX storage destination.
+    @Suppress("DEPRECATION") // Android 8 and 9 publish through an absolute file path.
+    fun uneditedCapturesAreSavedInTheSystemCameraAlbum() {
+        val context = RuntimeEnvironment.getApplication()
+        val photo = Uri.parse("content://media/external/images/media/42")
+        CameraCapture(context) { output, callback ->
+            val values = checkNotNull(output.contentValues)
+            if (Build.VERSION.SDK_INT >= 29) {
+                assertEquals("DCIM/Camera", values.getAsString(MediaStore.Images.Media.RELATIVE_PATH))
+            } else {
+                val path = File(values.getAsString(MediaStore.Images.Media.DATA))
+                assertTrue(path.parentFile!!.path.replace('\\', '/').endsWith("/DCIM/Camera"))
+            }
+            callback.onImageSaved(ImageCapture.OutputFileResults(photo))
+        }.use { capture ->
+            capture.previewReady(true)
+            capture.takePhoto()
+            assertEquals(photo, capture.state.savedPhoto)
+        }
+    }
+
     @Test
     @SuppressLint("RestrictedApi") // Inspect the camera output destination at the platform adapter boundary.
     fun cropOnlyCaptureWritesToPrivateStorageAndPublishesOnlyTheOrientedCrop() {
@@ -58,6 +82,7 @@ class CameraCropCaptureTest {
             capture.takePhoto(CropBox(0f, 0.5f, 1f, 1f), keepOriginal = false)
             await { !capture.state.saving && !temporary.exists() }
             assertEquals(1, gallery.insertions)
+            assertEquals("DCIM/Camera", gallery.values.getAsString(MediaStore.Images.Media.RELATIVE_PATH))
             val output = context.contentResolver.openInputStream(capture.state.savedPhoto!!).use {
                 BitmapFactory.decodeStream(it)
             }

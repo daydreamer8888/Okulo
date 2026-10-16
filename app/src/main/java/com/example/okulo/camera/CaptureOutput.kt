@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import androidx.camera.core.ImageCapture
+import com.example.okulo.image.GalleryAlbum
 import com.example.okulo.image.galleryPhotoValues
 import java.io.Closeable
 import java.io.File
@@ -28,7 +29,7 @@ internal fun captureOutput(context: Context, cropOnly: Boolean): CaptureOutput {
         ImageCapture.OutputFileOptions.Builder(
             context.contentResolver,
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            galleryPhotoValues("Okulo")
+            galleryPhotoValues("Okulo", album = GalleryAlbum.Camera)
         ).build()
     )
 }
