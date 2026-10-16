@@ -47,6 +47,7 @@ internal fun CameraLayout(
     compositionActions: CameraCompositionActions = CameraCompositionActions(),
     showScores: Boolean = false,
     recommendationEnabled: Boolean = capture.ready,
+    recentPhoto: @Composable () -> Unit = { SavedPhotoButton(capture.savedPhoto, onViewPhoto) },
     viewfinder: @Composable () -> Unit
 ) {
     BoxWithConstraints(modifier.fillMaxSize().background(Color.Black)) {
@@ -73,7 +74,7 @@ internal fun CameraLayout(
                         Modifier.align(Alignment.CenterStart).width(recentPhotoWidth),
                         contentAlignment = Alignment.Center
                     ) {
-                        SavedPhotoButton(capture.savedPhoto, onViewPhoto)
+                        recentPhoto()
                     }
                     Box(Modifier.align(Alignment.Center)) {
                         CaptureButton(

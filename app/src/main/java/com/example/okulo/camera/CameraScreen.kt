@@ -89,7 +89,7 @@ internal fun CameraScreen(
             !capture.state.saving && !capture.state.preparing,
         onMessageDismissed = capture::dismissMessage,
         onCapture = onCapture,
-        onViewPhoto = { openCapturedPhoto(context, capture.state.savedPhoto) }
+        recentPhoto = { CameraGalleryButton(capture.state.savedPhoto) }
     ) {
         if (permission.granted) {
             CameraLiveView(capture, composition, zoom, frameActions, showLevel, showHighlights) { source ->
