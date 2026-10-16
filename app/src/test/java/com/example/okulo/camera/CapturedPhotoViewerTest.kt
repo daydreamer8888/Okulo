@@ -8,6 +8,7 @@ import android.os.Build
 import android.provider.MediaStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -19,6 +20,25 @@ import org.robolectric.shadows.ShadowToast
 @Config(sdk = [28, 29])
 class CapturedPhotoViewerTest {
     private val photo = Uri.parse("content://media/external/images/media/42")
+
+    @Before
+    fun installSystemGallery() {
+        registerSystemGallery()
+    }
+
+    @Test
+    fun prefersTheSystemGalleryWhenAnotherAppHandlesPhotoReview() {
+        val review = Intent(MediaStore.ACTION_REVIEW).setDataAndType(photo, "image/*")
+        val view = Intent(Intent.ACTION_VIEW).setDataAndType(photo, "image/*")
+        registerPhotoViewer(review, "example.thirdparty", system = false)
+        registerPhotoViewer(view, "example.thirdparty", system = false)
+        val context = ViewerContext()
+
+        openCapturedPhoto(context, photo)
+
+        assertEquals("example.gallery", context.attempts.single().`package`)
+        assertEquals(photo, context.attempts.single().data)
+    }
 
     @Test
     fun opensCapturedPhotoWithGalleryBrowsingWhenSupported() {
@@ -57,7 +77,7 @@ class CapturedPhotoViewerTest {
     fun missingViewersExplainTheFailureAfterTryingAvailableActions() {
         val context = ViewerContext(setOf("android.provider.action.REVIEW", Intent.ACTION_VIEW))
         openCapturedPhoto(context, photo)
-        assertEquals("未找到可查看照片的应用。", ShadowToast.getTextOfLatestToast())
+        assertEquals("未找到系统相册。", ShadowToast.getTextOfLatestToast())
         assertEquals(if (Build.VERSION.SDK_INT >= 29) 2 else 1, context.attempts.size)
     }
 

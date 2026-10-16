@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performClick
 import androidx.lifecycle.Lifecycle
 import com.example.okulo.photo.TestAnalyzer
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +37,9 @@ import java.io.FileNotFoundException
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CameraGalleryUiTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+
+    @Before
+    fun prepareSystemGallery() { registerSystemGallery() }
 
     @Test
     fun cameraAlbumRefreshesAcrossLaunchDeletionAndReturningFromAnotherCamera() {

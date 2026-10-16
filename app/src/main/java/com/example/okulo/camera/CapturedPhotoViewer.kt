@@ -3,6 +3,7 @@ package com.example.okulo.camera
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -22,16 +23,24 @@ internal fun openCapturedPhoto(context: Context, uri: Uri?) {
     } else {
         listOf(Intent.ACTION_VIEW)
     }
-    for (action in actions) {
-        try {
-            context.startActivity(
-                Intent(action).setDataAndType(uri, mediaType)
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            )
-            return
-        } catch (_: ActivityNotFoundException) {
-            // Older gallery apps may only support viewing a single photo.
+    val gallery = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_GALLERY)
+    val viewer = Intent(Intent.ACTION_VIEW).setDataAndType(uri, mediaType)
+    val packages = listOf(gallery, viewer).flatMap { intent ->
+        context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_SYSTEM_ONLY)
+            .map { it.activityInfo.packageName }
+    }.distinct()
+    for (packageName in packages) {
+        for (action in actions) {
+            try {
+                context.startActivity(
+                    Intent(action).setPackage(packageName).setDataAndType(uri, mediaType)
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                )
+                return
+            } catch (_: ActivityNotFoundException) {
+                // A system gallery may only support ACTION_VIEW.
+            }
         }
     }
-    Toast.makeText(context, "未找到可查看照片的应用。", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, "未找到系统相册。", Toast.LENGTH_SHORT).show()
 }

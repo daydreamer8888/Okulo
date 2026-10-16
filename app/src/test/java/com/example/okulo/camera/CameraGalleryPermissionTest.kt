@@ -14,6 +14,7 @@ import androidx.lifecycle.Lifecycle
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,6 +30,9 @@ import org.robolectric.shadows.ShadowContentResolver
 @Suppress("DEPRECATION") // Deliver platform permission results to the registered activity-result callback.
 class CameraGalleryPermissionTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+
+    @Before
+    fun prepareSystemGallery() { registerSystemGallery() }
 
     @Test
     fun firstGalleryTapRequestsPhotoAccessThenOpensTheLatestCameraPhotoWithItsMediaType() {
