@@ -35,8 +35,8 @@ android {
         applicationId = "com.example.okulo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.1.2"
+        versionCode = 5
+        versionName = "1.2.0"
         ndk {
             abiFilters += providers.gradleProperty("okuloAbis").orElse("arm64-v8a").get().split(",")
         }
