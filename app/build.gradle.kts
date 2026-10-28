@@ -9,6 +9,8 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+val runtimeAar = rootProject.layout.projectDirectory.file(".gradle/okulo-runtime/onnxruntime-android.aar")
+
 abstract class PrepareLicenseAssets : DefaultTask() {
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.NONE)
@@ -65,13 +67,15 @@ android {
     sourceSets.getByName("main").assets.srcDir(
         providers.gradleProperty("okuloModelAssets").orElse("model-assets")
     )
-    androidResources { noCompress += "onnx" }
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all { it.maxHeapSize = "1g" }
     }
     buildFeatures {
         compose = true
+    }
+    packaging {
+        jniLibs.useLegacyPackaging = false
     }
 }
 
@@ -82,7 +86,7 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.exifinterface)
-    implementation(libs.onnxruntime.android)
+    implementation(files(runtimeAar))
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -113,6 +117,16 @@ detekt {
 }
 
 val modelAssetRoot = providers.gradleProperty("okuloModelAssets").orElse("model-assets")
+val verifyRuntime by tasks.registering {
+    inputs.file(runtimeAar)
+    doLast {
+        check(runtimeAar.asFile.isFile) {
+            "Missing Android runtime. See docs/model-assets.md to prepare inference dependencies."
+        }
+    }
+}
+tasks.named("preBuild") { dependsOn(verifyRuntime) }
+
 val verifyModelAssets by tasks.registering {
     val models = listOf("s2c.onnx", "yolo26n.onnx")
     inputs.files(models.map { file("${modelAssetRoot.get()}/models/$it") })

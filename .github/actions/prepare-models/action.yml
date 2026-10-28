@@ -1,5 +1,5 @@
 name: Prepare model assets
-description: Fetch and verify the versioned ONNX models used by the app.
+description: Fetch and verify the versioned models and Android inference runtime.
 runs:
   using: composite
   steps:
@@ -12,13 +12,14 @@ runs:
       shell: bash
       run: |
         python3 -m unittest discover -s tools/models -p 'test_*.py'
+        python3 -m unittest discover -s tools/runtime -p 'test_*.py'
 
     - name: Restore model cache
       id: models
       uses: actions/cache@v5
       with:
         path: ${{ runner.temp }}/okulo-models
-        key: okulo-model-assets-v1-${{ hashFiles('tools/models/*.py') }}
+        key: okulo-model-assets-v1-${{ hashFiles('tools/models/*.py', 'tools/runtime/prepare.py') }}
 
     - name: Download model assets
       if: steps.models.outputs.cache-hit != 'true'
@@ -31,6 +32,10 @@ runs:
           --repo daydreamer8888/Okulo \
           --pattern 's2c.onnx' --pattern 'yolo26n.onnx' \
           --dir "$RUNNER_TEMP/okulo-models"
+        gh release download runtime-assets-v1 \
+          --repo daydreamer8888/Okulo \
+          --pattern 'onnxruntime-android-1.30.0-okulo-v1.aar' \
+          --dir "$RUNNER_TEMP/okulo-models"
 
     - name: Verify and stage model assets
       shell: bash
@@ -38,3 +43,5 @@ runs:
         python3 tools/models/package.py \
           --scorer "$RUNNER_TEMP/okulo-models/s2c.onnx" \
           --detector "$RUNNER_TEMP/okulo-models/yolo26n.onnx"
+        python3 tools/runtime/prepare.py \
+          --source "$RUNNER_TEMP/okulo-models/onnxruntime-android-1.30.0-okulo-v1.aar"

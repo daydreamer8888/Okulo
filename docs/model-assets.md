@@ -14,16 +14,20 @@ gh release download model-assets-v1 \
 python3 tools/models/package.py \
   --scorer /tmp/okulo-models/s2c.onnx \
   --detector /tmp/okulo-models/yolo26n.onnx
+gh release download runtime-assets-v1 \
+  --repo daydreamer8888/Okulo \
+  --pattern 'onnxruntime-android-1.30.0-okulo-v1.aar' \
+  --dir /tmp/okulo-models --clobber
+python3 tools/runtime/prepare.py \
+  --source /tmp/okulo-models/onnxruntime-android-1.30.0-okulo-v1.aar
 ./gradlew :app:assembleDebug
 ```
 
-工具校验 SHA-256 后将模型放入 `app/model-assets/models/`。CI 使用相同流程。
-
-Windows 使用 `gradlew.bat`。默认打包 `arm64-v8a`，其他架构通过 `-PokuloAbis` 指定，多个架构用逗号分隔。
+Windows 使用 `gradlew.bat`，默认打包 `arm64-v8a`，其他架构通过 `-PokuloAbis` 指定，多个架构用逗号分隔。
 
 ## 更新
 
-更新模型时，同步 Release、`tools/models/package.py` 与 `ModelAssets.kt` 中的哈希，以及模型测试基准。更换 Release 标签时同步 CI 下载与缓存配置。
+更新模型时，同步 Release、`tools/models/package.py` 与 `ModelAssets.kt` 中的哈希，以及模型测试基准，并同步 `tools/runtime/build.py` 的算子清单、重建运行库。更换 Release 标签时同步 CI 下载与缓存配置。
 
 ## 来源与许可
 
